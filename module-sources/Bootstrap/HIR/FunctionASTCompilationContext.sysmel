@@ -134,6 +134,8 @@ ASTDownCastNode extend: {
     }.        
 }.
 
+let PrimitiveFunctionGenerator := (ASTFunctionApplicationNode, HIRFunctionASTCompilationContext) => HIRValue.
+
 let primitiveFunctionGenerators := #{
     #basicAllocate : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let typeNode => ASTNode := self arguments first.
@@ -343,7 +345,7 @@ let primitiveFunctionGenerators := #{
 
 ASTFunctionApplicationNode extend: {
     public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
-        let primitiveGenerator := primitiveFunctionGenerators atOrNil: self functionExpression literalFunctionPrimitiveName.
+        let primitiveGenerator => PrimitiveFunctionGenerator := primitiveFunctionGenerators atOrNil: self functionExpression literalFunctionPrimitiveName.
         (primitiveGenerator ifNotNil: {
             primitiveGenerator(self, context)
         }) ifNil: {

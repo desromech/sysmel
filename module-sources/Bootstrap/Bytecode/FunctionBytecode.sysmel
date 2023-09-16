@@ -111,11 +111,11 @@ public: #FunctionBytecode::OperandVectorNameDictionary with: operandVectorNameDi
 
 FunctionBytecode definition: {
 
-    public final method computeOperandCountForOpcode: (opcode: UInt8) ::=> Size := {
+    public final method computeOperandCountForOpcode: (opcode: UInt8) countExtension: (countExtension: Size) ::=> Size := {
         if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
             let standardOpcode := opcode & 16rF0 u8.
             let opcodeVariantNumber := opcode & 16r0F u8.
-            (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
+            ((countExtension << 4sz) | (opcodeVariantNumber asSize)) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
         } else: {
             (opcode >> 4u8) asSize
         }
@@ -131,9 +131,9 @@ FunctionBytecode definition: {
         let instructionsSize := instructions size.
         let pc mutable := 0sz.
         let countExtension mutable := 0sz.
+        let instructionPC mutable := 0sz.
 
         while: pc < instructionsSize do: {
-            let instructionPC := pc.
             let opcode := instructions at: pc.
             pc := pc + 1sz.
 
@@ -144,7 +144,7 @@ FunctionBytecode definition: {
 
                 countExtension := (countExtension << 16sz) | (highByte asSize << 8sz) | lowByte asSize.
             } ifFalse: {
-                let operandCount := (self computeOperandCountForOpcode: opcode) + countExtension.
+                let operandCount := (self computeOperandCountForOpcode: opcode countExtension: countExtension).
                 let operands := Array new: operandCount.
                 let i mutable := 0sz.
                 while: (i < operandCount) do: {
@@ -156,8 +156,10 @@ FunctionBytecode definition: {
                 } continueWith: (i := i + 1sz).
 
                 let nextPC := pc.
-                countExtension := 0sz.
                 aBlock(opcode, operands, instructionPC, nextPC).
+
+                instructionPC := pc.
+                countExtension := 0sz.
             }.
         }.
     }.

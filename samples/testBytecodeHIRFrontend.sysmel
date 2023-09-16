@@ -1,4 +1,4 @@
-
+#*
 {
 function returnVar() => Int32 := {
     let var mutable => Int32 := 1i32.
@@ -16,4 +16,30 @@ printLine((returnVar ensureAnalysis; definition) bytecode fullPrintString).
 let module := returnVar asHIRModuleFromBytecode.
 printLine(module fullPrintString).
 
+}.
+*#
+
+#*{
+printLine((ObjectModel::applyDirect16 ensureAnalysis; definition) bytecode fullPrintString).
+
+let module := ObjectModel::applyDirect16 asHIRModuleFromBytecode.
+printLine(module fullPrintString).
+}
+*#
+
+{
+public struct MyStruct definition: {
+    public field x => Int32.
+    public field y => Int32.
+}.
+
+function myStruct() => Int32 := {
+    let s mutable := MyStruct new.
+    s x
+}.
+
+printLine((myStruct ensureAnalysis; definition) bytecode fullPrintString).
+
+let module := myStruct asHIRModuleFromBytecode.
+printLine(module fullPrintString).
 }.

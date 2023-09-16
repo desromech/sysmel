@@ -10,10 +10,25 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
     public field temporaries => Array.
     public field temporaryTypes => Array.
 
+    public field currentPCToDebugTableIndex => Size.
+
     public override method initialize => Void := {
         super initialize.
 
         pcToBasicBlockTable := Dictionary new.
+    }.
+
+    public method compilationTarget => HIRCompilationTarget
+        := moduleCompilationContext compilationTarget.
+    
+    let PrimitiveFunctionContentGenerator := HIRFunctionBytecodeCompilationContext => HIRValue.
+    let PrimitiveFunctionContentGenerators := #{
+        #ObjectModel::isLogical : {:(HIRFunctionBytecodeCompilationContext)self :: HIRValue |
+            self builder literal: self compilationTarget hasLogicalObjectModel
+        }.
+        #ObjectModel::isNative : {:(HIRFunctionBytecodeCompilationContext)self :: HIRValue |
+            self builder literal: self compilationTarget hasNativeObjectModel
+        }.
     }.
 
     public method ensureBasicBlockAtPC: (pc: Size)
@@ -22,8 +37,34 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         }.
 
     public method useSourceInformationOfPC: (pc: Size) ::=> Void := {
+        let pcToDebugListTable := bytecode pcToDebugListTable.
+        pcToDebugListTable ifNil: {
+            return: void
+        }.
 
+        while: (currentPCToDebugTableIndex + 1sz < pcToDebugListTable size)
+            && (((pcToDebugListTable at: currentPCToDebugTableIndex + 1sz) downCastTo: Size) <= pc) do: {
+            currentPCToDebugTableIndex := currentPCToDebugTableIndex + 1sz
+        }.
+
+        currentPCToDebugTableIndex < pcToDebugListTable size ifFalse: {
+            return: void
+        }.
+
+        let sourceDebugEntryIndex => Size := pcToDebugListTable at: currentPCToDebugTableIndex.
+        bytecode debugSourcePositions ifNotNil: {
+            builder sourcePosition: (bytecode debugSourcePositions at: sourceDebugEntryIndex).
+        }.
+
+        bytecode debugSourceASTNodes ifNotNil: {
+            builder sourceASTNode: (bytecode debugSourceASTNodes at: sourceDebugEntryIndex)
+        }.
+
+        bytecode debugSourceEnvironments ifNotNil: {
+            builder sourceEnvironment: (bytecode debugSourceEnvironments at: sourceDebugEntryIndex)
+        }.
     }.
+
     public method declareTemporaries => Void := {
         let temporaryCount := bytecode localVectorSize asSize.
         temporaries := Array new: temporaryCount.
@@ -46,11 +87,28 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         self functionDefinition: functionDefinition.
         self ssaFunction: ssaFunction.
 
+        functionDefinition importedSymbols size = 0sz ifFalse: {
+            return: void
+        }.
+
         self builder: (HIRInstructionBuilder new
                     sourcePosition: functionDefinition sourcePosition;
                     function: ssaFunction;
                     beginBasicBlockNamed: #entry;
                     yourself).
+
+
+        let primitiveGenerator => PrimitiveFunctionContentGenerator := PrimitiveFunctionContentGenerators atOrNil: functionDefinition primitiveName.
+        primitiveGenerator ifNotNil: {
+            let primitiveResultValue := primitiveGenerator(self).
+            primitiveResultValue ifNotNil: {
+                self builder isLastTerminator not ifTrue: {
+                    self builder return: primitiveResultValue
+                }.
+
+                return: void
+            }
+        }.
 
         bytecode := functionDefinition bytecode.
 
@@ -152,6 +210,239 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         bytecode literalVector untypedAt: operandIndex
     }.
 
+    public method computeActualCallResultType: (calledFunction: HIRValue) withResultTemporaryType: (resultType: Type) ::=> Type := {
+        let canonicalResultType := calledFunction type canonicalResultType.
+        (canonicalResultType isSubtypeOf: resultType) ifTrue: {
+            canonicalResultType
+        } ifFalse: {
+            resultType
+        }
+    }.
+
+    let PrimitiveGeneratorFunction := (HIRFunctionBytecodeCompilationContext, Array, Type) => HIRValue.
+    let PrimitiveGenerators := #{
+        #basicAllocate : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let typeValue => HIRValue := arguments first.
+            typeValue isLiteralConstant && (typeValue type isSubtypeOf: Type) ifFalse: {return: nil}.
+
+            let type := typeValue evaluateAsConstantType.
+            type isValueType ifFalse: {return: nil}.
+        
+            resultType == type ifTrue: {
+                self builder literal: type defaultValue type: resultType
+            } ifFalse: {
+                self builder alloca: type type: resultType
+            }
+        }.
+
+        #basicNew : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let typeValue => HIRValue := arguments first.
+            typeValue isLiteralConstant && (typeValue type isSubtypeOf: Type) ifFalse: {return: nil}.
+
+            let type := typeValue evaluateAsConstantType.
+            type isValueType ifFalse: {return: nil}.
+        
+            resultType == type ifTrue: {
+                self builder literal: type defaultValue type: resultType
+            } ifFalse: {
+                let result := self builder alloca: type type: resultType.
+
+                ## Basic initialize.
+                type needsNonDefaultBasicInitialization ifTrue: {
+                    let basicInitializeMethod := type validBasicInitializeMethod.
+                    basicInitializeMethod ifNotNil: {
+                        self builder call: (self moduleCompilationContext translateFunction: basicInitializeMethod withBuilder: self builder)
+                            arguments: (Array with: result)
+                            resultType: Void.
+                    }
+                }.
+
+                result.
+            }
+        }.
+
+        #new : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let typeValue => HIRValue := arguments first.
+            typeValue isLiteralConstant && (typeValue type isSubtypeOf: Type) ifFalse: {return: nil}.
+
+            let type := typeValue evaluateAsConstantType.
+            type isValueType ifFalse: {return: nil}.
+        
+            resultType == type ifTrue: {
+                self builder literal: type defaultValue type: resultType
+            } ifFalse: {
+                let result := self builder alloca: type type: resultType.
+
+                ## Basic initialize.
+                type needsNonDefaultBasicInitialization ifTrue: {
+                    let basicInitializeMethod := type validBasicInitializeMethod.
+                    basicInitializeMethod ifNotNil: {
+                        self builder call: (self moduleCompilationContext translateFunction: basicInitializeMethod withBuilder: self builder)
+                            arguments: (Array with: result)
+                            resultType: Void.
+                    }
+                }.
+
+                ## Initialize.
+                let initializeMethod := type lookupSelector: #initialize.
+                initializeMethod isNotNil && (initializeMethod ~~ (AnyValue >> #initialize)) ifTrue: {
+                    self builder call: (self moduleCompilationContext translateFunction: initializeMethod withBuilder: self builder)
+                        arguments: (Array with: result)
+                        resultType: Void.
+                }.
+
+                result.
+            }
+        }.
+
+        #PointerType::reinterpretCastTo: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder pointerOrIntegerReinterpretCast: arguments first into: arguments second type: resultType
+        }.
+        #UIntPointer::reinterpretCastTo: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder pointerOrIntegerReinterpretCast: arguments first into: arguments second type: resultType
+        }.
+        #IntPointer::reinterpretCastTo: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder pointerOrIntegerReinterpretCast: arguments first into: arguments second type: resultType
+        }.
+
+        #PointerLikeType::reinterpretCast : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder pointerOrIntegerReinterpretCast: arguments first into: (self builder literal: resultType) type: resultType
+        }.
+        #PointerLikeType::at: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder pointer: arguments first elementAt: arguments second type: resultType
+        }.
+        #PointerLikeType::load : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            resultType isTemporaryReferenceType ifTrue: {
+                let valueType := (resultType downCastTo: ReferenceLikeType) baseType.
+                self assert: valueType isNotNil.
+
+                let temporary := self builder alloca: valueType type: resultType.
+                self builder store: (self builder load: arguments first type: valueType) in: temporary.
+                temporary
+            } ifFalse: {
+                self builder load: arguments first type: resultType
+            }
+        }.
+        #PointerLikeType::store: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let reference => HIRValue := arguments first.
+            let value => HIRValue := arguments second.
+            self builder store: value in: reference.
+            reference
+        }.
+
+        #FixedArray::at: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let reference => HIRValue := arguments first.
+            let index => HIRValue  := arguments second.
+
+            let referenceType := reference type downCastTo: PointerLikeType.
+            let fixedArrayType := referenceType baseType downCastTo: FixedArrayType.
+            let elementReferenceType := fixedArrayType elementType refFor: referenceType addressSpace.
+            let elementReference := self builder reference: reference elementAt: index type: elementReferenceType.
+            self builder load: elementReference type: resultType
+        }.
+        #FixedArray::at:put: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let reference => HIRValue := arguments first.
+            let index => HIRValue := arguments second.
+            let value => HIRValue := arguments third.
+
+            let referenceType := reference type downCastTo: PointerLikeType.
+            let fixedArrayType := referenceType baseType downCastTo: FixedArrayType.
+            let elementReferenceType := fixedArrayType elementType refFor: referenceType addressSpace.
+            let elementReference := self builder reference: reference elementAt: index type: elementReferenceType.
+            self builder
+                store: value in: elementReference;
+                literal: void
+        }.
+        #FixedArray::refAt: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let reference => HIRValue := arguments first.
+            let index => HIRValue  := arguments second.
+            self builder reference: reference elementAt: index type: resultType
+        }.
+
+        #Void::fromAnyValue : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder literal: void
+        }.
+        #yourself : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            arguments first
+        }.
+
+        #RawTuple::typeSlotAt: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let typeSlotValue => HIRValue := arguments second.
+            typeSlotValue isLiteralConstant ifTrue: {
+                let tuple => HIRValue := arguments first.
+                let typeSlot => TypeSlot := typeSlotValue evaluateConstant.
+
+                self builder tuple: tuple typedSlotAt: typeSlot.
+            } ifFalse: {
+                nil
+            }
+        }.
+        #RawTuple::typeSlotAt:put: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let typeSlotValue => HIRValue := arguments second.
+            typeSlotValue isLiteralConstant ifTrue: {
+                let tuple => HIRValue := arguments first.
+                let typeSlot => TypeSlot := typeSlotValue evaluateConstant.
+                let value => HIRValue := arguments third.
+
+                self builder tuple: tuple typedSlotAt: typeSlot put: value.
+            } ifFalse: {
+                nil
+            }
+        }.
+        #RawTuple::refTypeSlotAt: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let typeSlotValue => HIRValue := arguments second.
+            typeSlotValue isLiteralConstant ifTrue: {
+                let tuple => HIRValue := arguments first.
+                let typeSlot => TypeSlot := typeSlotValue evaluateConstant.
+
+                self builder tuple: tuple typedSlotAt: typeSlot.
+            } ifFalse: {
+                nil
+            }
+        }.
+        #RawTuple::refTypeSlotAt:put: : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            let typeSlotValue => HIRValue := arguments second.
+            typeSlotValue isLiteralConstant ifTrue: {
+                let tuple => HIRValue := arguments first.
+                let typeSlot => TypeSlot := typeSlotValue evaluateConstant.
+                let value => HIRValue := arguments third.
+
+                self builder tuple: tuple typedSlotAt: typeSlot put: value.
+            } ifFalse: {
+                nil
+            }
+        }.
+
+        #ObjectModel::isLogical : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder literal: self compilationTarget hasLogicalObjectModel
+        }.
+        #ObjectModel::isNative : {:(HIRFunctionBytecodeCompilationContext)self :(Array)arguments :(Type)resultType :: HIRValue |
+            self builder literal: self compilationTarget hasNativeObjectModel
+        }.
+    }.
+
+    public method compileCall: (calledFunction: HIRValue) isUnchecked: (isUnchecked: Boolean) arguments: (arguments: Array) resultType: (resultType: Type) resultTemporary: (resultTemporary: Int16) ::=> Void := {
+        let actualResultType := self computeActualCallResultType: calledFunction withResultTemporaryType: resultType.
+        let primitiveName := calledFunction primitiveName.
+        let primitiveGenerator => PrimitiveGeneratorFunction := PrimitiveGenerators atOrNil: primitiveName.
+
+        let result := (primitiveGenerator ifNotNil: {
+            primitiveGenerator(self, arguments, resultType)
+        }) ifNil: {
+            (builder call: calledFunction arguments: arguments resultType: actualResultType)
+                isUnchecked: isUnchecked;
+                yourself
+        }.
+
+        (actualResultType isSubtypeOf: ControlFlowEscapeType) ifTrue: {
+            builder
+                unreachable;
+                beginBasicBlockNamed: #deadCode
+        } ifFalse: {
+            self storeInTemporary: resultTemporary value: result
+        }.
+    }.
+
     public method compileNop: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         ## Nothing is required here.
     }.
@@ -222,13 +513,13 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         self storeInTemporary: operands first value: (builder coerceValue: value into: type type: (self typeOfTemporary: operands first))
     }.
 
-    public method compileDownCast: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+    public method compileDownCastValue: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         let type := self valueOfOperand: operands second.
         let value := self valueOfOperand: operands third.
         self storeInTemporary: operands first value: (builder downCast: value into: type type: (self typeOfTemporary: operands first))
     }.
 
-    public method compileUncheckedDownCast: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+    public method compileUncheckedDownCastValue: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         let type := self valueOfOperand: operands second.
         let value := self valueOfOperand: operands third.
         self storeInTemporary: operands first value: (builder unchecked: true downCast: value into: type type: (self typeOfTemporary: operands first))
@@ -281,16 +572,13 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
     public method compileCall: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         let calledFunction := self valueOfOperand: operands second.
         let arguments := (operands allButFirst: 2sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
-        let result := builder call: calledFunction arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
-        self storeInTemporary: operands first value: result
+        self compileCall: calledFunction isUnchecked: false arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void) resultTemporary: operands first
     }.
 
     public method compileUncheckedCall: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         let calledFunction := self valueOfOperand: operands second.
         let arguments := (operands allButFirst: 2sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
-        let result := builder call: calledFunction arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
-        result isUnchecked: true.
-        self storeInTemporary: operands first value: result
+        self compileCall: calledFunction isUnchecked: true arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void) resultTemporary: operands first
     }.
 
     public method compileSend: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
