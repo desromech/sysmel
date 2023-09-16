@@ -62,6 +62,8 @@ SYSBVM_API uint8_t sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(u
     case SYSBVM_OPCODE_LOAD:
     case SYSBVM_OPCODE_ALLOCA_WITH_VALUE:
     case SYSBVM_OPCODE_COERCE_VALUE:
+    case SYSBVM_OPCODE_DOWNCAST_VALUE:
+    case SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE:
     case SYSBVM_OPCODE_MAKE_ASSOCIATION:
     case SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
     case SYSBVM_OPCODE_SLOT_AT:
@@ -317,10 +319,6 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
                 isBackwardBranch = decodedOperands[1 < 0];
             }
             break;
-        case SYSBVM_OPCODE_TYPECHECK:
-            sysbvm_tuple_typecheckValue(context, operandRegisterFile[0], operandRegisterFile[1]);
-            break;
-
         case SYSBVM_OPCODE_SLOT_AT:
             {
                 size_t slotIndex = sysbvm_typeSlot_getIndex(operandRegisterFile[2]);
@@ -366,6 +364,13 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
         case SYSBVM_OPCODE_COERCE_VALUE:
             operandRegisterFile[0] = sysbvm_type_coerceValue(context, operandRegisterFile[1], operandRegisterFile[2]);
             break;
+        case SYSBVM_OPCODE_DOWNCAST_VALUE:
+            sysbvm_tuple_typecheckValue(context, operandRegisterFile[1], operandRegisterFile[2]);
+            operandRegisterFile[0] = operandRegisterFile[2];
+            break;
+        case SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE:
+            operandRegisterFile[0] = operandRegisterFile[2];
+            break;            
         case SYSBVM_OPCODE_MAKE_ASSOCIATION:
             operandRegisterFile[0] = sysbvm_association_create(context, operandRegisterFile[1], operandRegisterFile[2]);
             break;
@@ -610,11 +615,12 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Store", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_STORE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfTrue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_JUMP_IF_TRUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfFalse", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_JUMP_IF_FALSE));
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::TypeCheck", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_TYPECHECK));
 
     // Three operands.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::AllocaWithValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_ALLOCA_WITH_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::CoerceValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_COERCE_VALUE));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::DownCastValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_DOWNCAST_VALUE));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::UncheckedDownCastValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeAssociation", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MAKE_ASSOCIATION));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeClosureWithVector", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotAt", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT));

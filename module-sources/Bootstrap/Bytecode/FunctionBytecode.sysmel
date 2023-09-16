@@ -37,10 +37,11 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::Store : #store.
     FunctionBytecode::Opcode::JumpIfTrue : #jumpIfTrue.
     FunctionBytecode::Opcode::JumpIfFalse : #jumpIfFalse.
-    FunctionBytecode::Opcode::TypeCheck : #typeCheck.
 
     FunctionBytecode::Opcode::AllocaWithValue : #allocaWithValue.
     FunctionBytecode::Opcode::CoerceValue : #coerceValue.
+    FunctionBytecode::Opcode::DownCastValue : #downCastValue.
+    FunctionBytecode::Opcode::UncheckedDownCastValue : #uncheckedDownCastValue.
     FunctionBytecode::Opcode::MakeAssociation : #makeAssociation.
     FunctionBytecode::Opcode::MakeClosureWithVector : #makeClosureWithVector.
     FunctionBytecode::Opcode::SlotAt : #slotAt.
@@ -76,10 +77,11 @@ let opcodeDestinationOperandCount := #{
     FunctionBytecode::Opcode::Store : 0sz.
     FunctionBytecode::Opcode::JumpIfTrue : 0sz.
     FunctionBytecode::Opcode::JumpIfFalse : 0sz.
-    FunctionBytecode::Opcode::TypeCheck : 0sz.
 
     FunctionBytecode::Opcode::AllocaWithValue : 1sz.
     FunctionBytecode::Opcode::CoerceValue : 1sz.
+    FunctionBytecode::Opcode::DownCastValue : 1sz.
+    FunctionBytecode::Opcode::UncheckedDownCastValue : 1sz.
     FunctionBytecode::Opcode::MakeAssociation : 1sz.
     FunctionBytecode::Opcode::MakeClosureWithVector : 1sz.
     FunctionBytecode::Opcode::SlotAt : 1sz.

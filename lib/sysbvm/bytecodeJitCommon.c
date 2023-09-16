@@ -380,15 +380,18 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
             sysbvm_jit_jumpRelativeIfFalse(&jit, decodedOperands[0], pc + decodedOperands[1]);
             break;
 
-        case SYSBVM_OPCODE_TYPECHECK:
-            sysbvm_jit_callWithContextNoResult2(&jit, &sysbvm_tuple_typecheckValue, decodedOperands[0], decodedOperands[1]);
-            break;
         // Three operands.
         case SYSBVM_OPCODE_ALLOCA_WITH_VALUE:
             sysbvm_jit_callWithContext2(&jit, &sysbvm_pointerLikeType_withBoxForValue, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
             break;
         case SYSBVM_OPCODE_COERCE_VALUE:
             sysbvm_jit_callWithContext2(&jit, &sysbvm_type_coerceValue, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case SYSBVM_OPCODE_DOWNCAST_VALUE:
+            sysbvm_jit_callWithContext2(&jit, &sysbvm_type_downCastValue, decodedOperands[0], decodedOperands[1], decodedOperands[2]);
+            break;
+        case SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE:
+            sysbvm_jit_moveOperandToOperand(&jit, decodedOperands[0], decodedOperands[2]);
             break;
         case SYSBVM_OPCODE_MAKE_ASSOCIATION:
             sysbvm_jit_callWithContext2(&jit, &sysbvm_association_create, decodedOperands[0], decodedOperands[1], decodedOperands[2]);

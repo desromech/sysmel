@@ -24,11 +24,12 @@ typedef enum sysbvm_opcode_e
     SYSBVM_OPCODE_STORE, /// store <PointerLikeValue> <Value>
     SYSBVM_OPCODE_JUMP_IF_TRUE, /// jumpIfTrue <Condition> <Destination Relative PC>
     SYSBVM_OPCODE_JUMP_IF_FALSE, /// jumpIfFalse <Condition> <Destination Relative PC>
-    SYSBVM_OPCODE_TYPECHECK, /// typecheck <ExpectedType> <Value>
 
     // Three operand instructions
     SYSBVM_OPCODE_ALLOCA_WITH_VALUE = 0x30, /// <Result> := alloca <Pointer Type> <Value>
     SYSBVM_OPCODE_COERCE_VALUE, /// <Result> = coerceValue <Type> <Value>
+    SYSBVM_OPCODE_DOWNCAST_VALUE, /// <Result> = downCast <Type> <Value>
+    SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE, /// <Result> = uncheckedDownCast <Type> <Value>
     SYSBVM_OPCODE_MAKE_ASSOCIATION, /// <Result> = makeAssociation <Key> <Value>
     SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR, /// <Result> = makeClosureWithVector <Function Definition> <Capture vector>
     SYSBVM_OPCODE_SLOT_AT, /// <Result> = slotAt <Tuple> <TypeSlot>

@@ -175,6 +175,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_uncheckedCall(sysbvm_
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_coerceValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t type, sysbvm_tuple_t value);
 
 /**
+ * Down cast value.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_downCastValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t type, sysbvm_tuple_t value);
+
+/**
+ * Unchecked downcast cast value.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_uncheckedDownCastValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t type, sysbvm_tuple_t value);
+
+/**
  * Jump instruction.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jump(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination);
@@ -273,11 +283,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_refSlotReferenceAt(sy
  * Slot at put instruction.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_slotAtPut(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value);
-
-/**
- * Typecheck instruction.
- */
-SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_typecheck(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t expectedType, sysbvm_tuple_t value);
 
 /**
  * Creates a bytecode instruction.

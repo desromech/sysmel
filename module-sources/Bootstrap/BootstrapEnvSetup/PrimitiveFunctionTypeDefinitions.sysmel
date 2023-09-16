@@ -128,6 +128,7 @@ identityHash adoptDefinitionOf: {:(AnyValue)value :: Size |
     <targetDefinedPrimitive>
     primitiveFailedError()
 }.
+(Untyped::~~) ensureAnalysis.
 
 Untyped::identityHash adoptDefinitionOf: {:(Untyped)value :: Size |
     <primitive: #identityHash >

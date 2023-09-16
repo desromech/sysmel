@@ -854,11 +854,15 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_getAnalyzeAndTypeCheckMessageSendNodeWithE
  */
 SYSBVM_API void sysbvm_type_setAnalyzeAndTypeCheckMessageSendNodeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t coerceValueFunction);
 
-
 /**
  * Coerces a value into the specified type. Error if the coercion is not possible.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_coerceValue(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t value);
+
+/**
+ * Down casts a value into the specified type. Error if the coercion is not possible.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_downCastValue(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t value);
 
 /**
  * Coerces a value into the specified type. Passing references in case of no type to coerce-

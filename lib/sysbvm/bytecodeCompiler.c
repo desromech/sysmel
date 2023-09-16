@@ -264,6 +264,30 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_coerceValue(sysbvm_co
     return instruction;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_downCastValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t type, sysbvm_tuple_t value)
+{
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
+    sysbvm_array_atPut(operands, 0, result);
+    sysbvm_array_atPut(operands, 1, type);
+    sysbvm_array_atPut(operands, 2, value);
+
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_DOWNCAST_VALUE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
+    return instruction;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_uncheckedDownCastValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t type, sysbvm_tuple_t value)
+{
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
+    sysbvm_array_atPut(operands, 0, result);
+    sysbvm_array_atPut(operands, 1, type);
+    sysbvm_array_atPut(operands, 2, value);
+
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
+    return instruction;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jump(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1);
@@ -375,17 +399,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_refSlotAtPut(sysbvm_c
     sysbvm_array_atPut(operands, 2, value);
 
     sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_AT_PUT, operands);
-    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
-    return instruction;
-}
-
-SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_typecheck(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t expectedType, sysbvm_tuple_t value)
-{
-    sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
-    sysbvm_array_atPut(operands, 0, expectedType);
-    sysbvm_array_atPut(operands, 1, value);
-
-    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_TYPECHECK, operands);
     sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
@@ -1091,17 +1104,21 @@ static sysbvm_tuple_t sysbvm_astDownCastNode_primitiveCompileIntoBytecode(sysbvm
     struct {
         sysbvm_tuple_t typeOperand;
         sysbvm_tuple_t valueOperand;
+        sysbvm_tuple_t result;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
     gcFrame.typeOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*downCastNode)->typeExpression);
     gcFrame.valueOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*downCastNode)->valueExpression);
-    sysbvm_functionBytecodeAssembler_typecheck(context, (*compiler)->assembler, gcFrame.typeOperand, gcFrame.valueOperand);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    if(sysbvm_tuple_boolean_decode((*downCastNode)->isUnchecked))
+        sysbvm_functionBytecodeAssembler_uncheckedDownCastValue(context, (*compiler)->assembler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
+    else
+        sysbvm_functionBytecodeAssembler_downCastValue(context, (*compiler)->assembler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return gcFrame.valueOperand;
+    return gcFrame.result;
 }
-
 
 static sysbvm_tuple_t sysbvm_functionBytecodeAssembler_getLiteralFunctionPrimitiveName(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t operand)
 {

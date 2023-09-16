@@ -1241,6 +1241,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_coerceValue(sysbvm_context_t *context, sys
     return SYSBVM_VOID_TUPLE;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_type_downCastValue(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t value)
+{
+    sysbvm_tuple_typecheckValue(context, type, value);
+    return value;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_type_coerceValuePassingReferences(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t value)
 {
     if(type)
