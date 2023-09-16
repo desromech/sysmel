@@ -21,7 +21,7 @@ extern void sysbvm_orderedCollection_registerPrimitives(void);
 extern void sysbvm_astInterpreter_registerPrimitives(void);
 extern void sysbvm_boolean_registerPrimitives(void);
 extern void sysbvm_bytecode_registerPrimitives(void);
-extern void sysbvm_bytecodeCompiler_registerPrimitives();
+extern void sysbvm_functionBytecodeDirectCompiler_registerPrimitives();
 extern void sysbvm_byteStream_registerPrimitives(void);
 extern void sysbvm_dictionary_registerPrimitives(void);
 extern void sysbvm_errors_registerPrimitives(void);
@@ -47,7 +47,7 @@ extern void sysbvm_orderedCollection_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_astInterpreter_setupASTInterpreter(sysbvm_context_t *context);
 extern void sysbvm_boolean_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context);
-extern void sysbvm_bytecodeCompiler_setupPrimitives(sysbvm_context_t *context);
+extern void sysbvm_functionBytecodeDirectCompiler_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_byteStream_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_dictionary_setupPrimitives(sysbvm_context_t *context);
 extern void sysbvm_errors_setupPrimitives(sysbvm_context_t *context);
@@ -81,7 +81,7 @@ void sysbvm_context_registerPrimitives(void)
     sysbvm_astInterpreter_registerPrimitives();
     sysbvm_boolean_registerPrimitives();
     sysbvm_bytecode_registerPrimitives();
-    sysbvm_bytecodeCompiler_registerPrimitives();
+    sysbvm_functionBytecodeDirectCompiler_registerPrimitives();
     sysbvm_byteStream_registerPrimitives();
     sysbvm_dictionary_registerPrimitives();
     sysbvm_errors_registerPrimitives();
@@ -479,7 +479,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.astNodeEvaluationSelector = sysbvm_symbol_internWithCString(context, "evaluateWithEnvironment:");
     context->roots.astNodeAnalysisAndEvaluationSelector = sysbvm_symbol_internWithCString(context, "analyzeAndEvaluateWithEnvironment:");
     context->roots.astNodeValidateThenAnalyzeAndEvaluateWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "validateThenAnalyzeAndEvaluateWithEnvironment:");
-    context->roots.astNodeCompileIntoBytecodeSelector = sysbvm_symbol_internWithCString(context, "compileIntoBytecodeWith:");
+    context->roots.astNodeCompileIntoBytecodeSelector = sysbvm_symbol_internWithCString(context, "doCompileIntoBytecodeWith:");
     context->roots.ensureAnalysisSelector = sysbvm_symbol_internWithCString(context, "ensureAnalysis");
     
     context->roots.analyzeAndEvaluateMessageSendNodeForReceiverWithEnvironmentSelector = sysbvm_symbol_internWithCString(context, "analyzeAndEvaluateMessageSendNode:forReceiver:withEnvironment:");
@@ -846,9 +846,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "pcToDebugListTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
-        "debugSourceASTNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "debugSourceASTNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.arrayType,
         "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
-        "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.arrayType,
         
         "jittedCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         "jittedCodeSessionToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
@@ -1212,20 +1212,28 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "astTemplateParameterIndex", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         NULL);
 
-    context->roots.bytecodeCompilerInstructionOperandType = sysbvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstructionOperand", context->roots.objectType,
+    context->roots.functionBytecodeAssemblerAbstractOperand = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeAssemblerAbstractOperand", context->roots.objectType,
+        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         NULL);
-    context->roots.bytecodeCompilerInstructionType = sysbvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstruction", context->roots.objectType,
+    context->roots.functionBytecodeAssemblerAbstractInstruction = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionBytecodeAssemblerAbstractOperand);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionBytecodeAssemblerAbstractInstruction, "FunctionBytecodeAssemblerAbstractInstruction", SYSBVM_NULL_TUPLE,
         "pc", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "endPC", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "opcode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, NULL,
-        "operands", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "previous", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,
+        "next", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,
 
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
         "sourceEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "sourceASTNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
-
         NULL);
-    context->roots.bytecodeCompilerInstructionVectorOperandType = sysbvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompilerInstructionVectorOperand", context->roots.bytecodeCompilerInstructionOperandType,
+
+    context->roots.functionBytecodeAssemblerLabel = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeAssemblerLabel", context->roots.functionBytecodeAssemblerAbstractInstruction,
+        NULL);
+    context->roots.functionBytecodeAssemblerInstruction = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeAssemblerInstruction", context->roots.functionBytecodeAssemblerAbstractInstruction,
+        "standardOpcode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,
+        "operands", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    context->roots.functionBytecodeAssemblerVectorOperand = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeAssemblerVectorOperand", context->roots.functionBytecodeAssemblerAbstractOperand,
         "index", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.int16Type,
         "vectorType", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.int16Type,
 
@@ -1233,12 +1241,14 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "hasNonAllocaDestination", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasSlotReferenceAtDestination", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasNonSlotReferenceAtDestination", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+
         "hasLoadStoreUsage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasNonLoadStoreUsage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+
         "optimizationTupleOperand", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         "optimizationTypeSlotOperand", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);
-    context->roots.bytecodeCompilerType = sysbvm_context_createIntrinsicClass(context, "BootstrapBytecodeCompiler", context->roots.objectType,
+    context->roots.functionBytecodeAssembler = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeAssembler", context->roots.objectType,
         "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "captures", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "literals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
@@ -1246,17 +1256,21 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "temporaries", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "usedTemporaryCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
 
-        "firstInstruction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionType,
-        "lastInstruction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionType,
-
-        "breakLabel", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionOperandType,
-        "continueLabel", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bytecodeCompilerInstructionOperandType,
+        "firstInstruction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,
+        "lastInstruction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,
 
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
         "sourceEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "sourceASTNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
 
-        "bindingDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.dictionaryType,
+        NULL);
+    context->roots.functionBytecodeDirectCompiler = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeDirectCompiler", context->roots.objectType,
+        "assembler", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssembler,
+        "bindingDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
+
+        "breakLabel", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,
+        "continueLabel", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,
+
         NULL);
     
     context->roots.exceptionType = sysbvm_context_createIntrinsicClass(context, "Exception", context->roots.objectType,
@@ -1401,7 +1415,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     sysbvm_astInterpreter_setupASTInterpreter(context);
     sysbvm_boolean_setupPrimitives(context);
     sysbvm_bytecode_setupPrimitives(context);
-    sysbvm_bytecodeCompiler_setupPrimitives(context);
+    sysbvm_functionBytecodeDirectCompiler_setupPrimitives(context);
     sysbvm_byteStream_setupPrimitives(context);
     sysbvm_dictionary_setupPrimitives(context);
     sysbvm_errors_setupPrimitives(context);

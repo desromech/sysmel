@@ -10,23 +10,23 @@
 #include "internal/context.h"
 #include <stdlib.h>
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompilerInstruction_create(sysbvm_context_t *context, uint8_t opcode, sysbvm_tuple_t operands)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssemblerInstruction_create(sysbvm_context_t *context, uint8_t opcode, sysbvm_tuple_t operands)
 {
-    sysbvm_bytecodeCompilerInstruction_t *result = (sysbvm_bytecodeCompilerInstruction_t*)sysbvm_context_allocatePointerTuple(context, context->roots.bytecodeCompilerInstructionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_bytecodeCompilerInstruction_t));
-    result->opcode = sysbvm_tuple_uint8_encode(opcode);
+    sysbvm_functionBytecodeAssemblerInstruction_t *result = (sysbvm_functionBytecodeAssemblerInstruction_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeAssemblerInstruction, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecodeAssemblerInstruction_t));
+    result->standardOpcode = sysbvm_tuple_uint8_encode(opcode);
     result->operands = operands;
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompilerInstruction_createLabel(sysbvm_context_t *context)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssemblerInstruction_createLabel(sysbvm_context_t *context)
 {
-    sysbvm_bytecodeCompilerInstruction_t *result = (sysbvm_bytecodeCompilerInstruction_t*)sysbvm_context_allocatePointerTuple(context, context->roots.bytecodeCompilerInstructionType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_bytecodeCompilerInstruction_t));
+    sysbvm_functionBytecodeAssemblerLabel_t *result = (sysbvm_functionBytecodeAssemblerLabel_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeAssemblerLabel, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecodeAssemblerLabel_t));
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompilerInstructionVectorOperand_create(sysbvm_context_t *context, sysbvm_operandVectorName_t vectorName, int16_t vectorIndex)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssemblerVectorOperand_create(sysbvm_context_t *context, sysbvm_operandVectorName_t vectorName, int16_t vectorIndex)
 {
-    sysbvm_bytecodeCompilerInstructionVectorOperand_t *result = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_context_allocatePointerTuple(context, context->roots.bytecodeCompilerInstructionVectorOperandType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_bytecodeCompilerInstructionVectorOperand_t));
+    sysbvm_functionBytecodeAssemblerVectorOperand_t *result = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeAssemblerVectorOperand, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecodeAssemblerVectorOperand_t));
     result->vectorType = sysbvm_tuple_int16_encode(vectorName);
     result->index = sysbvm_tuple_int16_encode(vectorIndex);
     result->hasAllocaDestination = SYSBVM_FALSE_TUPLE;
@@ -38,367 +38,370 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompilerInstructionVectorOperand_create
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_create(sysbvm_context_t *context)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_create(sysbvm_context_t *context)
 {
-    sysbvm_bytecodeCompiler_t *result = (sysbvm_bytecodeCompiler_t*)sysbvm_context_allocatePointerTuple(context, context->roots.bytecodeCompilerType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_bytecodeCompiler_t));
+    sysbvm_functionBytecodeAssembler_t *result = (sysbvm_functionBytecodeAssembler_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeAssembler, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecodeAssembler_t));
     result->arguments = sysbvm_array_create(context, 0);
     result->captures = sysbvm_array_create(context, 0);
     result->literals = sysbvm_orderedCollection_create(context);
     result->literalDictionary = sysbvm_identityDictionary_create(context);
     result->temporaries = sysbvm_orderedCollection_create(context);
     result->usedTemporaryCount = sysbvm_tuple_size_encode(context, 0);
-    result->bindingDictionary = sysbvm_identityDictionary_create(context);
     return (sysbvm_tuple_t)result;
 }
 
-SYSBVM_API void sysbvm_bytecodeCompiler_setArgumentCount(sysbvm_context_t *context, sysbvm_tuple_t compiler, size_t argumentCount)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_create(sysbvm_context_t *context)
+{
+    sysbvm_functionBytecodeDirectCompiler_t *result = (sysbvm_functionBytecodeDirectCompiler_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeDirectCompiler, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecodeDirectCompiler_t));
+    result->assembler = (sysbvm_functionBytecodeAssembler_t*)sysbvm_functionBytecodeAssembler_create(context);
+    result->bindingDictionary = sysbvm_methodDictionary_create(context);
+    return (sysbvm_tuple_t)result;
+}
+
+SYSBVM_API void sysbvm_functionBytecodeAssembler_setArgumentCount(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, size_t argumentCount)
 {
     sysbvm_tuple_t arguments = sysbvm_array_create(context, argumentCount);
     for(size_t i = 0; i < argumentCount; ++i )
     {
-        sysbvm_tuple_t argumentOperand = sysbvm_bytecodeCompilerInstructionVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_ARGUMENTS, (int16_t)i);
+        sysbvm_tuple_t argumentOperand = sysbvm_functionBytecodeAssemblerVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_ARGUMENTS, (int16_t)i);
         sysbvm_array_atPut(arguments, i, argumentOperand);
     }
 
-    ((sysbvm_bytecodeCompiler_t*)compiler)->arguments = arguments;
+    assembler->arguments = arguments;
 }
 
-SYSBVM_API void sysbvm_bytecodeCompiler_setCaptureCount(sysbvm_context_t *context, sysbvm_tuple_t compiler, size_t argumentCount)
+SYSBVM_API void sysbvm_functionBytecodeAssembler_setCaptureCount(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, size_t argumentCount)
 {
     sysbvm_tuple_t captures = sysbvm_array_create(context, argumentCount);
     for(size_t i = 0; i < argumentCount; ++i )
     {
-        sysbvm_tuple_t captureOperand = sysbvm_bytecodeCompilerInstructionVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_CAPTURES, (int16_t)i);
+        sysbvm_tuple_t captureOperand = sysbvm_functionBytecodeAssemblerVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_CAPTURES, (int16_t)i);
         sysbvm_array_atPut(captures, i, captureOperand);
     }
 
-    ((sysbvm_bytecodeCompiler_t*)compiler)->captures = captures;
+    assembler->captures = captures;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_addLiteral(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t literalValue)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_addLiteral(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t literalValue)
 {
-    sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
     sysbvm_tuple_t existent = SYSBVM_NULL_TUPLE;
-    if(sysbvm_identityDictionary_find(compilerObject->literalDictionary, literalValue, &existent))
+    if(sysbvm_identityDictionary_find(assembler->literalDictionary, literalValue, &existent))
         return existent;
 
-    size_t literalIndex = sysbvm_orderedCollection_getSize(compilerObject->literals);
-    sysbvm_tuple_t newLiteralOperand = sysbvm_bytecodeCompilerInstructionVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LITERAL, (int16_t)literalIndex);
-    sysbvm_orderedCollection_add(context, compilerObject->literals, literalValue);
-    sysbvm_identityDictionary_atPut(context, compilerObject->literalDictionary, literalValue, newLiteralOperand);
+    size_t literalIndex = sysbvm_orderedCollection_getSize(assembler->literals);
+    sysbvm_tuple_t newLiteralOperand = sysbvm_functionBytecodeAssemblerVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LITERAL, (int16_t)literalIndex);
+    sysbvm_orderedCollection_add(context, assembler->literals, literalValue);
+    sysbvm_identityDictionary_atPut(context, assembler->literalDictionary, literalValue, newLiteralOperand);
     return newLiteralOperand;
 }
 
-SYSBVM_API void sysbvm_bytecodeCompiler_addInstruction(sysbvm_tuple_t compiler, sysbvm_tuple_t instruction)
+SYSBVM_API void sysbvm_functionBytecodeAssembler_addInstruction(sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t instruction)
 {
-    sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
-    sysbvm_bytecodeCompilerInstruction_t *instructionObject = (sysbvm_bytecodeCompilerInstruction_t*)instruction;
+    sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instructionObject = (sysbvm_functionBytecodeAssemblerAbstractInstruction_t*)instruction;
 
-    instructionObject->previous = (sysbvm_bytecodeCompilerInstruction_t*)compilerObject->lastInstruction;
+    instructionObject->previous = assembler->lastInstruction;
 
-    if(compilerObject->lastInstruction)
+    if(assembler->lastInstruction)
     {
-        ((sysbvm_bytecodeCompilerInstruction_t*)compilerObject->lastInstruction)->next = instructionObject;
+        ((sysbvm_functionBytecodeAssemblerAbstractInstruction_t*)assembler->lastInstruction)->next = instructionObject;
     }
     else
     {
-        compilerObject->firstInstruction = instructionObject;
+        assembler->firstInstruction = instructionObject;
     }
 
-    compilerObject->lastInstruction = instructionObject;
+    assembler->lastInstruction = instructionObject;
 
-    instructionObject->sourceASTNode = compilerObject->sourceASTNode;
-    instructionObject->sourceEnvironment = compilerObject->sourceEnvironment;
-    instructionObject->sourcePosition = compilerObject->sourcePosition;
+    instructionObject->sourceASTNode = assembler->sourceASTNode;
+    instructionObject->sourceEnvironment = assembler->sourceEnvironment;
+    instructionObject->sourcePosition = assembler->sourcePosition;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_compileASTNode(sysbvm_context_t *context, sysbvm_tuple_t compiler_, sysbvm_tuple_t astNode_)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_compileASTNode(sysbvm_context_t *context, sysbvm_functionBytecodeDirectCompiler_t *compiler_, sysbvm_tuple_t astNode_)
 {
     struct {
-        sysbvm_bytecodeCompiler_t *compilerObject;
+        sysbvm_functionBytecodeDirectCompiler_t *compiler;
         sysbvm_tuple_t astNode;
         sysbvm_tuple_t result;
 
         sysbvm_tuple_t oldSourcePosition;
         sysbvm_tuple_t oldSourceASTNode;
     } gcFrame = {
-        .compilerObject = (sysbvm_bytecodeCompiler_t*)compiler_,
+        .compiler = compiler_,
         .astNode = astNode_
     };
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.oldSourcePosition = gcFrame.compilerObject->sourcePosition;
-    gcFrame.oldSourceASTNode = gcFrame.compilerObject->sourceASTNode;
+    gcFrame.oldSourcePosition = gcFrame.compiler->assembler->sourcePosition;
+    gcFrame.oldSourceASTNode = gcFrame.compiler->assembler->sourceASTNode;
 
-    gcFrame.compilerObject->sourcePosition = sysbvm_astNode_getSourcePosition(gcFrame.astNode);
-    gcFrame.compilerObject->sourceASTNode = gcFrame.astNode;
+    gcFrame.compiler->assembler->sourcePosition = sysbvm_astNode_getSourcePosition(gcFrame.astNode);
+    gcFrame.compiler->assembler->sourceASTNode = gcFrame.astNode;
 
-    gcFrame.result = sysbvm_tuple_send1(context, context->roots.astNodeCompileIntoBytecodeSelector, gcFrame.astNode, (sysbvm_tuple_t)gcFrame.compilerObject);
+    gcFrame.result = sysbvm_tuple_send1(context, context->roots.astNodeCompileIntoBytecodeSelector, gcFrame.astNode, (sysbvm_tuple_t)gcFrame.compiler);
 
-    gcFrame.compilerObject->sourcePosition = gcFrame.oldSourcePosition;
-    gcFrame.compilerObject->sourceASTNode = gcFrame.oldSourceASTNode;
+    gcFrame.compiler->assembler->sourcePosition = gcFrame.oldSourcePosition;
+    gcFrame.compiler->assembler->sourceASTNode = gcFrame.oldSourceASTNode;
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_compileASTNodeWithBreakAndContinue(sysbvm_context_t *context, sysbvm_tuple_t compiler_, sysbvm_tuple_t astNode, sysbvm_tuple_t breakLabel, sysbvm_tuple_t continueLabel)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_compileASTNodeWithBreakAndContinue(sysbvm_context_t *context, sysbvm_functionBytecodeDirectCompiler_t *compiler_, sysbvm_tuple_t astNode, sysbvm_tuple_t breakLabel, sysbvm_tuple_t continueLabel)
 {
     struct {
-        sysbvm_bytecodeCompiler_t *compilerObject;
+        sysbvm_functionBytecodeDirectCompiler_t *compiler;
         sysbvm_tuple_t oldBreakLabel;
         sysbvm_tuple_t oldContinueLabel;
         sysbvm_tuple_t result;
     } gcFrame = {
-        .compilerObject = (sysbvm_bytecodeCompiler_t*)compiler_,
+        .compiler = compiler_,
     };
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.oldBreakLabel = gcFrame.compilerObject->breakLabel;
-    gcFrame.oldContinueLabel = gcFrame.compilerObject->continueLabel;
-    gcFrame.compilerObject->breakLabel = breakLabel;
-    gcFrame.compilerObject->continueLabel = continueLabel;
+    gcFrame.oldBreakLabel = gcFrame.compiler->breakLabel;
+    gcFrame.oldContinueLabel = gcFrame.compiler->continueLabel;
+    gcFrame.compiler->breakLabel = breakLabel;
+    gcFrame.compiler->continueLabel = continueLabel;
 
-    gcFrame.result = sysbvm_bytecodeCompiler_compileASTNode(context, (sysbvm_tuple_t)gcFrame.compilerObject, astNode);
+    gcFrame.result = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, gcFrame.compiler, astNode);
 
-    gcFrame.compilerObject->breakLabel = gcFrame.oldBreakLabel;
-    gcFrame.compilerObject->continueLabel = gcFrame.oldContinueLabel;
+    gcFrame.compiler->breakLabel = gcFrame.oldBreakLabel;
+    gcFrame.compiler->continueLabel = gcFrame.oldContinueLabel;
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_compileASTNodeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t compiler_, sysbvm_tuple_t astNode, sysbvm_tuple_t environment)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_compileASTNodeWithEnvironment(sysbvm_context_t *context, sysbvm_functionBytecodeDirectCompiler_t *compiler_, sysbvm_tuple_t astNode, sysbvm_tuple_t environment)
 {
     struct {
-        sysbvm_bytecodeCompiler_t *compilerObject;
+        sysbvm_functionBytecodeDirectCompiler_t *compiler;
         sysbvm_tuple_t oldEnvironment;
         sysbvm_tuple_t result;
     } gcFrame = {
-        .compilerObject = (sysbvm_bytecodeCompiler_t*)compiler_,
+        .compiler = compiler_,
     };
 
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.oldEnvironment = gcFrame.compilerObject->sourceEnvironment;
-    gcFrame.compilerObject->sourceEnvironment = environment;
+    gcFrame.oldEnvironment = gcFrame.compiler->assembler->sourceEnvironment;
+    gcFrame.compiler->assembler->sourceEnvironment = environment;
 
-    gcFrame.result = sysbvm_bytecodeCompiler_compileASTNode(context, (sysbvm_tuple_t)gcFrame.compilerObject, astNode);
+    gcFrame.result = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, gcFrame.compiler, astNode);
 
-    gcFrame.compilerObject->sourceEnvironment = gcFrame.oldEnvironment;
+    gcFrame.compiler->assembler->sourceEnvironment = gcFrame.oldEnvironment;
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }
 
-SYSBVM_API void sysbvm_bytecodeCompiler_setBindingValue(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t binding, sysbvm_tuple_t value)
+SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_setBindingValue(sysbvm_context_t *context, sysbvm_functionBytecodeDirectCompiler_t *compiler, sysbvm_tuple_t binding, sysbvm_tuple_t value)
 {
-    sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
-    sysbvm_identityDictionary_atPut(context, compilerObject->bindingDictionary, binding, value);
+    sysbvm_methodDictionary_atPut(context, compiler->bindingDictionary, binding, value);
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_getBindingValue(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t binding)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_getBindingValue(sysbvm_context_t *context, sysbvm_functionBytecodeDirectCompiler_t *compiler, sysbvm_tuple_t binding)
 {
     (void)context;
     if(sysbvm_tuple_isKindOf(context, binding, context->roots.symbolTupleSlotBindingType))
     {
         sysbvm_symbolTupleSlotBinding_t *bindingObject = (sysbvm_symbolTupleSlotBinding_t*)binding;
-        sysbvm_tuple_t tupleValue = sysbvm_bytecodeCompiler_getBindingValue(context, compiler, bindingObject->tupleBinding);
-        sysbvm_tuple_t reference = sysbvm_bytecodeCompiler_newTemporary(context, compiler);
+        sysbvm_tuple_t tupleValue = sysbvm_functionBytecodeDirectCompiler_getBindingValue(context, compiler, bindingObject->tupleBinding);
+        sysbvm_tuple_t reference = sysbvm_functionBytecodeAssembler_newTemporary(context, compiler->assembler);
 
         sysbvm_symbolBinding_t *tupleBindingObject = (sysbvm_symbolBinding_t*)bindingObject->tupleBinding;
 
         if(sysbvm_type_isPointerLikeType(tupleBindingObject->type))
-            sysbvm_bytecodeCompiler_refSlotReferenceAt(context, compiler, reference, tupleValue, sysbvm_bytecodeCompiler_addLiteral(context, compiler, bindingObject->typeSlot));
+            sysbvm_functionBytecodeAssembler_refSlotReferenceAt(context, compiler->assembler, reference, tupleValue, sysbvm_functionBytecodeAssembler_addLiteral(context, compiler->assembler, bindingObject->typeSlot));
         else
-            sysbvm_bytecodeCompiler_slotReferenceAt(context, compiler, reference, tupleValue, sysbvm_bytecodeCompiler_addLiteral(context, compiler, bindingObject->typeSlot));
+            sysbvm_functionBytecodeAssembler_slotReferenceAt(context, compiler->assembler, reference, tupleValue, sysbvm_functionBytecodeAssembler_addLiteral(context, compiler->assembler, bindingObject->typeSlot));
         return reference;
     }
 
     if(sysbvm_symbolBinding_isValue(context, binding))
-        return sysbvm_bytecodeCompiler_addLiteral(context, compiler, sysbvm_symbolValueBinding_getValue(binding));
+        return sysbvm_functionBytecodeAssembler_addLiteral(context, compiler->assembler, sysbvm_symbolValueBinding_getValue(binding));
 
     sysbvm_tuple_t value = SYSBVM_NULL_TUPLE;
-    sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
-    if(!sysbvm_identityDictionary_find(compilerObject->bindingDictionary, binding, &value))
+    sysbvm_functionBytecodeDirectCompiler_t *compilerObject = (sysbvm_functionBytecodeDirectCompiler_t*)compiler;
+    if(!sysbvm_methodDictionary_find(compilerObject->bindingDictionary, binding, &value))
         sysbvm_error("Invalid value binding.");
 
     return value;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_newTemporary(sysbvm_context_t *context, sysbvm_tuple_t compiler)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler)
 {
-    sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
-    size_t temporaryIndex = sysbvm_orderedCollection_getSize(compilerObject->temporaries);
-    sysbvm_tuple_t temporaryOperand = sysbvm_bytecodeCompilerInstructionVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LOCAL, (int16_t)temporaryIndex);
-    sysbvm_orderedCollection_add(context, compilerObject->temporaries, temporaryOperand);
+    size_t temporaryIndex = sysbvm_orderedCollection_getSize(assembler->temporaries);
+    sysbvm_tuple_t temporaryOperand = sysbvm_functionBytecodeAssemblerVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LOCAL, (int16_t)temporaryIndex);
+    sysbvm_orderedCollection_add(context, assembler->temporaries, temporaryOperand);
     return temporaryOperand;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_allocaWithValue(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t pointerLikeType, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_allocaWithValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t pointerLikeType, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, pointerLikeType);
     sysbvm_array_atPut(operands, 2, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_ALLOCA_WITH_VALUE, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_ALLOCA_WITH_VALUE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_coerceValue(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t type, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_coerceValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t type, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, type);
     sysbvm_array_atPut(operands, 2, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_COERCE_VALUE, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_COERCE_VALUE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_jump(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t destination)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jump(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1);
     sysbvm_array_atPut(operands, 0, destination);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_JUMP, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_JUMP, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_jumpIfFalse(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t condition, sysbvm_tuple_t destination)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jumpIfFalse(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t condition, sysbvm_tuple_t destination)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
     sysbvm_array_atPut(operands, 0, condition);
     sysbvm_array_atPut(operands, 1, destination);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_JUMP_IF_FALSE, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_JUMP_IF_FALSE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_load(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t destination, sysbvm_tuple_t pointer)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_load(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t pointer)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
     sysbvm_array_atPut(operands, 0, destination);
     sysbvm_array_atPut(operands, 1, pointer);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_LOAD, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_LOAD, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_store(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t pointer, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_store(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t pointer, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
     sysbvm_array_atPut(operands, 0, pointer);
     sysbvm_array_atPut(operands, 1, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_STORE, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_STORE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_slotAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_slotAt(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, tuple);
     sysbvm_array_atPut(operands, 2, typeSlot);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_SLOT_AT, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_SLOT_AT, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_slotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_slotReferenceAt(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, tuple);
     sysbvm_array_atPut(operands, 2, typeSlot);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_SLOT_REFERENCE_AT, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_SLOT_REFERENCE_AT, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_slotAtPut(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_slotAtPut(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, tuple);
     sysbvm_array_atPut(operands, 1, typeSlot);
     sysbvm_array_atPut(operands, 2, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_SLOT_AT_PUT, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_SLOT_AT_PUT, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_refSlotAt(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, tuple);
     sysbvm_array_atPut(operands, 2, typeSlot);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_AT, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_AT, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_refSlotReferenceAt(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, tuple);
     sysbvm_array_atPut(operands, 2, typeSlot);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_REFERENCE_AT, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_refSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_refSlotAtPut(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, tuple);
     sysbvm_array_atPut(operands, 1, typeSlot);
     sysbvm_array_atPut(operands, 2, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_AT_PUT, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_REF_SLOT_AT_PUT, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_typecheck(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t expectedType, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_typecheck(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t expectedType, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
     sysbvm_array_atPut(operands, 0, expectedType);
     sysbvm_array_atPut(operands, 1, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_TYPECHECK, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_TYPECHECK, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_jumpIfTrue(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t condition, sysbvm_tuple_t destination)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jumpIfTrue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t condition, sysbvm_tuple_t destination)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
     sysbvm_array_atPut(operands, 0, condition);
     sysbvm_array_atPut(operands, 1, destination);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_JUMP_IF_TRUE, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_JUMP_IF_TRUE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_call(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t function, sysbvm_tuple_t arguments)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_call(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t function, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2 + argumentCount);
@@ -407,12 +410,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_call(sysbvm_context_t *context
     for(size_t i = 0; i < argumentCount; ++i)
         sysbvm_array_atPut(operands, 2 + i, sysbvm_array_at(arguments, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_CALL + (argumentCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_CALL + (argumentCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_uncheckedCall(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t function, sysbvm_tuple_t arguments)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_uncheckedCall(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t function, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2 + argumentCount);
@@ -421,12 +424,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_uncheckedCall(sysbvm_context_t
     for(size_t i = 0; i < argumentCount; ++i)
         sysbvm_array_atPut(operands, 2 + i, sysbvm_array_at(arguments, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_UNCHECKED_CALL + (argumentCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_UNCHECKED_CALL + (argumentCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_send(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t selector, sysbvm_tuple_t receiver, sysbvm_tuple_t arguments)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_send(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t selector, sysbvm_tuple_t receiver, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3 + argumentCount);
@@ -436,12 +439,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_send(sysbvm_context_t *context
     for(size_t i = 0; i < argumentCount; ++i)
         sysbvm_array_atPut(operands, 3 + i, sysbvm_array_at(arguments, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_SEND + (argumentCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_SEND + (argumentCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_sendWithLookupReceiverType(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t receiverLookupType, sysbvm_tuple_t selector, sysbvm_tuple_t receiver, sysbvm_tuple_t arguments)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_sendWithLookupReceiverType(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t receiverLookupType, sysbvm_tuple_t selector, sysbvm_tuple_t receiver, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 4 + argumentCount);
@@ -452,12 +455,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_sendWithLookupReceiverType(sys
     for(size_t i = 0; i < argumentCount; ++i)
         sysbvm_array_atPut(operands, 4 + i, sysbvm_array_at(arguments, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_SEND_WITH_LOOKUP + (argumentCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_SEND_WITH_LOOKUP + (argumentCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeArrayWithElements(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeArrayWithElements(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
 {
     size_t elementCount = sysbvm_array_getSize(elements);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1 + elementCount);
@@ -465,24 +468,24 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeArrayWithElements(sysbvm_c
     for(size_t i = 0; i < elementCount; ++i)
         sysbvm_array_atPut(operands, 1 + i, sysbvm_array_at(elements, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS + (elementCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_MAKE_ARRAY_WITH_ELEMENTS + (elementCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeAssociation(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t key, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeAssociation(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t key, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, key);
     sysbvm_array_atPut(operands, 2, value);
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_MAKE_ASSOCIATION, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_MAKE_ASSOCIATION, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeByteArrayWithElements(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeByteArrayWithElements(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
 {
     size_t elementCount = sysbvm_array_getSize(elements);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1 + elementCount);
@@ -490,12 +493,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeByteArrayWithElements(sysb
     for(size_t i = 0; i < elementCount; ++i)
         sysbvm_array_atPut(operands, 1 + i, sysbvm_array_at(elements, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_MAKE_BYTE_ARRAY_WITH_ELEMENTS + (elementCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_MAKE_BYTE_ARRAY_WITH_ELEMENTS + (elementCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeDictionaryWithElements(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeDictionaryWithElements(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
 {
     size_t elementCount = sysbvm_array_getSize(elements);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1 + elementCount);
@@ -503,12 +506,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeDictionaryWithElements(sys
     for(size_t i = 0; i < elementCount; ++i)
         sysbvm_array_atPut(operands, 1 + i, sysbvm_array_at(elements, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS + (elementCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS + (elementCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeClosureWithCaptures(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t result, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captures)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeClosureWithCaptures(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captures)
 {
     size_t captureCount = sysbvm_array_getSize(captures);
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2 + captureCount);
@@ -517,57 +520,62 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_makeClosureWithCaptures(sysbvm
     for(size_t i = 0; i < captureCount; ++i)
         sysbvm_array_atPut(operands, 2 + i, sysbvm_array_at(captures, i));
     
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES + (captureCount & 0xF), operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES + (captureCount & 0xF), operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_move(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t destination, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_move(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
     sysbvm_array_atPut(operands, 0, destination);
     sysbvm_array_atPut(operands, 1, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_MOVE, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_MOVE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeCompiler_return(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t value)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_return(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t value)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1);
     sysbvm_array_atPut(operands, 0, value);
 
-    sysbvm_tuple_t instruction = sysbvm_bytecodeCompilerInstruction_create(context, SYSBVM_OPCODE_RETURN, operands);
-    sysbvm_bytecodeCompiler_addInstruction(compiler, instruction);
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_RETURN, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
 
-static size_t sysbvm_bytecodeCompilerInstruction_computeAssembledSize(sysbvm_bytecodeCompilerInstruction_t *instruction)
+static bool sysbvm_functionBytecodeAssemblerInstruction_isLabel(sysbvm_context_t *context, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction)
 {
-    // Is this a label?
-    if(!instruction->operands || !instruction->opcode)
-        return 0;
-
-    return 1 + sysbvm_array_getSize(instruction->operands) * 2;
+    return sysbvm_tuple_getType(context, (sysbvm_tuple_t)instruction) == context->roots.functionBytecodeAssemblerLabel;
 }
 
-static size_t sysbvm_bytecodeCompilerInstructionOperandFor_assembleInto(sysbvm_context_t *context, sysbvm_tuple_t operand, uint8_t *destination, sysbvm_bytecodeCompilerInstruction_t *instruction)
+static size_t sysbvm_functionBytecodeAssemblerInstruction_computeAssembledSize(sysbvm_context_t *context, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction)
+{
+    // Is this a label?
+    if(sysbvm_functionBytecodeAssemblerInstruction_isLabel(context, instruction))
+        return 0;
+
+    return 1 + sysbvm_array_getSize(((sysbvm_functionBytecodeAssemblerInstruction_t*)instruction)->operands) * 2;
+}
+
+static size_t sysbvm_functionBytecodeAssemblerAbstractOperandFor_assembleInto(sysbvm_context_t *context, sysbvm_tuple_t operand, uint8_t *destination, sysbvm_functionBytecodeAssemblerInstruction_t *instruction)
 {
     sysbvm_tuple_t operandType = sysbvm_tuple_getType(context, operand);
-    if(operandType == context->roots.bytecodeCompilerInstructionType)
+    if(operandType == context->roots.functionBytecodeAssemblerInstruction || operandType == context->roots.functionBytecodeAssemblerLabel)
     {
-        sysbvm_bytecodeCompilerInstruction_t *destinationInstruction = (sysbvm_bytecodeCompilerInstruction_t*)operand;
+        sysbvm_functionBytecodeAssemblerAbstractInstruction_t *destinationInstruction = (sysbvm_functionBytecodeAssemblerAbstractInstruction_t*)operand;
         size_t destPC = sysbvm_tuple_size_decode(destinationInstruction->pc);
-        size_t sourcePC = sysbvm_tuple_size_decode(instruction->endPC);
+        size_t sourcePC = sysbvm_tuple_size_decode(instruction->super.endPC);
         int16_t pcDelta = (int16_t) (destPC - sourcePC);
         *destination++ = pcDelta & 0xFF;
         *destination++ = (pcDelta >> 8) & 0xFF;
         return 2;
     }
-    else if(operandType == context->roots.bytecodeCompilerInstructionVectorOperandType)
+    else if(operandType == context->roots.functionBytecodeAssemblerVectorOperand)
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *vectorOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)operand;
+        sysbvm_functionBytecodeAssemblerVectorOperand_t *vectorOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)operand;
         int16_t vectorType = sysbvm_tuple_int16_decode(vectorOperand->vectorType);
         int16_t vectorIndex = sysbvm_tuple_int16_decode(vectorOperand->index);
         int16_t encodedOperand = (vectorIndex << SYSBVM_OPERAND_VECTOR_BITS) | vectorType;
@@ -582,54 +590,59 @@ static size_t sysbvm_bytecodeCompilerInstructionOperandFor_assembleInto(sysbvm_c
     }
 }
 
-static size_t sysbvm_bytecodeCompilerInstruction_assembleInto(sysbvm_context_t *context, sysbvm_bytecodeCompilerInstruction_t *instruction, uint8_t *destination)
+static size_t sysbvm_functionBytecodeAssemblerInstruction_assembleInto(sysbvm_context_t *context, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction, uint8_t *destination)
 {
     // Is this a label?
-    if(!instruction->operands || !instruction->opcode)
+    if(sysbvm_functionBytecodeAssemblerInstruction_isLabel(context, instruction))
         return 0;
 
-    size_t offset = 0;
-    destination[offset++] = sysbvm_tuple_uint8_decode(instruction->opcode);
+    sysbvm_functionBytecodeAssemblerInstruction_t *bytecodeInstruction = (sysbvm_functionBytecodeAssemblerInstruction_t*)instruction;
 
-    size_t operandCount = sysbvm_array_getSize(instruction->operands);
+    size_t offset = 0;
+    destination[offset++] = sysbvm_tuple_uint8_decode(bytecodeInstruction->standardOpcode);
+
+    size_t operandCount = sysbvm_array_getSize(bytecodeInstruction->operands);
     for(size_t i = 0; i < operandCount; ++i)
     {
-        sysbvm_tuple_t operand = sysbvm_array_at(instruction->operands, i);
-        offset += sysbvm_bytecodeCompilerInstructionOperandFor_assembleInto(context, operand, destination + offset, instruction);
+        sysbvm_tuple_t operand = sysbvm_array_at(bytecodeInstruction->operands, i);
+        offset += sysbvm_functionBytecodeAssemblerAbstractOperandFor_assembleInto(context, operand, destination + offset, bytecodeInstruction);
     }
 
     return offset;
 }
 
-static void sysbvm_bytecodeCompiler_removeInstruction(sysbvm_bytecodeCompiler_t *compiler, sysbvm_bytecodeCompilerInstruction_t *instruction)
+static void sysbvm_functionBytecodeAssembler_removeInstruction(sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction)
 {
-    sysbvm_bytecodeCompilerInstruction_t *previous = instruction->previous;
-    sysbvm_bytecodeCompilerInstruction_t *next = instruction->next;
+    sysbvm_functionBytecodeAssemblerAbstractInstruction_t *previous = instruction->previous;
+    sysbvm_functionBytecodeAssemblerAbstractInstruction_t *next = instruction->next;
 
     if(previous)
         previous->next = next;
     else
-        compiler->firstInstruction = next;
+        assembler->firstInstruction = next;
 
     if(next)
         next->previous = previous;
     else
-        compiler->lastInstruction = previous;
+        assembler->lastInstruction = previous;
 }
 
-static void sysbvm_bytecodeCompiler_optimizeJumps(sysbvm_bytecodeCompiler_t *compiler)
+static void sysbvm_functionBytecodeAssembler_optimizeJumps(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler)
 {
-    sysbvm_bytecodeCompilerInstruction_t *instruction = compiler->firstInstruction;
+    sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction = assembler->firstInstruction;
     while(instruction)
     {
-        sysbvm_bytecodeCompilerInstruction_t *nextInstruction = instruction->next;
-        uint8_t opcode = sysbvm_tuple_uint8_decode(instruction->opcode);
-        if(opcode == SYSBVM_OPCODE_JUMP || opcode == SYSBVM_OPCODE_JUMP_IF_TRUE || opcode == SYSBVM_OPCODE_JUMP_IF_FALSE)
+        sysbvm_functionBytecodeAssemblerAbstractInstruction_t *nextInstruction = instruction->next;
+        if(!sysbvm_functionBytecodeAssemblerInstruction_isLabel(context, instruction))
         {
-            sysbvm_tuple_t lastOperand = sysbvm_array_at(instruction->operands, sysbvm_array_getSize(instruction->operands) - 1);
-            if(lastOperand == (sysbvm_tuple_t)nextInstruction)
-                sysbvm_bytecodeCompiler_removeInstruction(compiler, instruction);
-
+            sysbvm_functionBytecodeAssemblerInstruction_t *bytecodeInstruction = (sysbvm_functionBytecodeAssemblerInstruction_t*)instruction;
+            uint8_t opcode = sysbvm_tuple_uint8_decode(bytecodeInstruction->standardOpcode);
+            if(opcode == SYSBVM_OPCODE_JUMP || opcode == SYSBVM_OPCODE_JUMP_IF_TRUE || opcode == SYSBVM_OPCODE_JUMP_IF_FALSE)
+            {
+                sysbvm_tuple_t lastOperand = sysbvm_array_at(bytecodeInstruction->operands, sysbvm_array_getSize(bytecodeInstruction->operands) - 1);
+                if(lastOperand == (sysbvm_tuple_t)nextInstruction)
+                    sysbvm_functionBytecodeAssembler_removeInstruction(assembler, instruction);
+            }
         }
 
         instruction = nextInstruction;
@@ -637,24 +650,24 @@ static void sysbvm_bytecodeCompiler_optimizeJumps(sysbvm_bytecodeCompiler_t *com
 
 }
 
-static void sysbvm_bytecodeCompiler_markInstructionOperandUsages(sysbvm_context_t *context, sysbvm_bytecodeCompilerInstruction_t *instruction)
+static void sysbvm_functionBytecodeAssembler_markInstructionOperandUsages(sysbvm_context_t *context, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction)
 {
-    (void)context;
     // Ignore labels.
-    if(!instruction->opcode || !instruction->operands)
+    if(sysbvm_functionBytecodeAssemblerInstruction_isLabel(context, instruction))
         return;
 
-    uint8_t opcode = sysbvm_tuple_uint8_decode(instruction->opcode);
+    sysbvm_functionBytecodeAssemblerInstruction_t *bytecodeInstruction = (sysbvm_functionBytecodeAssemblerInstruction_t*)instruction;
+    uint8_t opcode = sysbvm_tuple_uint8_decode(bytecodeInstruction->standardOpcode);
     uint8_t destinationOperandCount = sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(opcode);
 
-    size_t operandCount = sysbvm_array_getSize(instruction->operands);
+    size_t operandCount = sysbvm_array_getSize(bytecodeInstruction->operands);
     if(opcode == SYSBVM_OPCODE_JUMP || opcode == SYSBVM_OPCODE_JUMP_IF_TRUE || opcode == SYSBVM_OPCODE_JUMP_IF_FALSE)
         --operandCount;
     
     // Mark the destination operands.
     for(size_t i = 0; i < destinationOperandCount; ++i)
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *operand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, i);
+        sysbvm_functionBytecodeAssemblerVectorOperand_t *operand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_array_at(bytecodeInstruction->operands, i);
         if(opcode == SYSBVM_OPCODE_ALLOCA || opcode == SYSBVM_OPCODE_ALLOCA_WITH_VALUE)
             operand->hasAllocaDestination = SYSBVM_TRUE_TUPLE;
         else
@@ -669,7 +682,7 @@ static void sysbvm_bytecodeCompiler_markInstructionOperandUsages(sysbvm_context_
     // Mark the used operands.
     for(size_t i = destinationOperandCount; i < operandCount; ++i)
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *operand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, i);
+        sysbvm_functionBytecodeAssemblerVectorOperand_t *operand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_array_at(bytecodeInstruction->operands, i);
         if(opcode == SYSBVM_OPCODE_LOAD)
             operand->hasLoadStoreUsage = SYSBVM_TRUE_TUPLE;
         else if(opcode == SYSBVM_OPCODE_STORE && i == 0)
@@ -679,9 +692,9 @@ static void sysbvm_bytecodeCompiler_markInstructionOperandUsages(sysbvm_context_
     }
 }
 
-static bool sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_tuple_t operand)
+static bool sysbvm_functionBytecodeAssembler_isLocalOnlyAlloca(sysbvm_tuple_t operand)
 {
-    sysbvm_bytecodeCompilerInstructionVectorOperand_t *vectorOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)operand;
+    sysbvm_functionBytecodeAssemblerVectorOperand_t *vectorOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)operand;
 
     bool hasAllocaDestination = sysbvm_tuple_boolean_decode(vectorOperand->hasAllocaDestination);
     bool hasNonAllocaDestination = sysbvm_tuple_boolean_decode(vectorOperand->hasNonAllocaDestination);
@@ -692,9 +705,9 @@ static bool sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_tuple_t operand)
         (hasLoadStoreUsage && !hasNonLoadStoreUsage);
 }
 
-static bool sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_tuple_t operand)
+static bool sysbvm_functionBytecodeAssembler_isLocalOnlyReferenceAt(sysbvm_tuple_t operand)
 {
-    sysbvm_bytecodeCompilerInstructionVectorOperand_t *vectorOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)operand;
+    sysbvm_functionBytecodeAssemblerVectorOperand_t *vectorOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)operand;
 
     bool hasSlotReferenceAtDestination = sysbvm_tuple_boolean_decode(vectorOperand->hasSlotReferenceAtDestination);
     bool hasNonSlotReferenceAtDestination = sysbvm_tuple_boolean_decode(vectorOperand->hasNonSlotReferenceAtDestination);
@@ -705,80 +718,81 @@ static bool sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_tuple_t operan
         (hasLoadStoreUsage && !hasNonLoadStoreUsage);
 }
 
-static void sysbvm_bytecodeCompiler_optimizeLocalOnlyAllocaAndSlotReferences(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_bytecodeCompilerInstruction_t *instruction)
+static void sysbvm_functionBytecodeAssembler_optimizeLocalOnlyAllocaAndSlotReferences(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction)
 {
     // Ignore labels.
-    if(!instruction->opcode || !instruction->operands)
+    if(sysbvm_functionBytecodeAssemblerInstruction_isLabel(context, instruction))
         return;
 
-    uint8_t opcode = sysbvm_tuple_uint8_decode(instruction->opcode);
+    sysbvm_functionBytecodeAssemblerInstruction_t *bytecodeInstruction = (sysbvm_functionBytecodeAssemblerInstruction_t*)instruction;
+    uint8_t opcode = sysbvm_tuple_uint8_decode(bytecodeInstruction->standardOpcode);
     if(opcode == SYSBVM_OPCODE_ALLOCA
-        && sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_array_at(instruction->operands, 0)))
+        && sysbvm_functionBytecodeAssembler_isLocalOnlyAlloca(sysbvm_array_at(bytecodeInstruction->operands, 0)))
     {
-        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
-        sysbvm_array_atPut(instruction->operands, 1, sysbvm_bytecodeCompiler_addLiteral(context, compiler, SYSBVM_NULL_TUPLE));
+        bytecodeInstruction->standardOpcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
+        sysbvm_array_atPut(bytecodeInstruction->operands, 1, sysbvm_functionBytecodeAssembler_addLiteral(context, assembler, SYSBVM_NULL_TUPLE));
     }
     else if(opcode == SYSBVM_OPCODE_ALLOCA_WITH_VALUE
-        && sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_array_at(instruction->operands, 0)))
+        && sysbvm_functionBytecodeAssembler_isLocalOnlyAlloca(sysbvm_array_at(bytecodeInstruction->operands, 0)))
     {
         sysbvm_tuple_t newOperands = sysbvm_array_create(context, 2);
-        sysbvm_array_atPut(newOperands, 0, sysbvm_array_at(instruction->operands, 0));
-        sysbvm_array_atPut(newOperands, 1, sysbvm_array_at(instruction->operands, 2));
-        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
-        instruction->operands = newOperands;
+        sysbvm_array_atPut(newOperands, 0, sysbvm_array_at(bytecodeInstruction->operands, 0));
+        sysbvm_array_atPut(newOperands, 1, sysbvm_array_at(bytecodeInstruction->operands, 2));
+        bytecodeInstruction->standardOpcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
+        bytecodeInstruction->operands = newOperands;
     }
     else if(opcode == SYSBVM_OPCODE_SLOT_REFERENCE_AT
-        && sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_array_at(instruction->operands, 0)))
+        && sysbvm_functionBytecodeAssembler_isLocalOnlyReferenceAt(sysbvm_array_at(bytecodeInstruction->operands, 0)))
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *referenceOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, 0);
-        referenceOperand->optimizationTupleOperand = sysbvm_array_at(instruction->operands, 1);
-        referenceOperand->optimizationTypeSlotOperand = sysbvm_array_at(instruction->operands, 2);
+        sysbvm_functionBytecodeAssemblerVectorOperand_t *referenceOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_array_at(bytecodeInstruction->operands, 0);
+        referenceOperand->optimizationTupleOperand = sysbvm_array_at(bytecodeInstruction->operands, 1);
+        referenceOperand->optimizationTypeSlotOperand = sysbvm_array_at(bytecodeInstruction->operands, 2);
 
-        sysbvm_bytecodeCompiler_removeInstruction((sysbvm_bytecodeCompiler_t*)compiler, instruction);
+        sysbvm_functionBytecodeAssembler_removeInstruction(assembler, instruction);
     }
     else if(opcode == SYSBVM_OPCODE_LOAD
-        && sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_array_at(instruction->operands, 1)))
+        && sysbvm_functionBytecodeAssembler_isLocalOnlyAlloca(sysbvm_array_at(bytecodeInstruction->operands, 1)))
     {
-        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
+        bytecodeInstruction->standardOpcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
     }
     else if(opcode == SYSBVM_OPCODE_LOAD
-        && sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_array_at(instruction->operands, 1)))
+        && sysbvm_functionBytecodeAssembler_isLocalOnlyReferenceAt(sysbvm_array_at(bytecodeInstruction->operands, 1)))
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *referenceOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, 1);
+        sysbvm_functionBytecodeAssemblerVectorOperand_t *referenceOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_array_at(bytecodeInstruction->operands, 1);
 
         sysbvm_tuple_t newOperands = sysbvm_array_create(context, 3);
-        sysbvm_array_atPut(newOperands, 0, sysbvm_array_at(instruction->operands, 0));
+        sysbvm_array_atPut(newOperands, 0, sysbvm_array_at(bytecodeInstruction->operands, 0));
         sysbvm_array_atPut(newOperands, 1, referenceOperand->optimizationTupleOperand);
         sysbvm_array_atPut(newOperands, 2, referenceOperand->optimizationTypeSlotOperand);
-        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT);
-        instruction->operands = newOperands;
+        bytecodeInstruction->standardOpcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT);
+        bytecodeInstruction->operands = newOperands;
     }
     else if(opcode == SYSBVM_OPCODE_STORE
-        && sysbvm_bytecodeCompiler_isLocalOnlyAlloca(sysbvm_array_at(instruction->operands, 0)))
+        && sysbvm_functionBytecodeAssembler_isLocalOnlyAlloca(sysbvm_array_at(bytecodeInstruction->operands, 0)))
     {
-        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
+        bytecodeInstruction->standardOpcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
     }
     else if(opcode == SYSBVM_OPCODE_STORE
-        && sysbvm_bytecodeCompiler_isLocalOnlyReferenceAt(sysbvm_array_at(instruction->operands, 0)))
+        && sysbvm_functionBytecodeAssembler_isLocalOnlyReferenceAt(sysbvm_array_at(bytecodeInstruction->operands, 0)))
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *referenceOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_array_at(instruction->operands, 0);
+        sysbvm_functionBytecodeAssemblerVectorOperand_t *referenceOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_array_at(bytecodeInstruction->operands, 0);
 
         sysbvm_tuple_t newOperands = sysbvm_array_create(context, 3);
         sysbvm_array_atPut(newOperands, 0, referenceOperand->optimizationTupleOperand);
         sysbvm_array_atPut(newOperands, 1, referenceOperand->optimizationTypeSlotOperand);
-        sysbvm_array_atPut(newOperands, 2, sysbvm_array_at(instruction->operands, 1));
-        instruction->opcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT_PUT);
-        instruction->operands = newOperands;
+        sysbvm_array_atPut(newOperands, 2, sysbvm_array_at(bytecodeInstruction->operands, 1));
+        bytecodeInstruction->standardOpcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT_PUT);
+        bytecodeInstruction->operands = newOperands;
     }
 }
 
-static void sysbvm_bytecodeCompiler_optimizeTemporaries(sysbvm_context_t *context, sysbvm_bytecodeCompiler_t *compiler)
+static void sysbvm_functionBytecodeAssembler_optimizeTemporaries(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler)
 {
     // Clear the temporaries usage flags.
-    size_t temporaryCount = sysbvm_orderedCollection_getSize(compiler->temporaries);
+    size_t temporaryCount = sysbvm_orderedCollection_getSize(assembler->temporaries);
     for(size_t i = 0; i < temporaryCount; ++i)
     {
-        sysbvm_bytecodeCompilerInstructionVectorOperand_t *temporary = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)sysbvm_orderedCollection_at(compiler->temporaries, i);
+        sysbvm_functionBytecodeAssemblerVectorOperand_t *temporary = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_orderedCollection_at(assembler->temporaries, i);
         temporary->hasAllocaDestination = SYSBVM_FALSE_TUPLE;
         temporary->hasNonAllocaDestination = SYSBVM_FALSE_TUPLE;
         temporary->hasLoadStoreUsage = SYSBVM_FALSE_TUPLE;
@@ -786,32 +800,32 @@ static void sysbvm_bytecodeCompiler_optimizeTemporaries(sysbvm_context_t *contex
     }
 
     // Mark the temporaries per instruction usage.
-    sysbvm_bytecodeCompilerInstruction_t *instruction = compiler->firstInstruction;
+    sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction = assembler->firstInstruction;
     while(instruction)
     {
-        sysbvm_bytecodeCompiler_markInstructionOperandUsages(context, instruction);
+        sysbvm_functionBytecodeAssembler_markInstructionOperandUsages(context, instruction);
         instruction = instruction->next;
     }
 
     // Optimize the local only allocas.
-    instruction = compiler->firstInstruction;
+    instruction = assembler->firstInstruction;
     while(instruction)
     {
-        sysbvm_bytecodeCompilerInstruction_t *nextInstruction = instruction->next;
-        sysbvm_bytecodeCompiler_optimizeLocalOnlyAllocaAndSlotReferences(context, (sysbvm_tuple_t)compiler, instruction);
+        sysbvm_functionBytecodeAssemblerAbstractInstruction_t *nextInstruction = instruction->next;
+        sysbvm_functionBytecodeAssembler_optimizeLocalOnlyAllocaAndSlotReferences(context, assembler, instruction);
         instruction = nextInstruction;
     }
 }
 
-SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context_t *context, sysbvm_functionDefinition_t *definition_)
+SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(sysbvm_context_t *context, sysbvm_functionDefinition_t *definition_)
 {
     struct {
         sysbvm_functionDefinition_t *definition;
         sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition;
-        sysbvm_bytecodeCompiler_t *compiler;
+        sysbvm_functionBytecodeDirectCompiler_t *compiler;
         sysbvm_tuple_t bodyResult;
         sysbvm_functionBytecode_t *bytecode;
-        sysbvm_bytecodeCompilerInstruction_t *instruction;
+        sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction;
 
         sysbvm_tuple_t pcToDebugListTable;
         sysbvm_tuple_t debugSourceTuple;
@@ -832,52 +846,52 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
 
     gcFrame.sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)gcFrame.definition->sourceAnalyzedDefinition;
 
-    gcFrame.compiler = (sysbvm_bytecodeCompiler_t*)sysbvm_bytecodeCompiler_create(context);
-    gcFrame.compiler->sourceEnvironment = gcFrame.sourceAnalyzedDefinition->environment;
-    gcFrame.compiler->sourcePosition = gcFrame.sourceAnalyzedDefinition->sourcePosition;
+    gcFrame.compiler = (sysbvm_functionBytecodeDirectCompiler_t*)sysbvm_functionBytecodeDirectCompiler_create(context);
+    gcFrame.compiler->assembler->sourceEnvironment = gcFrame.sourceAnalyzedDefinition->environment;
+    gcFrame.compiler->assembler->sourcePosition = gcFrame.sourceAnalyzedDefinition->sourcePosition;
 
     {
         // Make the argument operands.
         size_t argumentCount = sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->arguments);
-        sysbvm_bytecodeCompiler_setArgumentCount(context, (sysbvm_tuple_t)gcFrame.compiler, argumentCount);
+        sysbvm_functionBytecodeAssembler_setArgumentCount(context, gcFrame.compiler->assembler, argumentCount);
         for(size_t i = 0; i < argumentCount; ++i)
         {
             sysbvm_tuple_t binding = sysbvm_array_at(gcFrame.sourceAnalyzedDefinition->arguments, i);
-            sysbvm_tuple_t value = sysbvm_array_at(gcFrame.compiler->arguments, i);
-            sysbvm_bytecodeCompiler_setBindingValue(context, (sysbvm_tuple_t)gcFrame.compiler, binding, value);
+            sysbvm_tuple_t value = sysbvm_array_at(gcFrame.compiler->assembler->arguments, i);
+            sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, gcFrame.compiler, binding, value);
         }
 
         // Make the binding operands.
         size_t captureCount = sysbvm_array_getSize(gcFrame.sourceAnalyzedDefinition->captures);
-        sysbvm_bytecodeCompiler_setCaptureCount(context, (sysbvm_tuple_t)gcFrame.compiler, captureCount);
+        sysbvm_functionBytecodeAssembler_setCaptureCount(context, gcFrame.compiler->assembler, captureCount);
         for(size_t i = 0; i < captureCount; ++i)
         {
             sysbvm_tuple_t binding = sysbvm_array_at(gcFrame.sourceAnalyzedDefinition->captures, i);
-            sysbvm_tuple_t value = sysbvm_array_at(gcFrame.compiler->captures, i);
-            sysbvm_bytecodeCompiler_setBindingValue(context, (sysbvm_tuple_t)gcFrame.compiler, binding, value);
+            sysbvm_tuple_t value = sysbvm_array_at(gcFrame.compiler->assembler->captures, i);
+            sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, gcFrame.compiler, binding, value);
         }
     }
 
     // Compile the body.
     gcFrame.bodyResult = gcFrame.sourceAnalyzedDefinition->bodyNode
-        ? sysbvm_bytecodeCompiler_compileASTNode(context, (sysbvm_tuple_t)gcFrame.compiler, gcFrame.sourceAnalyzedDefinition->bodyNode)
-        : sysbvm_bytecodeCompiler_addLiteral(context, (sysbvm_tuple_t)gcFrame.compiler, SYSBVM_VOID_TUPLE);
+        ? sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, gcFrame.compiler, gcFrame.sourceAnalyzedDefinition->bodyNode)
+        : sysbvm_functionBytecodeAssembler_addLiteral(context, gcFrame.compiler->assembler, SYSBVM_VOID_TUPLE);
 
     if(gcFrame.bodyResult)
-        sysbvm_bytecodeCompiler_return(context, (sysbvm_tuple_t)gcFrame.compiler, gcFrame.bodyResult);
+        sysbvm_functionBytecodeAssembler_return(context, gcFrame.compiler->assembler, gcFrame.bodyResult);
 
     // Perform some optimizations.
-    sysbvm_bytecodeCompiler_optimizeJumps(gcFrame.compiler);
-    sysbvm_bytecodeCompiler_optimizeTemporaries(context, gcFrame.compiler);
+    sysbvm_functionBytecodeAssembler_optimizeJumps(context, gcFrame.compiler->assembler);
+    sysbvm_functionBytecodeAssembler_optimizeTemporaries(context, gcFrame.compiler->assembler);
     
     // Assemble the instructions.
-    gcFrame.compiler->usedTemporaryCount = sysbvm_tuple_size_encode(context, sysbvm_orderedCollection_getSize(gcFrame.compiler->temporaries));
+    gcFrame.compiler->assembler->usedTemporaryCount = sysbvm_tuple_size_encode(context, sysbvm_orderedCollection_getSize(gcFrame.compiler->assembler->temporaries));
 
     gcFrame.bytecode = (sysbvm_functionBytecode_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecode_t));
-    gcFrame.bytecode->argumentCount = sysbvm_tuple_size_encode(context, sysbvm_array_getSize(gcFrame.compiler->arguments));
-    gcFrame.bytecode->captureVectorSize = sysbvm_tuple_size_encode(context, sysbvm_array_getSize(gcFrame.compiler->captures));
-    gcFrame.bytecode->localVectorSize = gcFrame.compiler->usedTemporaryCount;
-    gcFrame.bytecode->literalVector = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->literals);
+    gcFrame.bytecode->argumentCount = sysbvm_tuple_size_encode(context, sysbvm_array_getSize(gcFrame.compiler->assembler->arguments));
+    gcFrame.bytecode->captureVectorSize = sysbvm_tuple_size_encode(context, sysbvm_array_getSize(gcFrame.compiler->assembler->captures));
+    gcFrame.bytecode->localVectorSize = gcFrame.compiler->assembler->usedTemporaryCount;
+    gcFrame.bytecode->literalVector = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->assembler->literals);
 
     gcFrame.bytecode->jittedCode = sysbvm_tuple_systemHandle_encode(context, 0);
     gcFrame.bytecode->jittedCodeSessionToken = sysbvm_tuple_systemHandle_encode(context, 0);
@@ -893,11 +907,11 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
 
     // Assemble the instructions.
     size_t instructionsOffset = 0;
-    for(gcFrame.instruction = gcFrame.compiler->firstInstruction; gcFrame.instruction; gcFrame.instruction = gcFrame.instruction->next)
+    for(gcFrame.instruction = gcFrame.compiler->assembler->firstInstruction; gcFrame.instruction; gcFrame.instruction = gcFrame.instruction->next)
     {
         size_t pc = instructionsOffset;
         gcFrame.instruction->pc = sysbvm_tuple_size_encode(context, instructionsOffset);
-        instructionsOffset += sysbvm_bytecodeCompilerInstruction_computeAssembledSize(gcFrame.instruction);
+        instructionsOffset += sysbvm_functionBytecodeAssemblerInstruction_computeAssembledSize(context, gcFrame.instruction);
         gcFrame.instruction->endPC = sysbvm_tuple_size_encode(context, instructionsOffset);
 
         // Ensure the debug source tuple is on their respective tables.
@@ -929,8 +943,8 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
     gcFrame.bytecode->instructions = sysbvm_byteArray_create(context, instructionsOffset);
     instructionsOffset = 0;
     uint8_t *destInstructions = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(gcFrame.bytecode->instructions)->bytes;
-    for(gcFrame.instruction = gcFrame.compiler->firstInstruction; gcFrame.instruction; gcFrame.instruction = gcFrame.instruction->next)
-        instructionsOffset += sysbvm_bytecodeCompilerInstruction_assembleInto(context, gcFrame.instruction, destInstructions + instructionsOffset);
+    for(gcFrame.instruction = gcFrame.compiler->assembler->firstInstruction; gcFrame.instruction; gcFrame.instruction = gcFrame.instruction->next)
+        instructionsOffset += sysbvm_functionBytecodeAssemblerInstruction_assembleInto(context, gcFrame.instruction, destInstructions + instructionsOffset);
 
     // Finish by installing it on the definition.
     gcFrame.definition->bytecode = (sysbvm_tuple_t)gcFrame.bytecode;
@@ -941,6 +955,17 @@ SYSBVM_API void sysbvm_bytecodeCompiler_compileFunctionDefinition(sysbvm_context
     gcFrame.bytecode->debugSourceEnvironments = sysbvm_orderedCollection_asArray(context, gcFrame.debugSourceEnvironments);
 }
 
+static sysbvm_tuple_t sysbvm_astNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+    
+    sysbvm_error("ASTNode compileIntoBytecode: subclass responsibility");
+    return SYSBVM_NULL_TUPLE;
+}
+
 static sysbvm_tuple_t sysbvm_astBreakNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)context;
@@ -948,12 +973,12 @@ static sysbvm_tuple_t sysbvm_astBreakNode_primitiveCompileIntoBytecode(sysbvm_co
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     //sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_bytecodeCompiler_t **compiler = (sysbvm_bytecodeCompiler_t **)&arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
     if(!(*compiler)->breakLabel)
         sysbvm_error("Break statement in wrong location.");
-    sysbvm_bytecodeCompiler_jump(context, (sysbvm_tuple_t)*compiler, (*compiler)->breakLabel);
+    sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, (*compiler)->breakLabel);
      
-    return sysbvm_bytecodeCompiler_addLiteral(context, (sysbvm_tuple_t)*compiler, SYSBVM_VOID_TUPLE);
+    return sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
 }
 
 static sysbvm_tuple_t sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -963,7 +988,7 @@ static sysbvm_tuple_t sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode(sys
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astCoerceValueNode_t **coerceValueNode = (sysbvm_astCoerceValueNode_t**)node;
     struct {
@@ -973,10 +998,10 @@ static sysbvm_tuple_t sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode(sys
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.typeOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->typeExpression);
-    gcFrame.valueOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->valueExpression);
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_coerceValue(context, *compiler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
+    gcFrame.typeOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->typeExpression);
+    gcFrame.valueOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->valueExpression);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    sysbvm_functionBytecodeAssembler_coerceValue(context, (*compiler)->assembler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -989,12 +1014,12 @@ static sysbvm_tuple_t sysbvm_astContinueNode_primitiveCompileIntoBytecode(sysbvm
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     //sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_bytecodeCompiler_t **compiler = (sysbvm_bytecodeCompiler_t **)&arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
     if(!(*compiler)->continueLabel)
         sysbvm_error("Continue statement in wrong location.");
-    sysbvm_bytecodeCompiler_jump(context, (sysbvm_tuple_t)*compiler, (*compiler)->continueLabel);
+    sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, (*compiler)->continueLabel);
      
-    return sysbvm_bytecodeCompiler_addLiteral(context, (sysbvm_tuple_t)*compiler, SYSBVM_VOID_TUPLE);
+    return sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
 }
 
 static sysbvm_tuple_t sysbvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1004,7 +1029,7 @@ static sysbvm_tuple_t sysbvm_astDoWhileContinueWithNode_primitiveCompileIntoByte
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astDoWhileContinueWithNode_t **doWhileNode = (sysbvm_astDoWhileContinueWithNode_t**)node;
     struct {
@@ -1016,41 +1041,41 @@ static sysbvm_tuple_t sysbvm_astDoWhileContinueWithNode_primitiveCompileIntoByte
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.doWhileEntryLabel = sysbvm_bytecodeCompilerInstruction_createLabel(context);
-    gcFrame.doWhileCondition = sysbvm_bytecodeCompilerInstruction_createLabel(context);
-    gcFrame.doWhileContinue = sysbvm_bytecodeCompilerInstruction_createLabel(context);
-    gcFrame.doWhileMergeLabel = sysbvm_bytecodeCompilerInstruction_createLabel(context);
+    gcFrame.doWhileEntryLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.doWhileCondition = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.doWhileContinue = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.doWhileMergeLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
 
     // Do while body.
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.doWhileEntryLabel);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.doWhileEntryLabel);
     if((*doWhileNode)->bodyExpression)
-        sysbvm_bytecodeCompiler_compileASTNodeWithBreakAndContinue(context, *compiler, (*doWhileNode)->bodyExpression, gcFrame.doWhileMergeLabel, gcFrame.doWhileCondition);
-    sysbvm_bytecodeCompiler_jump(context, *compiler, gcFrame.doWhileCondition);
+        sysbvm_functionBytecodeDirectCompiler_compileASTNodeWithBreakAndContinue(context, *compiler, (*doWhileNode)->bodyExpression, gcFrame.doWhileMergeLabel, gcFrame.doWhileCondition);
+    sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.doWhileCondition);
 
     // Do while condition block.
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.doWhileCondition);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.doWhileCondition);
     if((*doWhileNode)->conditionExpression)
     {
-        sysbvm_tuple_t condition = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*doWhileNode)->conditionExpression);
-        sysbvm_bytecodeCompiler_jumpIfFalse(context, *compiler, condition, gcFrame.doWhileMergeLabel);
+        sysbvm_tuple_t condition = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*doWhileNode)->conditionExpression);
+        sysbvm_functionBytecodeAssembler_jumpIfFalse(context, (*compiler)->assembler, condition, gcFrame.doWhileMergeLabel);
     }
     else
     {
-        sysbvm_bytecodeCompiler_jump(context, *compiler, gcFrame.doWhileContinue);
+        sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.doWhileContinue);
     }
 
     // Do while continue
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.doWhileContinue);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.doWhileContinue);
     if((*doWhileNode)->continueExpression)
-        sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*doWhileNode)->continueExpression);
+        sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*doWhileNode)->continueExpression);
 
-    sysbvm_bytecodeCompiler_jump(context, *compiler, gcFrame.doWhileEntryLabel);
+    sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.doWhileEntryLabel);
 
     // While merge
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.doWhileMergeLabel);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.doWhileMergeLabel);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_VOID_TUPLE);
+    return sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
 }
 
 static sysbvm_tuple_t sysbvm_astDownCastNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1060,7 +1085,7 @@ static sysbvm_tuple_t sysbvm_astDownCastNode_primitiveCompileIntoBytecode(sysbvm
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astDownCastNode_t **downCastNode = (sysbvm_astDownCastNode_t**)node;
     struct {
@@ -1069,29 +1094,28 @@ static sysbvm_tuple_t sysbvm_astDownCastNode_primitiveCompileIntoBytecode(sysbvm
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.typeOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*downCastNode)->typeExpression);
-    gcFrame.valueOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*downCastNode)->valueExpression);
-    sysbvm_bytecodeCompiler_typecheck(context, *compiler, gcFrame.typeOperand, gcFrame.valueOperand);
+    gcFrame.typeOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*downCastNode)->typeExpression);
+    gcFrame.valueOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*downCastNode)->valueExpression);
+    sysbvm_functionBytecodeAssembler_typecheck(context, (*compiler)->assembler, gcFrame.typeOperand, gcFrame.valueOperand);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.valueOperand;
 }
 
 
-static sysbvm_tuple_t sysbvm_bytecodeCompiler_getLiteralFunctionPrimitiveName(sysbvm_context_t *context, sysbvm_tuple_t compiler, sysbvm_tuple_t operand)
+static sysbvm_tuple_t sysbvm_functionBytecodeAssembler_getLiteralFunctionPrimitiveName(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t operand)
 {
     //sysbvm_tuple_t operandType 
-    if(sysbvm_tuple_getType(context, operand) != context->roots.bytecodeCompilerInstructionVectorOperandType)
+    if(sysbvm_tuple_getType(context, operand) != context->roots.functionBytecodeAssemblerVectorOperand)
         return SYSBVM_NULL_TUPLE;
     
-    sysbvm_bytecodeCompilerInstructionVectorOperand_t *vectorOperand = (sysbvm_bytecodeCompilerInstructionVectorOperand_t*)operand;
+    sysbvm_functionBytecodeAssemblerVectorOperand_t *vectorOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)operand;
     int16_t index = sysbvm_tuple_int16_decode(vectorOperand->index);
     int16_t vectorType = sysbvm_tuple_int16_decode(vectorOperand->vectorType);
-    sysbvm_bytecodeCompiler_t *compilerObject = (sysbvm_bytecodeCompiler_t*)compiler;
-    if(vectorType != SYSBVM_OPERAND_VECTOR_LITERAL || index < 0 || (size_t)index >= sysbvm_orderedCollection_getSize(compilerObject->literals))
+    if(vectorType != SYSBVM_OPERAND_VECTOR_LITERAL || index < 0 || (size_t)index >= sysbvm_orderedCollection_getSize(assembler->literals))
         return SYSBVM_NULL_TUPLE;
 
-    sysbvm_tuple_t literal = sysbvm_orderedCollection_at(compilerObject->literals, index);
+    sysbvm_tuple_t literal = sysbvm_orderedCollection_at(assembler->literals, index);
     if(!sysbvm_tuple_isFunction(context, literal))
         return SYSBVM_NULL_TUPLE;
 
@@ -1105,7 +1129,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveCompileIntoByte
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astFunctionApplicationNode_t **applicationNode = (sysbvm_astFunctionApplicationNode_t**)node;
     struct {
@@ -1123,41 +1147,41 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveCompileIntoByte
 
     size_t applicationArgumentCount = sysbvm_array_getSize((*applicationNode)->arguments);
 
-    gcFrame.function = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*applicationNode)->functionExpression);
+    gcFrame.function = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*applicationNode)->functionExpression);
 
     // Inline some special functions here.
-    gcFrame.primitiveName = sysbvm_bytecodeCompiler_getLiteralFunctionPrimitiveName(context, *compiler, gcFrame.function);
+    gcFrame.primitiveName = sysbvm_functionBytecodeAssembler_getLiteralFunctionPrimitiveName(context, (*compiler)->assembler, gcFrame.function);
     if(gcFrame.primitiveName == context->roots.anyValueToVoidPrimitiveName)
     {
         for(size_t i = 0; i < applicationArgumentCount; ++i)
         {
             gcFrame.argumentNode = sysbvm_array_at((*applicationNode)->arguments, i);
-            sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
+            sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
         }
 
-        gcFrame.result = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_VOID_TUPLE);
+        gcFrame.result = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.result;
     }
     else if(gcFrame.primitiveName == context->roots.pointerLikeLoadPrimitiveName && applicationArgumentCount == 1)
     {
         gcFrame.argumentNode = sysbvm_array_at((*applicationNode)->arguments, 0);
-        gcFrame.pointerOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
+        gcFrame.pointerOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
 
-        gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-        sysbvm_bytecodeCompiler_load(context, *compiler, gcFrame.result, gcFrame.pointerOperand);
+        gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+        sysbvm_functionBytecodeAssembler_load(context, (*compiler)->assembler, gcFrame.result, gcFrame.pointerOperand);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.result;
     }
     else if(gcFrame.primitiveName == context->roots.pointerLikeStorePrimitiveName && applicationArgumentCount == 2)
     {
         gcFrame.argumentNode = sysbvm_array_at((*applicationNode)->arguments, 0);
-        gcFrame.pointerOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
+        gcFrame.pointerOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
 
         gcFrame.argumentNode = sysbvm_array_at((*applicationNode)->arguments, 1);
-        gcFrame.valueOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
+        gcFrame.valueOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
 
-        sysbvm_bytecodeCompiler_store(context, *compiler, gcFrame.pointerOperand, gcFrame.valueOperand);
+        sysbvm_functionBytecodeAssembler_store(context, (*compiler)->assembler, gcFrame.pointerOperand, gcFrame.valueOperand);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.pointerOperand;
     }
@@ -1167,19 +1191,19 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveCompileIntoByte
     for(size_t i = 0; i < applicationArgumentCount; ++i)
     {
         gcFrame.argumentNode = sysbvm_array_at((*applicationNode)->arguments, i);
-        gcFrame.argumentOperand = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
+        gcFrame.argumentOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
         sysbvm_array_atPut(gcFrame.arguments, i, gcFrame.argumentOperand);
     }
 
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
 
     sysbvm_bitflags_t applicationFlags = sysbvm_tuple_bitflags_decode((*applicationNode)->applicationFlags);
     bool isNotypecheck = (applicationFlags & SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) != 0;
 
     if(isNotypecheck)
-        sysbvm_bytecodeCompiler_uncheckedCall(context, *compiler, gcFrame.result, gcFrame.function, gcFrame.arguments);
+        sysbvm_functionBytecodeAssembler_uncheckedCall(context, (*compiler)->assembler, gcFrame.result, gcFrame.function, gcFrame.arguments);
     else
-        sysbvm_bytecodeCompiler_call(context, *compiler, gcFrame.result, gcFrame.function, gcFrame.arguments);
+        sysbvm_functionBytecodeAssembler_call(context, (*compiler)->assembler, gcFrame.result, gcFrame.function, gcFrame.arguments);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1191,10 +1215,10 @@ static sysbvm_tuple_t sysbvm_astIdentifierReferenceNode_primitiveCompileIntoByte
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astIdentifierReferenceNode_t **referenceNode = (sysbvm_astIdentifierReferenceNode_t**)node;
-    return sysbvm_bytecodeCompiler_getBindingValue(context, *compiler, (*referenceNode)->binding);
+    return sysbvm_functionBytecodeDirectCompiler_getBindingValue(context, *compiler, (*referenceNode)->binding);
 }
 
 static sysbvm_tuple_t sysbvm_astIfNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1204,7 +1228,7 @@ static sysbvm_tuple_t sysbvm_astIfNode_primitiveCompileIntoBytecode(sysbvm_conte
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astIfNode_t **ifNode = (sysbvm_astIfNode_t**)node;
     struct {
@@ -1216,34 +1240,34 @@ static sysbvm_tuple_t sysbvm_astIfNode_primitiveCompileIntoBytecode(sysbvm_conte
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.falseLabel = sysbvm_bytecodeCompilerInstruction_createLabel(context);
-    gcFrame.mergeLabel = sysbvm_bytecodeCompilerInstruction_createLabel(context);
+    gcFrame.falseLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.mergeLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
 
     // Emit the condition
     {
-        sysbvm_tuple_t condition = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*ifNode)->conditionExpression);
-        sysbvm_bytecodeCompiler_jumpIfFalse(context, *compiler, condition, gcFrame.falseLabel);
+        sysbvm_tuple_t condition = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*ifNode)->conditionExpression);
+        sysbvm_functionBytecodeAssembler_jumpIfFalse(context, (*compiler)->assembler, condition, gcFrame.falseLabel);
     }
 
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
 
     // True branch.
     if((*ifNode)->trueExpression)
-        gcFrame.trueResult = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*ifNode)->trueExpression);
+        gcFrame.trueResult = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*ifNode)->trueExpression);
     else
-        gcFrame.trueResult = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_NULL_TUPLE);
-    sysbvm_bytecodeCompiler_move(context, *compiler, gcFrame.result, gcFrame.trueResult);
-    sysbvm_bytecodeCompiler_jump(context, *compiler, gcFrame.mergeLabel);
+        gcFrame.trueResult = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_NULL_TUPLE);
+    sysbvm_functionBytecodeAssembler_move(context, (*compiler)->assembler, gcFrame.result, gcFrame.trueResult);
+    sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.mergeLabel);
 
     // False branch.
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.falseLabel);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.falseLabel);
     if((*ifNode)->falseExpression)
-        gcFrame.falseResult = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*ifNode)->falseExpression);
+        gcFrame.falseResult = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*ifNode)->falseExpression);
     else
-        gcFrame.falseResult = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_NULL_TUPLE);
-    sysbvm_bytecodeCompiler_move(context, *compiler, gcFrame.result, gcFrame.falseResult);
+        gcFrame.falseResult = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_NULL_TUPLE);
+    sysbvm_functionBytecodeAssembler_move(context, (*compiler)->assembler, gcFrame.result, gcFrame.falseResult);
 
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.mergeLabel);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.mergeLabel);
     return gcFrame.result;
 }
 
@@ -1253,12 +1277,12 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveCompileIntoBytecode(sysbvm_c
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astLambdaNode_t **lambdaNode = (sysbvm_astLambdaNode_t**)node;
 
     sysbvm_functionDefinition_t *functionDefinition = (sysbvm_functionDefinition_t*)(*lambdaNode)->functionDefinition;
-    sysbvm_tuple_t functionDefinitionOperand = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (sysbvm_tuple_t)functionDefinition);
+    sysbvm_tuple_t functionDefinitionOperand = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (sysbvm_tuple_t)functionDefinition);
     sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)functionDefinition->sourceAnalyzedDefinition;
 
     size_t captureVectorSize = sysbvm_array_getSize(sourceAnalyzedDefinition->captures);
@@ -1267,16 +1291,16 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveCompileIntoBytecode(sysbvm_c
     for(size_t i = 0; i < captureVectorSize; ++i)
     {
         sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(sourceAnalyzedDefinition->captures, i));
-        sysbvm_tuple_t captureValue = sysbvm_bytecodeCompiler_getBindingValue(context, *compiler, captureBinding);
+        sysbvm_tuple_t captureValue = sysbvm_functionBytecodeDirectCompiler_getBindingValue(context, *compiler, captureBinding);
 
         sysbvm_array_atPut(captureVector, i, captureValue);
     }
 
-    sysbvm_tuple_t result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_makeClosureWithCaptures(context, *compiler, result, functionDefinitionOperand, captureVector);
+    sysbvm_tuple_t result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    sysbvm_functionBytecodeAssembler_makeClosureWithCaptures(context, (*compiler)->assembler, result, functionDefinitionOperand, captureVector);
 
     if((*lambdaNode)->binding)
-        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*lambdaNode)->binding, result);
+        sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, *compiler, (*lambdaNode)->binding, result);
     return result;
 }
 
@@ -1286,11 +1310,11 @@ static sysbvm_tuple_t sysbvm_astLexicalBlockNode_primitiveCompileIntoBytecode(sy
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astLexicalBlockNode_t **lexicalBlockNode = (sysbvm_astLexicalBlockNode_t**)node;
 
-    return sysbvm_bytecodeCompiler_compileASTNodeWithEnvironment(context, *compiler, (*lexicalBlockNode)->body, (*lexicalBlockNode)->bodyEnvironment);
+    return sysbvm_functionBytecodeDirectCompiler_compileASTNodeWithEnvironment(context, *compiler, (*lexicalBlockNode)->body, (*lexicalBlockNode)->bodyEnvironment);
 }
 
 static sysbvm_tuple_t sysbvm_astLiteralNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1300,10 +1324,10 @@ static sysbvm_tuple_t sysbvm_astLiteralNode_primitiveCompileIntoBytecode(sysbvm_
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astLiteralNode_t **literalNode = (sysbvm_astLiteralNode_t**)node;
-    return sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*literalNode)->value);
+    return sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*literalNode)->value);
 }
 
 static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1312,28 +1336,28 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytec
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astVariableDefinitionNode_t **variableDefinitionNode = (sysbvm_astVariableDefinitionNode_t**)node;
 
     sysbvm_tuple_t value = (*variableDefinitionNode)->valueExpression
-        ? sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*variableDefinitionNode)->valueExpression)
-        : sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_NULL_TUPLE);
+        ? sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*variableDefinitionNode)->valueExpression)
+        : sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_NULL_TUPLE);
 
     bool isMutable = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMutable);
     if(isMutable)
     {
-        sysbvm_tuple_t localVariable = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-        sysbvm_bytecodeCompiler_allocaWithValue(context, *compiler, localVariable,
-            sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*variableDefinitionNode)->super.analyzedType),
+        sysbvm_tuple_t localVariable = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+        sysbvm_functionBytecodeAssembler_allocaWithValue(context, (*compiler)->assembler, localVariable,
+            sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*variableDefinitionNode)->super.analyzedType),
             value);
         
-        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, localVariable);
+        sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, localVariable);
         return localVariable;
     }
     else
     {
-        sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, value);
+        sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, value);
         return value;
     }
 }
@@ -1345,7 +1369,7 @@ static sysbvm_tuple_t sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astMakeAssociationNode_t **associationNode = (sysbvm_astMakeAssociationNode_t**)node;
     struct {
@@ -1355,14 +1379,14 @@ static sysbvm_tuple_t sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.key = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*associationNode)->key);
+    gcFrame.key = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*associationNode)->key);
     if((*associationNode)->value)
-        gcFrame.value = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*associationNode)->value);
+        gcFrame.value = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*associationNode)->value);
     else
-        gcFrame.value = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_NULL_TUPLE);
+        gcFrame.value = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_NULL_TUPLE);
 
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_makeAssociation(context, *compiler, gcFrame.result, gcFrame.key, gcFrame.value);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    sysbvm_functionBytecodeAssembler_makeAssociation(context, (*compiler)->assembler, gcFrame.result, gcFrame.key, gcFrame.value);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1375,7 +1399,7 @@ static sysbvm_tuple_t sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode(sysbv
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astMakeArrayNode_t **arrayNode = (sysbvm_astMakeArrayNode_t**)node;
     struct {
@@ -1389,12 +1413,12 @@ static sysbvm_tuple_t sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode(sysbv
     gcFrame.elements = sysbvm_array_create(context, arrayElementCountCount);
     for(size_t i = 0; i < arrayElementCountCount; ++i)
     {
-        gcFrame.element = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*arrayNode)->elements, i));
+        gcFrame.element = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*arrayNode)->elements, i));
         sysbvm_array_atPut(gcFrame.elements, i, gcFrame.element);
     }
 
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_makeArrayWithElements(context, *compiler, gcFrame.result, gcFrame.elements);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    sysbvm_functionBytecodeAssembler_makeArrayWithElements(context, (*compiler)->assembler, gcFrame.result, gcFrame.elements);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1407,7 +1431,7 @@ static sysbvm_tuple_t sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode(s
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astMakeByteArrayNode_t **arrayNode = (sysbvm_astMakeByteArrayNode_t**)node;
     struct {
@@ -1421,12 +1445,12 @@ static sysbvm_tuple_t sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode(s
     gcFrame.elements = sysbvm_array_create(context, arrayElementCountCount);
     for(size_t i = 0; i < arrayElementCountCount; ++i)
     {
-        gcFrame.element = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*arrayNode)->elements, i));
+        gcFrame.element = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*arrayNode)->elements, i));
         sysbvm_array_atPut(gcFrame.elements, i, gcFrame.element);
     }
 
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_makeByteArrayWithElements(context, *compiler, gcFrame.result, gcFrame.elements);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    sysbvm_functionBytecodeAssembler_makeByteArrayWithElements(context, (*compiler)->assembler, gcFrame.result, gcFrame.elements);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1439,7 +1463,7 @@ static sysbvm_tuple_t sysbvm_astMakeDictionaryNode_primitiveCompileIntoBytecode(
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astMakeDictionaryNode_t **dictionaryNode = (sysbvm_astMakeDictionaryNode_t**)node;
     struct {
@@ -1453,12 +1477,12 @@ static sysbvm_tuple_t sysbvm_astMakeDictionaryNode_primitiveCompileIntoBytecode(
     gcFrame.elements = sysbvm_array_create(context, arrayElementCountCount);
     for(size_t i = 0; i < arrayElementCountCount; ++i)
     {
-        gcFrame.element = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*dictionaryNode)->elements, i));
+        gcFrame.element = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*dictionaryNode)->elements, i));
         sysbvm_array_atPut(gcFrame.elements, i, gcFrame.element);
     }
 
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
-    sysbvm_bytecodeCompiler_makeDictionaryWithElements(context, *compiler, gcFrame.result, gcFrame.elements);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    sysbvm_functionBytecodeAssembler_makeDictionaryWithElements(context, (*compiler)->assembler, gcFrame.result, gcFrame.elements);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1471,7 +1495,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveCompileIntoBytecode(sys
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astMessageSendNode_t **sendNode = (sysbvm_astMessageSendNode_t**)node;
     struct {
@@ -1484,24 +1508,24 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveCompileIntoBytecode(sys
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.receiver = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*sendNode)->receiver);
+    gcFrame.receiver = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*sendNode)->receiver);
     if((*sendNode)->receiverLookupType)
-        gcFrame.receiverLookupType = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*sendNode)->receiverLookupType);
-    gcFrame.selector = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*sendNode)->selector);
+        gcFrame.receiverLookupType = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*sendNode)->receiverLookupType);
+    gcFrame.selector = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*sendNode)->selector);
 
     size_t sendArgumentCount = sysbvm_array_getSize((*sendNode)->arguments);
     gcFrame.arguments = sysbvm_array_create(context, sendArgumentCount);
     for(size_t i = 0; i < sendArgumentCount; ++i)
     {
-        gcFrame.argument = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*sendNode)->arguments, i));
+        gcFrame.argument = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, sysbvm_array_at((*sendNode)->arguments, i));
         sysbvm_array_atPut(gcFrame.arguments, i, gcFrame.argument);
     }
 
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
     if((*sendNode)->receiverLookupType)
-        sysbvm_bytecodeCompiler_sendWithLookupReceiverType(context, *compiler, gcFrame.result, gcFrame.receiverLookupType, gcFrame.selector, gcFrame.receiver, gcFrame.arguments);
+        sysbvm_functionBytecodeAssembler_sendWithLookupReceiverType(context, (*compiler)->assembler, gcFrame.result, gcFrame.receiverLookupType, gcFrame.selector, gcFrame.receiver, gcFrame.arguments);
     else
-        sysbvm_bytecodeCompiler_send(context, *compiler, gcFrame.result, gcFrame.selector, gcFrame.receiver, gcFrame.arguments);
+        sysbvm_functionBytecodeAssembler_send(context, (*compiler)->assembler, gcFrame.result, gcFrame.selector, gcFrame.receiver, gcFrame.arguments);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1514,11 +1538,11 @@ static sysbvm_tuple_t sysbvm_astReturnNode_primitiveCompileIntoBytecode(sysbvm_c
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astReturnNode_t **returnNode = (sysbvm_astReturnNode_t**)node;
-    sysbvm_tuple_t result = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*returnNode)->expression);
-    sysbvm_bytecodeCompiler_return(context, *compiler, result);
+    sysbvm_tuple_t result = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*returnNode)->expression);
+    sysbvm_functionBytecodeAssembler_return(context, (*compiler)->assembler, result);
     return result;
 }
 
@@ -1529,7 +1553,7 @@ static sysbvm_tuple_t sysbvm_astSequenceNode_primitiveCompileIntoBytecode(sysbvm
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astSequenceNode_t **sequenceNode = (sysbvm_astSequenceNode_t**)node;
     struct {
@@ -1541,12 +1565,12 @@ static sysbvm_tuple_t sysbvm_astSequenceNode_primitiveCompileIntoBytecode(sysbvm
     size_t expressionCount = sysbvm_array_getSize((*sequenceNode)->expressions);
     gcFrame.result = SYSBVM_NULL_TUPLE;
     if(expressionCount == 0)
-        gcFrame.result = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_VOID_TUPLE);
+        gcFrame.result = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
 
     for(size_t i = 0; i < expressionCount; ++i)
     {
         gcFrame.expressionNode = sysbvm_array_at((*sequenceNode)->expressions, i);
-        gcFrame.result = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, gcFrame.expressionNode);
+        gcFrame.result = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, gcFrame.expressionNode);
     }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1560,7 +1584,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecod
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astTupleSlotNamedAtNode_t **slotNamedNode = (sysbvm_astTupleSlotNamedAtNode_t**)node;
     struct {
@@ -1570,13 +1594,13 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecod
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
-    gcFrame.slot = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
+    gcFrame.tuple = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
+    gcFrame.slot = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*slotNamedNode)->boundSlot);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
     if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
-        sysbvm_bytecodeCompiler_refSlotAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+        sysbvm_functionBytecodeAssembler_refSlotAt(context, (*compiler)->assembler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
     else
-        sysbvm_bytecodeCompiler_slotAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+        sysbvm_functionBytecodeAssembler_slotAt(context, (*compiler)->assembler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1589,7 +1613,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIn
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astTupleSlotNamedReferenceAtNode_t **slotNamedNode = (sysbvm_astTupleSlotNamedReferenceAtNode_t**)node;
     struct {
@@ -1599,13 +1623,13 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIn
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
-    gcFrame.slot = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
-    gcFrame.result = sysbvm_bytecodeCompiler_newTemporary(context, *compiler);
+    gcFrame.tuple = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
+    gcFrame.slot = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*slotNamedNode)->boundSlot);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
     if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
-        sysbvm_bytecodeCompiler_refSlotReferenceAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+        sysbvm_functionBytecodeAssembler_refSlotReferenceAt(context, (*compiler)->assembler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
     else
-        sysbvm_bytecodeCompiler_slotReferenceAt(context, *compiler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
+        sysbvm_functionBytecodeAssembler_slotReferenceAt(context, (*compiler)->assembler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1618,7 +1642,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoByte
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astTupleSlotNamedAtPutNode_t **slotNamedNode = (sysbvm_astTupleSlotNamedAtPutNode_t**)node;
     struct {
@@ -1629,13 +1653,13 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoByte
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
-    gcFrame.slot = sysbvm_bytecodeCompiler_addLiteral(context, *compiler, (*slotNamedNode)->boundSlot);
-    gcFrame.value = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->valueExpression);
+    gcFrame.tuple = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
+    gcFrame.slot = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*slotNamedNode)->boundSlot);
+    gcFrame.value = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->valueExpression);
     if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
-        sysbvm_bytecodeCompiler_refSlotAtPut(context, *compiler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
+        sysbvm_functionBytecodeAssembler_refSlotAtPut(context, (*compiler)->assembler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
     else
-        sysbvm_bytecodeCompiler_slotAtPut(context, *compiler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
+        sysbvm_functionBytecodeAssembler_slotAtPut(context, (*compiler)->assembler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
@@ -1648,7 +1672,7 @@ static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astUseNamedSlotsOfNode_t **usedNamedSlots = (sysbvm_astUseNamedSlotsOfNode_t**)node;
     struct {
@@ -1656,11 +1680,11 @@ static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.tuple = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*usedNamedSlots)->tupleExpression);
-    sysbvm_bytecodeCompiler_setBindingValue(context, *compiler, (*usedNamedSlots)->binding, gcFrame.tuple);
+    gcFrame.tuple = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*usedNamedSlots)->tupleExpression);
+    sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, *compiler, (*usedNamedSlots)->binding, gcFrame.tuple);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_VOID_TUPLE);
+    return sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
 }
 
 static sysbvm_tuple_t sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -1670,7 +1694,7 @@ static sysbvm_tuple_t sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode(s
     if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
 
     sysbvm_tuple_t *node = &arguments[0];
-    sysbvm_tuple_t *compiler = &arguments[1];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
 
     sysbvm_astWhileContinueWithNode_t **whileNode = (sysbvm_astWhileContinueWithNode_t**)node;
     struct {
@@ -1682,100 +1706,102 @@ static sysbvm_tuple_t sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode(s
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
-    gcFrame.whileEntryLabel = sysbvm_bytecodeCompilerInstruction_createLabel(context);
-    gcFrame.whileBodyLabel = sysbvm_bytecodeCompilerInstruction_createLabel(context);
-    gcFrame.whileContinue = sysbvm_bytecodeCompilerInstruction_createLabel(context);
-    gcFrame.whileMergeLabel = sysbvm_bytecodeCompilerInstruction_createLabel(context);
+    gcFrame.whileEntryLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.whileBodyLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.whileContinue = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.whileMergeLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
 
     // While condition block.
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.whileEntryLabel);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.whileEntryLabel);
     if((*whileNode)->conditionExpression)
     {
-        sysbvm_tuple_t condition = sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*whileNode)->conditionExpression);
-        sysbvm_bytecodeCompiler_jumpIfFalse(context, *compiler, condition, gcFrame.whileMergeLabel);
+        sysbvm_tuple_t condition = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*whileNode)->conditionExpression);
+        sysbvm_functionBytecodeAssembler_jumpIfFalse(context, (*compiler)->assembler, condition, gcFrame.whileMergeLabel);
     }
     else
     {
-        sysbvm_bytecodeCompiler_jump(context, *compiler, gcFrame.whileBodyLabel);
+        sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.whileBodyLabel);
     }
 
     // While body.
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.whileBodyLabel);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.whileBodyLabel);
     if((*whileNode)->bodyExpression)
-        sysbvm_bytecodeCompiler_compileASTNodeWithBreakAndContinue(context, *compiler, (*whileNode)->bodyExpression, gcFrame.whileMergeLabel, gcFrame.whileContinue);
-    sysbvm_bytecodeCompiler_jump(context, *compiler, gcFrame.whileContinue);
+        sysbvm_functionBytecodeDirectCompiler_compileASTNodeWithBreakAndContinue(context, *compiler, (*whileNode)->bodyExpression, gcFrame.whileMergeLabel, gcFrame.whileContinue);
+    sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.whileContinue);
 
     // While continue
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.whileContinue);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.whileContinue);
     if((*whileNode)->continueExpression)
-        sysbvm_bytecodeCompiler_compileASTNode(context, *compiler, (*whileNode)->continueExpression);
+        sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*whileNode)->continueExpression);
 
-    sysbvm_bytecodeCompiler_jump(context, *compiler, gcFrame.whileEntryLabel);
+    sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.whileEntryLabel);
 
     // While merge
-    sysbvm_bytecodeCompiler_addInstruction(*compiler, gcFrame.whileMergeLabel);
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.whileMergeLabel);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
-    return sysbvm_bytecodeCompiler_addLiteral(context, *compiler, SYSBVM_VOID_TUPLE);
+    return sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
 }
 
-static void sysbvm_bytecodeCompiler_setupNodeCompilationFunction(sysbvm_context_t *context, sysbvm_tuple_t astNodeType, sysbvm_functionEntryPoint_t compilationFunction)
+static void sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(sysbvm_context_t *context, sysbvm_tuple_t astNodeType, sysbvm_functionEntryPoint_t compilationFunction)
 {
-    sysbvm_type_setMethodWithSelector(context, astNodeType, context->roots.astNodeCompileIntoBytecodeSelector, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, compilationFunction));
+    sysbvm_type_setMethodWithSelector(context, astNodeType, context->roots.astNodeCompileIntoBytecodeSelector, sysbvm_function_createPrimitive(context, 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | (context->roots.astNodeType == astNodeType ? SYSBVM_FUNCTION_FLAGS_ABSTRACT : SYSBVM_FUNCTION_FLAGS_OVERRIDE), NULL, compilationFunction));
 }
 
-void sysbvm_bytecodeCompiler_registerPrimitives(void)
+void sysbvm_functionBytecodeDirectCompiler_registerPrimitives(void)
 {
-    sysbvm_primitiveTable_registerFunction(sysbvm_astBreakNode_primitiveCompileIntoBytecode, "ASTBreakNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode, "ASTCoerceValueNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astContinueNode_primitiveCompileIntoBytecode, "ASTContinueNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode, "ASTDoWhileContinueWithNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astDownCastNode_primitiveCompileIntoBytecode, "ASTDownCastNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astFunctionApplicationNode_primitiveCompileIntoBytecode, "ASTFunctionApplicationNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode, "ASTIdentifierReferenceNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveCompileIntoBytecode, "ASTIfNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLambdaNode_primitiveCompileIntoBytecode, "ASTLambdaNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLexicalBlockNode_primitiveCompileIntoBytecode, "ASTLexicalBlockNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astLiteralNode_primitiveCompileIntoBytecode, "ASTLiteralNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode, "ASTVariableDefinitionNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode, "ASTMakeArrayNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode, "ASTMakeAssociationNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode, "ASTMakeByteArrayNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeDictionaryNode_primitiveCompileIntoBytecode, "ASTMakeDictionaryNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astMessageSendNode_primitiveCompileIntoBytecode, "ASTMessageSendNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astReturnNode_primitiveCompileIntoBytecode, "ASTReturnNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astSequenceNode_primitiveCompileIntoBytecode, "ASTSequenceNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtPutNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedReferenceAtNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode, "ASTUseNamedSlotsOfNode::compileIntoBytecodeWith:");
-    sysbvm_primitiveTable_registerFunction(sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode, "ASTWhileNodeNode::compileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astNode_primitiveCompileIntoBytecode, "ASTNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astBreakNode_primitiveCompileIntoBytecode, "ASTBreakNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode, "ASTCoerceValueNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astContinueNode_primitiveCompileIntoBytecode, "ASTContinueNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode, "ASTDoWhileContinueWithNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astDownCastNode_primitiveCompileIntoBytecode, "ASTDownCastNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astFunctionApplicationNode_primitiveCompileIntoBytecode, "ASTFunctionApplicationNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode, "ASTIdentifierReferenceNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astIfNode_primitiveCompileIntoBytecode, "ASTIfNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astLambdaNode_primitiveCompileIntoBytecode, "ASTLambdaNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astLexicalBlockNode_primitiveCompileIntoBytecode, "ASTLexicalBlockNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astLiteralNode_primitiveCompileIntoBytecode, "ASTLiteralNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode, "ASTVariableDefinitionNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode, "ASTMakeArrayNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode, "ASTMakeAssociationNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode, "ASTMakeByteArrayNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astMakeDictionaryNode_primitiveCompileIntoBytecode, "ASTMakeDictionaryNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astMessageSendNode_primitiveCompileIntoBytecode, "ASTMessageSendNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astReturnNode_primitiveCompileIntoBytecode, "ASTReturnNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astSequenceNode_primitiveCompileIntoBytecode, "ASTSequenceNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtPutNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedReferenceAtNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode, "ASTUseNamedSlotsOfNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode, "ASTWhileNodeNode::doCompileIntoBytecodeWith:");
 }
 
-void sysbvm_bytecodeCompiler_setupPrimitives(sysbvm_context_t *context)
+void sysbvm_functionBytecodeDirectCompiler_setupPrimitives(sysbvm_context_t *context)
 {
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astBreakNodeType, &sysbvm_astBreakNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astCoerceValueNodeType, &sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astContinueNodeType, &sysbvm_astContinueNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astDoWhileContinueWithNodeType, &sysbvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astDownCastNodeType, &sysbvm_astDownCastNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astFunctionApplicationNodeType, &sysbvm_astFunctionApplicationNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astIdentifierReferenceNodeType, &sysbvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astIfNodeType, &sysbvm_astIfNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astLambdaNodeType, &sysbvm_astLambdaNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astLexicalBlockNodeType, &sysbvm_astLexicalBlockNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astLiteralNodeType, &sysbvm_astLiteralNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astVariableDefinitionNodeType, &sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMakeArrayNodeType, &sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMakeAssociationNodeType, &sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMakeByteArrayNodeType, &sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMakeDictionaryNodeType, &sysbvm_astMakeDictionaryNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astMessageSendNodeType, &sysbvm_astMessageSendNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astReturnNodeType, &sysbvm_astReturnNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astSequenceNodeType, &sysbvm_astSequenceNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtNodeType, &sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtPutNodeType, &sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedReferenceAtNodeType, &sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astUseNamedSlotsOfNodeType, &sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode);
-    sysbvm_bytecodeCompiler_setupNodeCompilationFunction(context, context->roots.astWhileContinueWithNodeType, &sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astNodeType, &sysbvm_astNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astBreakNodeType, &sysbvm_astBreakNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astCoerceValueNodeType, &sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astContinueNodeType, &sysbvm_astContinueNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astDoWhileContinueWithNodeType, &sysbvm_astDoWhileContinueWithNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astDownCastNodeType, &sysbvm_astDownCastNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astFunctionApplicationNodeType, &sysbvm_astFunctionApplicationNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astIdentifierReferenceNodeType, &sysbvm_astIdentifierReferenceNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astIfNodeType, &sysbvm_astIfNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astLambdaNodeType, &sysbvm_astLambdaNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astLexicalBlockNodeType, &sysbvm_astLexicalBlockNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astLiteralNodeType, &sysbvm_astLiteralNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astVariableDefinitionNodeType, &sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astMakeArrayNodeType, &sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astMakeAssociationNodeType, &sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astMakeByteArrayNodeType, &sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astMakeDictionaryNodeType, &sysbvm_astMakeDictionaryNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astMessageSendNodeType, &sysbvm_astMessageSendNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astReturnNodeType, &sysbvm_astReturnNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astSequenceNodeType, &sysbvm_astSequenceNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtNodeType, &sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtPutNodeType, &sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedReferenceAtNodeType, &sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astUseNamedSlotsOfNodeType, &sysbvm_astUseNamedSlotsOfNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astWhileContinueWithNodeType, &sysbvm_astWhileContinueNode_primitiveCompileIntoBytecode);
 }

@@ -1256,7 +1256,7 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
 
     (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
     (*functionDefinition)->nativeCodeDefinition = SYSBVM_NULL_TUPLE;
-    sysbvm_bytecodeCompiler_compileFunctionDefinition(context, (*functionDefinition));
+    sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(context, (*functionDefinition));
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);

@@ -382,7 +382,7 @@ Type
         self instanceAlignment: 0sz.
     } makeFinal withEagerAnalysis;
     withSelector: #addTypeSlot: addMethod: {:(Type)self :(TypeSlot)extraSlot :: Void |
-        if: self totalSlotCount ~~ nil then: (self error: "Cannot add type slot when the total slot count has already been computed").
+        if: self totalSlotCount ~~ nil then: (self error: ((("Cannot add type slot " -- extraSlot printString) -- " into ") -- self printString) -- " when the total slot count has already been computed").
         if: self pendingSlots == nil then: (self pendingSlots: OrderedCollection new).
 
         self invalidateLayout.

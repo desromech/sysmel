@@ -309,10 +309,13 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t modificationForbiddenType;
     sysbvm_tuple_t messageNotUnderstoodType;
 
-    sysbvm_tuple_t bytecodeCompilerType;
-    sysbvm_tuple_t bytecodeCompilerInstructionOperandType;
-    sysbvm_tuple_t bytecodeCompilerInstructionType;
-    sysbvm_tuple_t bytecodeCompilerInstructionVectorOperandType;
+    sysbvm_tuple_t functionBytecodeAssembler;
+    sysbvm_tuple_t functionBytecodeAssemblerAbstractOperand;
+    sysbvm_tuple_t functionBytecodeAssemblerAbstractInstruction;
+    sysbvm_tuple_t functionBytecodeAssemblerLabel;
+    sysbvm_tuple_t functionBytecodeAssemblerInstruction;
+    sysbvm_tuple_t functionBytecodeAssemblerVectorOperand;
+    sysbvm_tuple_t functionBytecodeDirectCompiler;
 
     sysbvm_tuple_t globalNamespace;
     sysbvm_tuple_t defaultAnalysisQueueValueBox;

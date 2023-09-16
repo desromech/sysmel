@@ -1,31 +1,9 @@
-public class FunctionBytecodeAssemblerAbstractOperand superclass: Object.
-public class FunctionBytecodeAssemblerAbstractInstruction superclass: FunctionBytecodeAssemblerAbstractOperand.
-public final class FunctionBytecodeAssembler superclass: Object.
-
 FunctionBytecodeAssemblerAbstractOperand definition: {
-    public field name => Symbol.
-
     public abstract method encodedValueForInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> Int16
         := self subclassResponsibility.
 }.
 
-public class FunctionBytecodeAssemblerOperand superclass: FunctionBytecodeAssemblerAbstractOperand; definition: {
-    public field index => Int16.
-    public field vectorType => Int16.
-
-    public field hasAllocaDestination => Boolean.
-    public field hasNonAllocaDestination => Boolean.
-    public field hasLoadStoreUsage => Boolean.
-    public field hasNonLoadStoreUsage => Boolean.
-
-    public override method initialize => Void := {
-        super initialize.
-        self hasAllocaDestination: false.
-        self hasNonAllocaDestination: false.
-        self hasLoadStoreUsage: false.
-        self hasNonLoadStoreUsage: false.
-    }.
-
+FunctionBytecodeAssemblerVectorOperand definition: {
     public method hasDestinationUsage => Boolean
         := self hasAllocaDestination || self hasNonAllocaDestination.
 
@@ -46,14 +24,6 @@ public class FunctionBytecodeAssemblerOperand superclass: FunctionBytecodeAssemb
 }.
 
 FunctionBytecodeAssemblerAbstractInstruction definition: {
-    public field pc => Size.
-    public field previousInstruction => FunctionBytecodeAssemblerAbstractInstruction.
-    public field nextInstruction => FunctionBytecodeAssemblerAbstractInstruction.
-
-    public field sourcePosition => SourcePosition.
-    public field sourceEnvironment => Environment.
-    public field sourceASTNode => ASTNode.
-
     public override method initialize => Void := {
         self pc: 0sz
     }.
@@ -78,13 +48,10 @@ FunctionBytecodeAssemblerAbstractInstruction definition: {
     public virtual method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {}.
 }.
 
-public final class FunctionBytecodeAssemblerLabel superclass: FunctionBytecodeAssemblerAbstractInstruction; definition: {
+FunctionBytecodeAssemblerLabel definition: {
 }.
 
-public final class FunctionBytecodeAssemblerInstruction superclass: FunctionBytecodeAssemblerAbstractInstruction; definition: {
-    public field standardOpcode => UInt8.
-    public field operands => Array.
-
+FunctionBytecodeAssemblerInstruction definition: {
     public override method initialize => Void := {
         super initialize.
         self operands: #()
@@ -103,7 +70,7 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self; nextPutAll: (FunctionBytecode::OpcodeNameDictionary at: self standardOpcode).
-        self operands do: {:(FunctionBytecodeAssemblerOperand)operand :: Void |
+        self operands do: {:(FunctionBytecodeAssemblerVectorOperand)operand :: Void |
             stream print: operand
         }
     }.
@@ -223,20 +190,6 @@ public final class FunctionBytecodeAssemblerInstruction superclass: FunctionByte
 }.
 
 FunctionBytecodeAssembler definition: {
-    public field arguments => Array.
-    public field captures => Array.
-    public field literals => OrderedCollection.
-    public field literalDictionary => IdentityDictionary.
-    public field temporaries => OrderedCollection.
-    public field usedTemporaryCount => Size.
-
-    public field firstInstruction => FunctionBytecodeAssemblerAbstractInstruction.
-    public field lastInstruction => FunctionBytecodeAssemblerAbstractInstruction.
-
-    public field sourcePosition => SourcePosition.
-    public field sourceEnvironment => Environment.
-    public field sourceASTNode => ASTNode.
-
     public override method initialize => Void := {
         self arguments: #().
         self captures: #().
@@ -248,12 +201,12 @@ FunctionBytecodeAssembler definition: {
 
     public method addInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> instruction class := {
         let lastInstruction := self lastInstruction.
-        instruction previousInstruction: lastInstruction.
+        instruction previous: lastInstruction.
 
         if: lastInstruction == nil then: {
             self firstInstruction: instruction.
         } else: {
-            lastInstruction nextInstruction: instruction.
+            lastInstruction next: instruction.
         }.
         
         self lastInstruction: instruction.
@@ -269,37 +222,37 @@ FunctionBytecodeAssembler definition: {
         let position mutable := self firstInstruction.
 
         while: position isNotNil do: {
-            let nextPosition := position nextInstruction.
+            let nextPosition := position next.
             aBlock(position).
             position := nextPosition
         }
     }.
 
     public method removeInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> Void := {
-        let previous := instruction previousInstruction.
-        let next := instruction nextInstruction.
+        let previous := instruction previous.
+        let next := instruction next.
 
         if: previous == nil then: {
             self firstInstruction: next.
         } else: {
-            previous nextInstruction: next
+            previous next: next
         }.
 
         if: next == nil then: {
             self lastInstruction: previous.
         } else: {
-            next previousInstruction: previous
+            next previous: previous
         }.
     }.
 
-    public method makeArgumentWithIndex: (argumentIndex: Size) ::=> FunctionBytecodeAssemblerOperand
-        := FunctionBytecodeAssemblerOperand new
+    public method makeArgumentWithIndex: (argumentIndex: Size) ::=> FunctionBytecodeAssemblerVectorOperand
+        := FunctionBytecodeAssemblerVectorOperand new
             index: argumentIndex asInt16;
             vectorType: FunctionBytecode::OperandVectorName::Arguments;
             yourself.
 
     public method argumentNames: (argumentNames: Array) ::=> Array := {
-        let arguments := (argumentNames collectWithIndex: {:(Symbol)name :(Size)index :: FunctionBytecodeAssemblerOperand |
+        let arguments := (argumentNames collectWithIndex: {:(Symbol)name :(Size)index :: FunctionBytecodeAssemblerVectorOperand |
             (self makeArgumentWithIndex: index)
                 name: name;
                 yourself
@@ -308,14 +261,14 @@ FunctionBytecodeAssembler definition: {
         arguments
     }.
 
-    public method makeCaptureWithIndex: (captureIndex: Size) ::=> FunctionBytecodeAssemblerOperand
-        := FunctionBytecodeAssemblerOperand new
+    public method makeCaptureWithIndex: (captureIndex: Size) ::=> FunctionBytecodeAssemblerVectorOperand
+        := FunctionBytecodeAssemblerVectorOperand new
             index: captureIndex asInt16;
             vectorType: FunctionBytecode::OperandVectorName::Captures;
             yourself.
 
     public method captureNames: (captureNames: Array) ::=> Array := {
-        let captures := (captureNames collectWithIndex: {:(Symbol)name :(Size)index :: FunctionBytecodeAssemblerOperand |
+        let captures := (captureNames collectWithIndex: {:(Symbol)name :(Size)index :: FunctionBytecodeAssemblerVectorOperand |
             (self makeCaptureWithIndex: index)
                 name: name;
                 yourself
@@ -324,10 +277,10 @@ FunctionBytecodeAssembler definition: {
         self captures
     }.
 
-    public method literal: literalValue ::=> FunctionBytecodeAssemblerOperand := {
+    public method literal: literalValue ::=> FunctionBytecodeAssemblerVectorOperand := {
         (self literalDictionary atOrNil: literalValue) ifNil: {
             let newLiteralIndex := self literals size asInt16.
-            let operand := FunctionBytecodeAssemblerOperand new
+            let operand := FunctionBytecodeAssemblerVectorOperand new
                 index: newLiteralIndex;
                 vectorType: FunctionBytecode::OperandVectorName::Literal;
                 yourself.
@@ -337,8 +290,8 @@ FunctionBytecodeAssembler definition: {
         }
     }.
 
-    public method temporary: (name: Symbol) ::=> FunctionBytecodeAssemblerOperand := {
-        let operand := FunctionBytecodeAssemblerOperand new
+    public method temporary: (name: Symbol) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let operand := FunctionBytecodeAssemblerVectorOperand new
             index: self temporaries size asInt16;
             vectorType: FunctionBytecode::OperandVectorName::Local;
             yourself.
@@ -373,19 +326,19 @@ FunctionBytecodeAssembler definition: {
         result
     }.
 
-    public method allocaPointerOfType: (pointerLikeType: FunctionBytecodeAssemblerOperand) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method allocaPointerOfType: (pointerLikeType: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Alloca;
             operands: (Array with: result with: pointerLikeType);
             yourself).
 
-    public method allocaWithValue: (value: FunctionBytecodeAssemblerOperand) inPointerOfType: (pointerLikeType: FunctionBytecodeAssemblerOperand) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method allocaWithValue: (value: FunctionBytecodeAssemblerVectorOperand) inPointerOfType: (pointerLikeType: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::AllocaWithValue;
             operands: (Array with: result with: pointerLikeType with: value);
             yourself).
 
-    public method call: (function: FunctionBytecodeAssemblerOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method call: (function: FunctionBytecodeAssemblerVectorOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: arguments size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::Call;
@@ -393,7 +346,7 @@ FunctionBytecodeAssembler definition: {
                     yourself)
     }.
 
-    public method uncheckedCall: (function: FunctionBytecodeAssemblerOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method uncheckedCall: (function: FunctionBytecodeAssemblerVectorOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: arguments size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::UncheckedCall;
@@ -401,25 +354,25 @@ FunctionBytecodeAssembler definition: {
                     yourself)
     }.
 
-    public method coerceValue: (value: FunctionBytecodeAssemblerOperand) toType: (targetType: FunctionBytecodeAssemblerOperand) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method coerceValue: (value: FunctionBytecodeAssemblerVectorOperand) toType: (targetType: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::CoerceValue;
             operands: (Array with: result with: targetType with: value);
             yourself).
 
-    public method makeAssociationWithKey: (key: FunctionBytecodeAssemblerOperand) value: (value: FunctionBytecodeAssemblerOperand) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method makeAssociationWithKey: (key: FunctionBytecodeAssemblerVectorOperand) value: (value: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::MakeAssociation;
             operands: (Array with: result with: key with: value);
             yourself).
 
-    public method makeClosure: (functionDefinition: FunctionBytecodeAssemblerOperand) withCaptureVector: (captureVector: FunctionBytecodeAssemblerOperand) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method makeClosure: (functionDefinition: FunctionBytecodeAssemblerVectorOperand) withCaptureVector: (captureVector: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::MakeClosureWithVector;
             operands: (Array with: result with: functionDefinition with: captureVector);
             yourself).
 
-    public method makeClosure: (functionDefinition: FunctionBytecodeAssemblerOperand) withCaptures: (captures: Array) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method makeClosure: (functionDefinition: FunctionBytecodeAssemblerVectorOperand) withCaptures: (captures: Array) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: captures size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::MakeClosureWithCaptures;
@@ -438,7 +391,7 @@ FunctionBytecodeAssembler definition: {
     public method beginLabelNamed: (name: Symbol) ::=> FunctionBytecodeAssemblerLabel
         := self beginLabel: (self label: name).
 
-    public method loadPointer: (pointer: FunctionBytecodeAssemblerOperand) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method loadPointer: (pointer: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Load;
             operands: (Array with: result with: pointer);
@@ -450,19 +403,19 @@ FunctionBytecodeAssembler definition: {
             operands: (Array with: destination);
             yourself).
 
-    public method jumpTo: (destination: FunctionBytecodeAssemblerAbstractInstruction) ifTrue: (condition: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method jumpTo: (destination: FunctionBytecodeAssemblerAbstractInstruction) ifTrue: (condition: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::JumpIfTrue;
             operands: (Array with: condition with: destination);
             yourself).
 
-    public method jumpTo: (destination: FunctionBytecodeAssemblerAbstractInstruction) ifFalse: (condition: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method jumpTo: (destination: FunctionBytecodeAssemblerAbstractInstruction) ifFalse: (condition: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::JumpIfFalse;
             operands: (Array with: condition with: destination);
             yourself).
 
-    public method makeArrayWithElements: (elements: Array) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method makeArrayWithElements: (elements: Array) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: elements size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::MakeArrayWithElements;
@@ -470,7 +423,7 @@ FunctionBytecodeAssembler definition: {
                     yourself)
     }.
 
-    public method makeByteArrayWithElements: (elements: Array) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method makeByteArrayWithElements: (elements: Array) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: elements size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::MakeByteArrayWithElements;
@@ -478,7 +431,7 @@ FunctionBytecodeAssembler definition: {
                     yourself)
     }.
 
-    public method makeDictionaryWithElements: (elements: Array) in: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method makeDictionaryWithElements: (elements: Array) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: elements size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::MakeDictionaryWithElements;
@@ -486,7 +439,7 @@ FunctionBytecodeAssembler definition: {
                     yourself)
     }.
 
-    public method move: (source: FunctionBytecodeAssemblerOperand) into: (destination: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method move: (source: FunctionBytecodeAssemblerVectorOperand) into: (destination: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Move;
             operands: (Array with: destination with: source);
@@ -497,13 +450,13 @@ FunctionBytecodeAssembler definition: {
             standardOpcode: FunctionBytecode::Opcode::Nop;
             yourself).
 
-    public method return: (operand: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method return: (operand: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Return;
             operands: (Array with: operand);
             yourself).
 
-    public method sendTo: (receiver: FunctionBytecodeAssemblerOperand) selector: (selector: FunctionBytecodeAssemblerOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method sendTo: (receiver: FunctionBytecodeAssemblerVectorOperand) selector: (selector: FunctionBytecodeAssemblerVectorOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: arguments size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::Send;
@@ -511,7 +464,7 @@ FunctionBytecodeAssembler definition: {
                     yourself)
     }.
 
-    public method sendTo: (receiver: FunctionBytecodeAssemblerOperand) receiverLookupType: (receiverLookupType: FunctionBytecodeAssemblerOperand) selector: (selector: FunctionBytecodeAssemblerOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction := {
+    public method sendTo: (receiver: FunctionBytecodeAssemblerVectorOperand) receiverLookupType: (receiverLookupType: FunctionBytecodeAssemblerVectorOperand) selector: (selector: FunctionBytecodeAssemblerVectorOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: arguments size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new
                     standardOpcode: FunctionBytecode::Opcode::SendWithLookup;
@@ -519,7 +472,7 @@ FunctionBytecodeAssembler definition: {
                     yourself)
     }.
 
-    public method storeValue: (value: FunctionBytecodeAssemblerOperand) inPointer: (pointer: FunctionBytecodeAssemblerOperand) ::=> FunctionBytecodeAssemblerInstruction
+    public method storeValue: (value: FunctionBytecodeAssemblerVectorOperand) inPointer: (pointer: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Store;
             operands: (Array with: pointer with: value);
@@ -541,7 +494,7 @@ FunctionBytecodeAssembler definition: {
 
         ## Optimize out the temporaries that are not used.
         let usedTemporaryCount mutable := 0i16.
-        self temporaries do: {:(FunctionBytecodeAssemblerOperand)each :: Void |
+        self temporaries do: {:(FunctionBytecodeAssemblerVectorOperand)each :: Void |
             if: each hasNonDestinationUsage then: {
                 if: each hasDestinationUsage then: {
                     each index: usedTemporaryCount.
@@ -561,7 +514,7 @@ FunctionBytecodeAssembler definition: {
 
     public method optimizeJumps => Void := {
         self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each :: Void  |
-            if: each isBranchInstruction && (each destinationInstruction == each nextInstruction) then: {
+            if: each isBranchInstruction && (each destinationInstruction == each next) then: {
                 self removeInstruction: each
             }
         }.

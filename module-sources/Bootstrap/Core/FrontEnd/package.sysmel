@@ -2,7 +2,6 @@ loadSourceNamed: "AnalysisQueue.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Function.sysmel".
 loadSourceNamed: "Environment.sysmel".
-loadSourceNamed: "BootstrapStubs.sysmel".
 loadSourceNamed: "SemanticAnalyzer.sysmel".
 AnalysisQueue current waitPendingAnalysis.
 loadSourceNamed: "MonadicParser.sysmel".
