@@ -85,6 +85,10 @@ HIRValue definition: {
         users ifNotNil: {:users | users do: aBlock }
     }.
 
+    public method usersCopyDo: (aBlock: (HIRValue) => Void) ::=> Void := {
+        users ifNotNil: {:users | users copy do: aBlock }
+    }.
+
     public method deleteAllDebugUsers => Void := {
         users ifNotNil: {
             users copy do: {:(HIRSetDebugValueForBindingInstruction)user :: Void |
@@ -1562,6 +1566,22 @@ HIRInstruction definition: {
         := users isNotNil && (users anySatisfy: {:(HIRValue)user :: Boolean |
             user isEscapingValue: self
         }).
+
+    public method isDominatedByInstruction: (instruction: HIRInstruction) ::=> Boolean := {
+        instruction parent ifNil: {
+            return: false
+        }.
+
+        self parent ifNil: {
+            return: false
+        }.
+
+        self parent == instruction parent ifTrue: {
+            instruction localValueIndex <= self localValueIndex
+        } ifFalse: {
+            instruction parent dominates: self parent
+        }
+    }.
 
     public override method postCopy => Void := {
         super postCopy.

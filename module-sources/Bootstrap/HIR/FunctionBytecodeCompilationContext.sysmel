@@ -81,6 +81,9 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
 
             self compileInstructionWithOpcode: opcode operands: operands pc: pc nextPC: nextPC
         }.
+
+        ## Simplify the temporaries.
+        HIRPromoteSSAAllocaPass runInFunctionDefinition: ssaFunction
     }.
 
     public method storeInTemporary: (operand: Int16) value: (value: HIRValue) ::=> Void := {

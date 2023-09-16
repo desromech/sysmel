@@ -5,6 +5,7 @@ loadSourceNamed: "FunctionASTCompilationContext.sysmel".
 
 loadSourceNamed: "TransformationPasses.sysmel".
 loadSourceNamed: "PromoteAllocaPass.sysmel".
+loadSourceNamed: "PromoteSSAAllocaPass.sysmel".
 loadSourceNamed: "ConstantPropagationPass.sysmel".
 loadSourceNamed: "InliningPass.sysmel".
 loadSourceNamed: "DestroySSAPass.sysmel".
