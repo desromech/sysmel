@@ -50,6 +50,11 @@ SYSBVM_API size_t sysbvm_orderedCollection_getCapacity(sysbvm_tuple_t orderedCol
 SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_at(sysbvm_tuple_t orderedCollection, size_t index);
 
 /**
+ * Sets the array list element at the specified index.
+ */
+SYSBVM_API void sysbvm_orderedCollection_atPut(sysbvm_tuple_t orderedCollection, size_t index, sysbvm_tuple_t value);
+
+/**
  * Does it include the specified element
  */
 SYSBVM_API bool sysbvm_orderedCollection_identityIncludes(sysbvm_tuple_t orderedCollection, sysbvm_tuple_t element);

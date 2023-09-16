@@ -20,14 +20,28 @@ printLine(module fullPrintString).
 *#
 
 #*{
-printLine((ObjectModel::applyDirect16 ensureAnalysis; definition) bytecode fullPrintString).
+let function := Elf64::Header >> #initialize.##Namespace >> #basicInitialize.
+printLine((function ensureAnalysis; definition) bytecode fullPrintString).
 
-let module := ObjectModel::applyDirect16 asHIRModuleFromBytecode.
+let module := function asHIRModule.
 printLine(module fullPrintString).
-}
-*#
+
+module performStandardOptimizations.
+printLine(module fullPrintString).
+}*#
 
 {
+let function := Elf64::Header >> #initialize .##Namespace >> #basicInitialize.
+printLine((function ensureAnalysis; definition) bytecode fullPrintString).
+
+let module := function asHIRModuleFromBytecodeForTarget: AsmCompilationTarget x86_64 asMirCompilationTarget asHIRCompilationTarget.
+printLine(module fullPrintString).
+
+module performStandardOptimizations.
+printLine(module fullPrintString).
+}
+
+#*{
 public struct MyStruct definition: {
     public field x => Int32.
     public field y => Int32.
@@ -43,3 +57,4 @@ printLine((myStruct ensureAnalysis; definition) bytecode fullPrintString).
 let module := myStruct asHIRModuleFromBytecode.
 printLine(module fullPrintString).
 }.
+*#

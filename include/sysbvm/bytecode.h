@@ -22,6 +22,7 @@ typedef enum sysbvm_opcode_e
     SYSBVM_OPCODE_ALLOCA = 0x20, /// <Result> := alloca <Pointer Type>
     SYSBVM_OPCODE_MOVE, /// <Destination> := move <Source>
     SYSBVM_OPCODE_LOAD, /// <Destination> := load <PointerLikeValue>
+    SYSBVM_OPCODE_LOAD_SYMBOL_VALUE_BINDING, /// <Destination> := loadSymbolValueBinding <SymbolValueBinding>
     SYSBVM_OPCODE_STORE, /// store <PointerLikeValue> <Value>
     SYSBVM_OPCODE_JUMP_IF_TRUE, /// jumpIfTrue <Condition> <Destination Relative PC>
     SYSBVM_OPCODE_JUMP_IF_FALSE, /// jumpIfFalse <Condition> <Destination Relative PC>

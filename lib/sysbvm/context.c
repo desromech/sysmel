@@ -1249,6 +1249,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
         "hasLoadStoreUsage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "hasNonLoadStoreUsage", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        
+        "allocaPointerRankIsLowered", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
 
         "optimizationTupleOperand", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         "optimizationTypeSlotOperand", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,

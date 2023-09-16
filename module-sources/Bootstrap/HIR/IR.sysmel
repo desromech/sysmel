@@ -926,6 +926,8 @@ HIRBasicBlock definition: {
     public field dfsParent => HIRBasicBlock.
     public field dfsIndex => UInt32.
 
+    public field sourcePC.
+
     public field semiDominator => HIRBasicBlock.
     public field dominanceAncestor => HIRBasicBlock.
     private field dominanceAncestorWithLowestSemiDominator => HIRBasicBlock.
@@ -1394,7 +1396,12 @@ HIRBasicBlock definition: {
     }.
 
     public method replacePredecessor: (oldPredecessor: HIRBasicBlock) with: (newPredecessor: HIRBasicBlock) ::=> Void := {
-        self predecessors at: (self predecessors indexOf: oldPredecessor) asSize put: newPredecessor.
+        let predecessorIndex := self predecessors indexOf: oldPredecessor. 
+        predecessorIndex < 0iptr ifTrue: {
+            return: void
+        }.
+
+        self predecessors at: predecessorIndex asSize put: newPredecessor.
         
         self phiInstructionsDo: {:(HIRPhiInstruction)each :: Void |
             each replaceIncomingBlock: oldPredecessor with: newPredecessor
@@ -1507,6 +1514,13 @@ HIRBasicBlock definition: {
 
         super replaceWith: replacement.
         self parent ifNotNil: {:parent :: Void | parent removeBasicBlock: self }
+    }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        super printOn: stream.
+        sourcePC ifNotNil: {
+            stream nextPut: '-'c8; print: sourcePC
+        }
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -2062,8 +2076,13 @@ public final class HIRTypeSlotAtPutInstruction superclass: HIRInstruction; defin
 
     public override method isTypeSlotAtPutInstruction => Boolean := true.
 
+    public override method initialize => Void := {
+        super initialize.
+        type := Void
+    }.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
-        stream print: self; nextPutAll: " typedSlotOf "; print: self tuple;
+        stream nextPutAll: "typedSlotOf "; print: self tuple;
             nextPutAll: " at "; print: self typeSlot;
             nextPutAll: " put "; print: self value
     }.
@@ -3049,7 +3068,6 @@ HIRInstructionBuilder definition: {
             tuple: tuple;
             typeSlot: typeSlot;
             value: value;
-            type: Void;
             registerInUsedValues;
             yourself).
 

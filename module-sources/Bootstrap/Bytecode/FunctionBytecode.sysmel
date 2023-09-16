@@ -35,6 +35,7 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::Alloca : #alloca.
     FunctionBytecode::Opcode::Move : #move.
     FunctionBytecode::Opcode::Load : #load.
+    FunctionBytecode::Opcode::LoadSymbolValueBinding : #loadSymbolValueBinding.
     FunctionBytecode::Opcode::Store : #store.
     FunctionBytecode::Opcode::JumpIfTrue : #jumpIfTrue.
     FunctionBytecode::Opcode::JumpIfFalse : #jumpIfFalse.
@@ -75,6 +76,7 @@ let opcodeDestinationOperandCount := #{
     FunctionBytecode::Opcode::Alloca : 1sz.
     FunctionBytecode::Opcode::Move : 1sz.
     FunctionBytecode::Opcode::Load : 1sz.
+    FunctionBytecode::Opcode::LoadSymbolValueBinding : 1sz.
     FunctionBytecode::Opcode::Store : 0sz.
     FunctionBytecode::Opcode::JumpIfTrue : 0sz.
     FunctionBytecode::Opcode::JumpIfFalse : 0sz.
@@ -191,6 +193,7 @@ FunctionBytecode definition: {
             nextPutAll: "captureVectorSize: "; print: self captureVectorSize; nl;
             nextPutAll: "localVectorSize: "; print: self localVectorSize; nl;
             nextPutAll: "literalVector: "; print: self literalVector; nl;
+            nextPutAll: "temporaryTypes: "; print: self temporaryTypes; nl;
             nextPutAll: "instructions: ["; nl.
 
         self decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :(Size)pc :(Size)nextPC :: Void |

@@ -53,6 +53,8 @@ typedef struct sysbvm_functionBytecodeAssemblerVectorOperand_s
 
     sysbvm_tuple_t hasLoadStoreUsage;
     sysbvm_tuple_t hasNonLoadStoreUsage;
+    
+    sysbvm_tuple_t allocaPointerRankIsLowered;
 
     sysbvm_tuple_t optimizationTupleOperand;
     sysbvm_tuple_t optimizationTypeSlotOperand;
@@ -209,6 +211,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jumpIfFalse(sysbvm_co
  * Load instruction.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_load(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t pointer);
+
+/**
+ * Load symbol value binding instruction.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_loadSymbolValueBinding(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t symbolValueBinding);
 
 /**
  * Make array with elements.

@@ -35,6 +35,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssemblerVectorOperand_create(s
     result->hasNonSlotReferenceAtDestination = SYSBVM_FALSE_TUPLE;
     result->hasLoadStoreUsage = SYSBVM_FALSE_TUPLE;
     result->hasNonLoadStoreUsage = SYSBVM_FALSE_TUPLE;
+    result->allocaPointerRankIsLowered = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
 }
 
@@ -211,7 +212,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_getBindingValue(
     {
         sysbvm_symbolTupleSlotBinding_t *bindingObject = (sysbvm_symbolTupleSlotBinding_t*)binding;
         sysbvm_tuple_t tupleValue = sysbvm_functionBytecodeDirectCompiler_getBindingValue(context, compiler, bindingObject->tupleBinding);
-        sysbvm_tuple_t reference = sysbvm_functionBytecodeAssembler_newTemporary(context, compiler->assembler, sysbvm_typeSlot_getType(bindingObject->typeSlot));
+        sysbvm_tuple_t reference = sysbvm_functionBytecodeAssembler_newTemporary(context, compiler->assembler, sysbvm_typeSlot_getValidReferenceType(context, bindingObject->typeSlot));
 
         sysbvm_symbolBinding_t *tupleBindingObject = (sysbvm_symbolBinding_t*)bindingObject->tupleBinding;
 
@@ -223,7 +224,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_getBindingValue(
     }
 
     if(sysbvm_symbolBinding_isValue(context, binding))
-        return sysbvm_functionBytecodeAssembler_addLiteral(context, compiler->assembler, sysbvm_symbolValueBinding_getValue(binding));
+    {
+        sysbvm_tuple_t valueTemp = sysbvm_functionBytecodeAssembler_newTemporary(context, compiler->assembler, sysbvm_symbolBinding_getType(binding));
+        sysbvm_tuple_t bindingLiteral = sysbvm_functionBytecodeAssembler_addLiteral(context, compiler->assembler, binding);
+        sysbvm_functionBytecodeAssembler_loadSymbolValueBinding(context, compiler->assembler, valueTemp, bindingLiteral);
+        return valueTemp;
+    }
 
     sysbvm_tuple_t value = SYSBVM_NULL_TUPLE;
     sysbvm_functionBytecodeDirectCompiler_t *compilerObject = (sysbvm_functionBytecodeDirectCompiler_t*)compiler;
@@ -318,6 +324,17 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_load(sysbvm_context_t
     sysbvm_array_atPut(operands, 1, pointer);
 
     sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_LOAD, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
+    return instruction;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_loadSymbolValueBinding(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t symbolValueBinding)
+{
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
+    sysbvm_array_atPut(operands, 0, destination);
+    sysbvm_array_atPut(operands, 1, symbolValueBinding);
+
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_LOAD_SYMBOL_VALUE_BINDING, operands);
     sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
     return instruction;
 }
@@ -772,8 +789,31 @@ static bool sysbvm_functionBytecodeAssembler_isLocalOnlyReferenceAt(sysbvm_tuple
         (hasLoadStoreUsage && !hasNonLoadStoreUsage);
 }
 
+static void sysbvm_functionBytecodeAssembler_lowerTemporaryPointerRank(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t operand)
+{
+    if(sysbvm_tuple_getType(context, operand) != context->roots.functionBytecodeAssemblerVectorOperand)
+        return;
+
+    sysbvm_functionBytecodeAssemblerVectorOperand_t *vectorOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)operand;
+    if(sysbvm_tuple_boolean_decode(vectorOperand->allocaPointerRankIsLowered))
+        return;
+
+    int16_t index = sysbvm_tuple_int16_decode(vectorOperand->index);
+    int16_t vectorType = sysbvm_tuple_int16_decode(vectorOperand->vectorType);
+    if(vectorType != SYSBVM_OPERAND_VECTOR_LOCAL || index < 0 || (size_t)index >= sysbvm_orderedCollection_getSize(assembler->temporaries))
+        return;
+
+    sysbvm_tuple_t temporaryType = sysbvm_orderedCollection_at(assembler->temporaryTypes, index);
+    if(!sysbvm_tuple_isKindOf(context, temporaryType, context->roots.pointerLikeType))
+        sysbvm_error("Expected a pointer like type for alloca which is going to be lowered.");
+
+    sysbvm_tuple_t baseType = ((sysbvm_pointerLikeType_t*)temporaryType)->baseType;
+    sysbvm_orderedCollection_atPut(assembler->temporaryTypes, index, baseType);
+}
+
 static void sysbvm_functionBytecodeAssembler_optimizeLocalOnlyAllocaAndSlotReferences(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction)
 {
+    //return;
     // Ignore labels.
     if(sysbvm_functionBytecodeAssemblerInstruction_isLabel(context, instruction))
         return;
@@ -785,10 +825,13 @@ static void sysbvm_functionBytecodeAssembler_optimizeLocalOnlyAllocaAndSlotRefer
     {
         bytecodeInstruction->standardOpcode = sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE);
         sysbvm_array_atPut(bytecodeInstruction->operands, 1, sysbvm_functionBytecodeAssembler_addLiteral(context, assembler, SYSBVM_NULL_TUPLE));
+        sysbvm_functionBytecodeAssembler_lowerTemporaryPointerRank(context, assembler, sysbvm_array_at(bytecodeInstruction->operands, 0));
     }
     else if(opcode == SYSBVM_OPCODE_ALLOCA_WITH_VALUE
         && sysbvm_functionBytecodeAssembler_isLocalOnlyAlloca(sysbvm_array_at(bytecodeInstruction->operands, 0)))
     {
+        sysbvm_functionBytecodeAssembler_lowerTemporaryPointerRank(context, assembler, sysbvm_array_at(bytecodeInstruction->operands, 0));
+
         sysbvm_tuple_t newOperands = sysbvm_array_create(context, 2);
         sysbvm_array_atPut(newOperands, 0, sysbvm_array_at(bytecodeInstruction->operands, 0));
         sysbvm_array_atPut(newOperands, 1, sysbvm_array_at(bytecodeInstruction->operands, 2));

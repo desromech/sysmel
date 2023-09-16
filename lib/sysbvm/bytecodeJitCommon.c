@@ -236,6 +236,12 @@ static void sysbvm_bytecodeJit_refSlotAtPut(sysbvm_context_t *context, sysbvm_tu
     sysbvm_tuple_slotAtPut(context, sysbvm_pointerLikeType_load(context, tupleReference), slotIndex, value);
 }
 
+static sysbvm_tuple_t sysbvm_bytecodeJit_symbolValueBinding_getValue(sysbvm_context_t *context, sysbvm_tuple_t valueBinding)
+{
+    (void)context;
+    return sysbvm_symbolValueBinding_getValue(valueBinding);
+}
+
 static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionBytecode_t *functionBytecode)
 {
     (void)context;
@@ -362,6 +368,9 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
             break;
         case SYSBVM_OPCODE_LOAD:
             sysbvm_jit_callWithContext1(&jit, &sysbvm_pointerLikeType_load, decodedOperands[0], decodedOperands[1]);
+            break;
+        case SYSBVM_OPCODE_LOAD_SYMBOL_VALUE_BINDING:
+            sysbvm_jit_callWithContext1(&jit, &sysbvm_bytecodeJit_symbolValueBinding_getValue, decodedOperands[0], decodedOperands[1]);
             break;
         case SYSBVM_OPCODE_STORE:
             sysbvm_jit_callWithContextNoResult2(&jit, &sysbvm_pointerLikeType_store, decodedOperands[0], decodedOperands[1]);

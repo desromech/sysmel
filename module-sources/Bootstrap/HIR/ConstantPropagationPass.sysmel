@@ -87,5 +87,7 @@ public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; d
                 processInstruction(pendingValue uncheckedDownCastTo: HIRInstruction)
             }.
         }.
+
+        function computeDominance
     }.
 }.

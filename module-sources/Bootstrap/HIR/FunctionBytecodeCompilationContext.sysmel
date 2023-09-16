@@ -33,7 +33,9 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
 
     public method ensureBasicBlockAtPC: (pc: Size)
         := pcToBasicBlockTable at: pc ifAbsentPut: {:: HIRBasicBlock | 
-            builder newBasicBlockNamed: #pc
+            (builder newBasicBlockNamed: #pc)
+                sourcePC: pc;
+                yourself
         }.
 
     public method useSourceInformationOfPC: (pc: Size) ::=> Void := {
@@ -77,7 +79,11 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         let i mutable := 0sz.
         while: (i < temporaryCount) do: {
             let temporaryType := bytecode temporaryTypes at: i.
-            temporaries at: i put: (builder alloca: temporaryType type: temporaryType pointer).
+            (temporaryType isSubtypeOf: Void) ifTrue: {
+                temporaries at: i put: (builder literal: void).
+            } ifFalse: {
+                temporaries at: i put: (builder alloca: temporaryType type: temporaryType memberPointer).
+            }.
         } continueWith: (i := i + 1sz).
     }.
 
@@ -137,7 +143,9 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
                 self useSourceInformationOfPC: pc
             }.
 
-            self compileInstructionWithOpcode: opcode operands: operands pc: pc nextPC: nextPC
+            builder isLastTerminator ifFalse: {
+                self compileInstructionWithOpcode: opcode operands: operands pc: pc nextPC: nextPC
+            }
         }.
 
         ## Simplify the temporaries.
@@ -154,7 +162,10 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         self assert: operandVector = FunctionBytecode::OperandVectorName::Local.
         self assert: operandIndex asSize < temporaries size.
 
-        builder store: value in: (temporaries at: operandIndex asSize)
+        let temporaryValue => HIRValue := temporaries at: operandIndex asSize.
+        temporaryValue isAllocaInstruction ifTrue: {
+            builder store: value in: temporaryValue
+        }.
     }.
 
     public method typeOfTemporary: (operand: Int16) ifAbsent: (ifAbsentType: Type) ::=> Type := {
@@ -194,7 +205,12 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
 
         operandVector = FunctionBytecode::OperandVectorName::Local ifTrue: {
             self assert: operandIndex < temporaries size.
-            return: (builder load: (temporaries at: operandIndex) type: (temporaryTypes at: operandIndex))
+            let temporaryValue => HIRValue := temporaries at: operandIndex.
+            temporaryValue isAllocaInstruction ifTrue: {
+                return: (builder load: temporaryValue type: (temporaryTypes at: operandIndex))
+            } ifFalse: {
+                return: temporaryValue
+            }
         }.
         
         error("Unsupported operand vector value type.").
@@ -435,9 +451,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         }.
 
         (actualResultType isSubtypeOf: ControlFlowEscapeType) ifTrue: {
-            builder
-                unreachable;
-                beginBasicBlockNamed: #deadCode
+            builder unreachable
         } ifFalse: {
             self storeInTemporary: resultTemporary value: result
         }.
@@ -474,6 +488,17 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
 
     public method compileLoad: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         self storeInTemporary: operands first value: (builder load: (self valueOfOperand: operands second) type: (self typeOfTemporary: operands first))
+    }.
+
+    public method compileLoadSymbolValueBinding: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let binding => SymbolValueBinding := self evaluateLiteral: operands second.
+        let value := binding isMutable ifTrue: {
+            moduleCompilationContext getOrCreateGlobalVariableForSymbolValueBinding: binding
+        } ifFalse: {
+            builder literal: binding value
+        }.
+
+        self storeInTemporary: operands first value: value
     }.
 
     public method compileStore: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
@@ -630,9 +655,10 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         at: FunctionBytecode::Opcode::Alloca put: HIRFunctionBytecodeCompilationContext >> #compileAlloca:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::Move put: HIRFunctionBytecodeCompilationContext >> #compileMove:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::Load put: HIRFunctionBytecodeCompilationContext >> #compileLoad:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::LoadSymbolValueBinding put: HIRFunctionBytecodeCompilationContext >> #compileLoadSymbolValueBinding:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::Store put: HIRFunctionBytecodeCompilationContext >> #compileStore:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::JumpIfTrue put: HIRFunctionBytecodeCompilationContext >> #compileJumpIfTrue:operands:pc:nextPC:;
-        at: FunctionBytecode::Opcode::JumpIfFalse put: HIRFunctionBytecodeCompilationContext >> #compileJumpIfTrue:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::JumpIfFalse put: HIRFunctionBytecodeCompilationContext >> #compileJumpIfFalse:operands:pc:nextPC:;
 
         at: FunctionBytecode::Opcode::AllocaWithValue put: HIRFunctionBytecodeCompilationContext >> #compileAllocaWithValue:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::CoerceValue put: HIRFunctionBytecodeCompilationContext >> #compileCoerceValue:operands:pc:nextPC:;

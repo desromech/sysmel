@@ -5,6 +5,7 @@
 #include "sysbvm/dictionary.h"
 #include "sysbvm/context.h"
 #include "sysbvm/function.h"
+#include "sysbvm/environment.h"
 #include "sysbvm/message.h"
 #include "sysbvm/gc.h"
 #include "sysbvm/type.h"
@@ -60,6 +61,7 @@ SYSBVM_API uint8_t sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(u
     case SYSBVM_OPCODE_ALLOCA:
     case SYSBVM_OPCODE_MOVE:
     case SYSBVM_OPCODE_LOAD:
+    case SYSBVM_OPCODE_LOAD_SYMBOL_VALUE_BINDING:
     case SYSBVM_OPCODE_ALLOCA_WITH_VALUE:
     case SYSBVM_OPCODE_COERCE_VALUE:
     case SYSBVM_OPCODE_DOWNCAST_VALUE:
@@ -298,6 +300,9 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
             break;
         case SYSBVM_OPCODE_LOAD:
             operandRegisterFile[0] = sysbvm_pointerLikeType_load(context, operandRegisterFile[1]);
+            break;
+        case SYSBVM_OPCODE_LOAD_SYMBOL_VALUE_BINDING:
+            operandRegisterFile[0] = sysbvm_symbolValueBinding_getValue(operandRegisterFile[1]);
             break;
         case SYSBVM_OPCODE_STORE:
             sysbvm_pointerLikeType_store(context, operandRegisterFile[0], operandRegisterFile[1]);
@@ -613,6 +618,7 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Alloca", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_ALLOCA));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Move", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MOVE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Load", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_LOAD));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::LoadSymbolValueBinding", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_LOAD_SYMBOL_VALUE_BINDING));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Store", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_STORE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfTrue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_JUMP_IF_TRUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfFalse", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_JUMP_IF_FALSE));

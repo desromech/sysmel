@@ -96,6 +96,18 @@ SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_at(sysbvm_tuple_t orderedColl
     return ((sysbvm_array_t*)orderedCollectionObject->storage)->elements[index];
 }
 
+SYSBVM_API void sysbvm_orderedCollection_atPut(sysbvm_tuple_t orderedCollection, size_t index, sysbvm_tuple_t value)
+{
+    if(!sysbvm_tuple_isNonNullPointer(orderedCollection)) sysbvm_error_nullArgument();
+
+    sysbvm_orderedCollection_t *orderedCollectionObject = (sysbvm_orderedCollection_t*)orderedCollection;
+    size_t size = sysbvm_tuple_size_decode(orderedCollectionObject->size);
+    if(index >= size)
+        sysbvm_error_indexOutOfBounds();
+
+    ((sysbvm_array_t*)orderedCollectionObject->storage)->elements[index] = value;
+}
+
 SYSBVM_API bool sysbvm_orderedCollection_identityIncludes(sysbvm_tuple_t orderedCollection, sysbvm_tuple_t element)
 {
     if(!sysbvm_tuple_isNonNullPointer(orderedCollection)) return false;
