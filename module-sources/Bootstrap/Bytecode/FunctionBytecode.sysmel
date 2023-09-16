@@ -30,6 +30,7 @@ let opcodeNameDictionary := #{
 
     FunctionBytecode::Opcode::Return : #return.
     FunctionBytecode::Opcode::Jump : #jump.
+    FunctionBytecode::Opcode::CountExtension : #countExtension.
 
     FunctionBytecode::Opcode::Alloca : #alloca.
     FunctionBytecode::Opcode::Move : #move.
@@ -129,25 +130,35 @@ FunctionBytecode definition: {
         let instructions := self instructions.
         let instructionsSize := instructions size.
         let pc mutable := 0sz.
+        let countExtension mutable := 0sz.
 
         while: pc < instructionsSize do: {
             let instructionPC := pc.
             let opcode := instructions at: pc.
             pc := pc + 1sz.
 
-            let operandCount := self computeOperandCountForOpcode: opcode.
-            let operands := Array new: operandCount.
-            let i mutable := 0sz.
-            while: (i < operandCount) do: {
+            opcode = FunctionBytecode::Opcode::CountExtension ifTrue: {
                 let lowByte := (instructions at: pc).
                 let highByte := (instructions at: pc + 1sz).
-                let operandIndex := ((lowByte asUInt16) | (highByte asUInt16 << 8u16)) asInt16.
-                operands at: i put: operandIndex.
-                pc := pc + 2sz
-            } continueWith: (i := i + 1sz).
+                pc := pc + 2sz.
 
-            let nextPC := pc.
-            aBlock(opcode, operands, instructionPC, nextPC).
+                countExtension := (countExtension << 16sz) | (highByte asSize << 8sz) | lowByte asSize.
+            } ifFalse: {
+                let operandCount := (self computeOperandCountForOpcode: opcode) + countExtension.
+                let operands := Array new: operandCount.
+                let i mutable := 0sz.
+                while: (i < operandCount) do: {
+                    let lowByte := (instructions at: pc).
+                    let highByte := (instructions at: pc + 1sz).
+                    let operandIndex := ((lowByte asUInt16) | (highByte asUInt16 << 8u16)) asInt16.
+                    operands at: i put: operandIndex.
+                    pc := pc + 2sz
+                } continueWith: (i := i + 1sz).
+
+                let nextPC := pc.
+                countExtension := 0sz.
+                aBlock(opcode, operands, instructionPC, nextPC).
+            }.
         }.
     }.
 

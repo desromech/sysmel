@@ -416,9 +416,24 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jumpIfTrue(sysbvm_con
     return instruction;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_countExtension(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, size_t count)
+{
+    if(count == 0)
+        return SYSBVM_NULL_TUPLE;
+
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 1);
+    sysbvm_array_atPut(operands, 0, sysbvm_tuple_int16_encode(count));
+
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_COUNT_EXTENSION, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
+    return instruction;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_call(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t function, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, argumentCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2 + argumentCount);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, function);
@@ -433,6 +448,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_call(sysbvm_context_t
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_uncheckedCall(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t function, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, argumentCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2 + argumentCount);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, function);
@@ -447,6 +464,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_uncheckedCall(sysbvm_
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_send(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t selector, sysbvm_tuple_t receiver, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, argumentCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 3 + argumentCount);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, selector);
@@ -462,6 +481,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_send(sysbvm_context_t
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_sendWithLookupReceiverType(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t receiverLookupType, sysbvm_tuple_t selector, sysbvm_tuple_t receiver, sysbvm_tuple_t arguments)
 {
     size_t argumentCount = sysbvm_array_getSize(arguments);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, argumentCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 4 + argumentCount);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, receiverLookupType);
@@ -478,6 +499,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_sendWithLookupReceive
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeArrayWithElements(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
 {
     size_t elementCount = sysbvm_array_getSize(elements);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, elementCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1 + elementCount);
     sysbvm_array_atPut(operands, 0, result);
     for(size_t i = 0; i < elementCount; ++i)
@@ -503,6 +526,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeAssociation(sysbv
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeByteArrayWithElements(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
 {
     size_t elementCount = sysbvm_array_getSize(elements);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, elementCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1 + elementCount);
     sysbvm_array_atPut(operands, 0, result);
     for(size_t i = 0; i < elementCount; ++i)
@@ -516,6 +541,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeByteArrayWithElem
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeDictionaryWithElements(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
 {
     size_t elementCount = sysbvm_array_getSize(elements);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, elementCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1 + elementCount);
     sysbvm_array_atPut(operands, 0, result);
     for(size_t i = 0; i < elementCount; ++i)
@@ -529,6 +556,8 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeDictionaryWithEle
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeClosureWithCaptures(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t functionDefinition, sysbvm_tuple_t captures)
 {
     size_t captureCount = sysbvm_array_getSize(captures);
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, captureCount>>4);
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2 + captureCount);
     sysbvm_array_atPut(operands, 0, result);
     sysbvm_array_atPut(operands, 1, functionDefinition);
@@ -596,6 +625,13 @@ static size_t sysbvm_functionBytecodeAssemblerAbstractOperandFor_assembleInto(sy
         int16_t encodedOperand = (vectorIndex << SYSBVM_OPERAND_VECTOR_BITS) | vectorType;
         *destination++ = encodedOperand & 0xFF;
         *destination++ = (encodedOperand >> 8) & 0xFF;
+        return 2;
+    }
+    else if(operandType == context->roots.int16Type)
+    {
+        int16_t operandValue = sysbvm_tuple_int16_decode(operand);
+        *destination++ = operandValue & 0xFF;
+        *destination++ = (operandValue >> 8) & 0xFF;
         return 2;
     }
     else
@@ -673,6 +709,9 @@ static void sysbvm_functionBytecodeAssembler_markInstructionOperandUsages(sysbvm
 
     sysbvm_functionBytecodeAssemblerInstruction_t *bytecodeInstruction = (sysbvm_functionBytecodeAssemblerInstruction_t*)instruction;
     uint8_t opcode = sysbvm_tuple_uint8_decode(bytecodeInstruction->standardOpcode);
+    if(opcode == SYSBVM_OPCODE_COUNT_EXTENSION)
+        return;
+
     uint8_t destinationOperandCount = sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(opcode);
 
     size_t operandCount = sysbvm_array_getSize(bytecodeInstruction->operands);

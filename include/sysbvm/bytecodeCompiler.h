@@ -161,6 +161,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_c
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_allocaWithValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t pointerLikeType, sysbvm_tuple_t value);
 
 /**
+ * Count extension
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_countExtension(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, size_t count);
+
+/**
  * Call instruction.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_call(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t function, sysbvm_tuple_t arguments);

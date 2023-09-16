@@ -607,6 +607,7 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
     // One operands.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Return", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_RETURN));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Jump", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_JUMP));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::CountExtension", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_COUNT_EXTENSION));
 
     // Two operands.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Alloca", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_ALLOCA));

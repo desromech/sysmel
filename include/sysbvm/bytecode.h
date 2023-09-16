@@ -16,6 +16,7 @@ typedef enum sysbvm_opcode_e
     // One operand instructions
     SYSBVM_OPCODE_RETURN = 0x10, /// return <Result>
     SYSBVM_OPCODE_JUMP, /// jump <Destination Relative PC>
+    SYSBVM_OPCODE_COUNT_EXTENSION = 0x1F, /// countExt <Amount>
 
     // Two operand instructions
     SYSBVM_OPCODE_ALLOCA = 0x20, /// <Result> := alloca <Pointer Type>
