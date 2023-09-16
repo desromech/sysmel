@@ -56,6 +56,7 @@ HIRValue definition: {
     public virtual method isSendInstruction => Boolean := false.
     public virtual method isSetDebugValueForBindingInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
+    public virtual method isTrapInstruction => Boolean := false.
     public virtual method isTypeSlotAtInstruction => Boolean := false.
     public virtual method isTypeSlotReferenceAtInstruction => Boolean := false.
     public virtual method isTypeSlotAtPutInstruction => Boolean := false.
@@ -1967,6 +1968,20 @@ public final class HIRPointerElementAtInstruction superclass: HIRInstruction; de
     }.
 }.
 
+public final class HIRTrapInstruction superclass: HIRInstruction; definition: {
+    public override method isTrapInstruction => Boolean := true.
+    public override method hasSideEffects => Boolean := true.
+
+    public override method initialize => Void := {
+        super initialize.
+        type := Void
+    }.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "trap"
+    }.
+}.
+
 public final class HIRTypeSlotAtInstruction superclass: HIRInstruction; definition: {
     public field tuple => HIRValue.
     public field typeSlot => TypeSlot.
@@ -2989,6 +3004,9 @@ HIRInstructionBuilder definition: {
             type: type;
             registerInUsedValues;
             yourself).
+
+    public method trap ::=> HIRTrapInstruction
+        := self addInstruction: HIRTrapInstruction new.
 
     public method tuple: (tuple: HIRValue) typedSlotAt: (typeSlot: TypeSlot) ::=> HIRTypeSlotAtInstruction
         := self addInstruction: (HIRTypeSlotAtInstruction new

@@ -46,9 +46,6 @@ public class ImageBuilderHIR_MIRTarget superclass: ImageBuilderHIRTarget; defini
         printLine("Image data generated").
         hirImage
     }.
-
-    public override method needsBytecode => Boolean
-        := false.
 }.
 
 HIRMIRCompilationTarget definition: {

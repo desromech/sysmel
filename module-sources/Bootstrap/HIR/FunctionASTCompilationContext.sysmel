@@ -1,241 +1,16 @@
-public final class HIRModuleCompilationContext superclass: Object; definition: {
-    public field compilationTarget => HIRCompilationTarget.
-    public field hirModule => HIRModule.
-    public field usedModules => OrderedCollection.
-    public field exclusiveCompilationMode => Boolean.
 
-    protected field translatedValueDictionary => ObjectPointerDictionary.
-
-    __Meta__ extend: {
-        public method forTarget: (compilationTarget: HIRCompilationTarget) ::=> self
-            := self new
-                initializeWithTarget: compilationTarget;
-                yourself.
-
-        public method forDefaultTarget => self
-            := self forTarget: HIRCompilationTarget default.
-    }.
-
-    public method initializeWithTarget: (theCompilationTarget: HIRCompilationTarget) ::=> Void := {
-        compilationTarget := theCompilationTarget.
-        hirModule := HIRModule new.
-        translatedValueDictionary := ObjectPointerDictionary new.
-        usedModules := OrderedCollection new.
-    }.
-
-    public method virtualTableSetSource: (virtualTableSetSource: VirtualTableSetSource) ::=> Void := {
-        hirModule virtualTableSetSource: virtualTableSetSource
-    }.
-
-    public method addUsedModule: (usedModule: HIRModule) ::=> Void := {
-        usedModules add: usedModule.
-    }.
-
-    public method findValueInUsedModule: value ::=> HIRValue := {
-        let i mutable := 0sz.
-        while: (i < usedModules size) do: {
-            let module := usedModules at: i.
-            let moduleValue := module getGlobalValueOrNilFor: value.
-            moduleValue ifNotNil: {
-                return: moduleValue 
-            }
-        } continueWith: (i := i + 1sz).
-        nil
-    }.
-
-    public method compileFunctions: (functions: SequenceableCollection) definitions: (functionDefinitions: SequenceableCollection) ::=> Void := {
-        let ssaFunctionDefinitions := functionDefinitions collect: {:(FunctionDefinition)eachFunctionDefinition :: HIRFunctionDefinition |
-            self declareFunctionDefinition: eachFunctionDefinition
-        }.
-
-        functions do: {:(Function)eachFunction :: Void |
-            self declareFunction: eachFunction
-        }.
-
-        ssaFunctionDefinitions doWithIndex: {:(HIRFunctionDefinition)eachHIRFunctionDefinition :(Size)index :: Void |
-            let eachFunctionDefinition => FunctionDefinition := functionDefinitions at: index.
-            self compileFunctionDefinition: eachFunctionDefinition into: eachHIRFunctionDefinition
-        }.
-    }.
-
-    public method compileFunctionsWithDefinitions: (functions: SequenceableCollection) ::=> Void 
-        := self compileFunctions: functions definitions: (functions collect: {:(Function)each :: FunctionDefinition | each definition}).
-
-    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> Void := {
-        let ssaFunctionDefinition := self declareFunctionDefinition: functionDefinition.
-        self compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition
-    }.
-
-    public method exportMainEntryPointFunction: (entryPointFunction: Function) ::=> Void := {
-        let ssaEntryPointFunction => HIRFunction := translatedValueDictionary atOrNil: entryPointFunction.
-        ssaEntryPointFunction ifNil: {return: void}.
-
-        ssaEntryPointFunction exportedSymbols: ssaEntryPointFunction exportedSymbols -- (Array with: #main).
-    }.
-
-    public method generateArgumentForNode: (argumentNode: ASTArgumentNode) ::=> HIRFunctionArgument := {
-        let binding := argumentNode binding.
-        self assert: binding isNotNil.
-
-        HIRFunctionArgument new
-            name: binding name;
-            type: binding type;
-            sourceBinding: binding;
-            yourself
-    }.
-
-    public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> HIRFunctionCapture := {
-        HIRFunctionCapture new
-            name: captureBinding name;
-            type: captureBinding type;
-            sourceBinding: captureBinding;
-            yourself
-    }.
-
-    public method declareFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> HIRFunctionDefinition := {
-        functionDefinition ensureAnalysis.
-        ## HACK: Make sure this is properly done by the analysis section.
-        functionDefinition boxDescriptor = 0uptr ifTrue: {
-            functionDefinition boxDescriptor: functionDefinition type applicationBoxDescriptor
-        }.
-
-        let translatedValue := HIRFunctionDefinition new
-            type: FunctionDefinition;
-            sourceObject: functionDefinition;
-            name: functionDefinition programEntityQualifiedNameSymbol;
-            functionType: functionDefinition type;
-            importedSymbols: functionDefinition importedSymbols asArray;
-            primitiveName: functionDefinition primitiveName;
-            sourcePosition: functionDefinition sourcePosition;
-            isNoGC: functionDefinition isNoGC;
-            callingConvention: functionDefinition callingConventionName;
-            arguments: (functionDefinition sourceAnalyzedDefinition argumentNodes collect: {:(ASTArgumentNode)argumentNode :: HIRFunctionArgument |
-                self generateArgumentForNode: argumentNode
-            }) asArray;
-            captures: (functionDefinition sourceAnalyzedDefinition captures collect: {:(SymbolCaptureBinding)captureBinding :: HIRFunctionCapture |
-                self generateCaptureForBinding: captureBinding
-            }) asArray;
-            yourself.
-
-        hirModule addGlobalValue: translatedValue.
-        translatedValueDictionary at: functionDefinition put: translatedValue.
-        translatedValue
-    }.
-
-    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunctionDefinition: HIRFunctionDefinition) ::=> Void := {
-        HIRFunctionCompilationContext new
-            moduleCompilationContext: self;
-            compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition.
-    }.
-
-    public method declareFunction: (function: Function) ::=> HIRFunction := {
-        function ensureAnalysis.
-        let translatedValue := HIRFunction new
-            sourceObject: function;
-            name: function programEntityQualifiedNameSymbol;
-            primitiveName: function primitiveName;
-            exportedSymbols: function exportedSymbols asArray;
-            type: function __type__;
-            yourself.
-
-        hirModule addGlobalValue: translatedValue.
-        translatedValueDictionary at: function put: translatedValue.
-
-        function definition ifNotNil: {
-            translatedValue definition: ((self translateFunctionDefinition: function definition) downCastTo: HIRFunctionDefinition).
-        }.
-        
-        translatedValue
-    }.
-
-    public method translateFunction: (function: Function) withBuilder: (builder: HIRInstructionBuilder) ::=> HIRValue := {
-        translatedValueDictionary at: function ifAbsent: { :: HIRValue |
-            let importedValue := self findValueInUsedModule: function.
-            importedValue ifNotNil: {
-                translatedValueDictionary at: function put: importedValue.
-                importedValue
-            } ifNil: {
-                exclusiveCompilationMode ifTrue: {
-                    builder literal: function type: function class
-                } ifFalse: {
-                    self declareFunction: function
-                }
-            }.
-        }
-    }.
-
-    public method translateFunction: (function: Function) ::=> HIRValue
-        := self translateFunction: function withBuilder: nil.
-
-    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) withBuilder: (builder: HIRInstructionBuilder) ::=> HIRValue := {
-        functionDefinition ensureAnalysis.
-        translatedValueDictionary at: functionDefinition ifAbsent: { :: HIRValue |
-            let importedValue := self findValueInUsedModule: functionDefinition.
-            importedValue ifNotNil: {
-                translatedValueDictionary at: functionDefinition put: importedValue.
-                importedValue downCastTo: HIRFunctionDefinition
-            } ifNil: {
-                exclusiveCompilationMode ifTrue: {
-                    builder ifNotNil: (builder literal: functionDefinition type: functionDefinition class)
-                } ifFalse: {
-                    let ssaFunctionDefinition := self declareFunctionDefinition: functionDefinition.
-                    self compileFunctionDefinition: functionDefinition into: ssaFunctionDefinition.
-                    ssaFunctionDefinition
-                }
-            }
-        }
-    }.
-
-    public method translateFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> HIRValue
-        := self translateFunctionDefinition: functionDefinition withBuilder: nil.
-
-    public method declareGlobalVariableForSymbolValueBinding: (binding: SymbolValueBinding) ::=> HIRGlobalVariable := {
-        let translatedValue := HIRGlobalVariable new
-            sourceBinding: binding;
-            referenceValue: binding value;
-            name: binding programEntityQualifiedNameSymbol;
-            type: binding type;
-            valueType: binding valueType;
-            isExternal: binding isExternal;
-            isThreadLocal: binding isThreadLocal;
-            yourself.
-
-        hirModule addGlobalValue: translatedValue.
-        translatedValueDictionary at: binding put: translatedValue.
-
-        translatedValue
-    }.
-
-    public method getOrCreateGlobalVariableForSymbolValueBinding: (binding: SymbolValueBinding) ::=> HIRGlobalVariable := {
-        self assert: binding isMutable.
-        translatedValueDictionary at: binding ifAbsent: { :: HIRGlobalVariable |
-            let importedValue := self findValueInUsedModule: binding.
-            importedValue ifNotNil: {
-                translatedValueDictionary at: binding put: importedValue.
-                importedValue downCastTo: HIRGlobalVariable
-            } ifNil: {
-                self declareGlobalVariableForSymbolValueBinding: binding
-            }
-        }.
-    }.
-
-    public method finish => HIRModule := {
-        hirModule
-    }.
-}.
-
-public final class HIRFunctionCompilationContext superclass: Object.
+public final class HIRFunctionASTCompilationContext superclass: Object.
 
 let primitiveFunctionContentGenerator := #{
-    #ObjectModel::isLogical : {:(HIRFunctionCompilationContext)context :: HIRValue |
+    #ObjectModel::isLogical : {:(HIRFunctionASTCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasLogicalObjectModel
     }.
-    #ObjectModel::isNative : {:(HIRFunctionCompilationContext)context :: HIRValue |
+    #ObjectModel::isNative : {:(HIRFunctionASTCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasNativeObjectModel
     }.
 }.
 
-HIRFunctionCompilationContext definition: {
+HIRFunctionASTCompilationContext definition: {
     public field moduleCompilationContext => HIRModuleCompilationContext.
     public field functionDefinition => FunctionDefinition.
     public field ssaFunction => HIRFunctionDefinition.
@@ -318,17 +93,17 @@ HIRFunctionCompilationContext definition: {
 }.
 
 ASTNode extend: {
-    public method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public method generateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder withSourceASTNode: self do: {:: HIRValue |
             self doGenerateHIRValueWith: context
     }.
 
-    public abstract method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public abstract method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := self subclassResponsibility.
 }.
 
 ASTBreakNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         context breakDestination ifNil: (self error: "Invalid break at this location.").
         context builder branch: context breakDestination.
         context builder literal: void
@@ -336,7 +111,7 @@ ASTBreakNode extend: {
 }.
 
 ASTCoerceValueNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let type := self typeExpression generateHIRValueWith: context.
         let value := self valueExpression generateHIRValueWith: context.
         context builder coerceValue: value into: type type: self analyzedType
@@ -344,7 +119,7 @@ ASTCoerceValueNode extend: {
 }.
 
 ASTContinueNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         context continueDestination ifNil: (self error: "Invalid continue at this location.").
         context builder branch: context continueDestination.
         context builder literal: void
@@ -352,7 +127,7 @@ ASTContinueNode extend: {
 }.
 
 ASTDownCastNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let type := self typeExpression generateHIRValueWith: context.
         let value := self valueExpression generateHIRValueWith: context.
         context builder unchecked: self isUnchecked downCast: value into: type type: self analyzedType
@@ -360,7 +135,7 @@ ASTDownCastNode extend: {
 }.
 
 let primitiveFunctionGenerators := #{
-    #basicAllocate : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #basicAllocate : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let typeNode => ASTNode := self arguments first.
         typeNode isLiteralNode && (typeNode analyzedType isSubtypeOf: Type) ifFalse: {return: nil}.
 
@@ -374,7 +149,7 @@ let primitiveFunctionGenerators := #{
         }
     }.
 
-    #basicNew : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #basicNew : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let typeNode => ASTNode := self arguments first.
         typeNode isLiteralNode && (typeNode analyzedType isSubtypeOf: Type) ifFalse: {return: nil}.
 
@@ -400,7 +175,7 @@ let primitiveFunctionGenerators := #{
         }
     }.
 
-    #new : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #new : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let typeNode => ASTNode := self arguments first.
         typeNode isLiteralNode && (typeNode analyzedType isSubtypeOf: Type) ifFalse: {return: nil}.
 
@@ -434,35 +209,35 @@ let primitiveFunctionGenerators := #{
         }
     }.
 
-    #PointerType::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #PointerType::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self arguments second generateHIRValueWith: context.
         context builder pointerOrIntegerReinterpretCast: pointer into: targetType type: self analyzedType
     }.
-    #UIntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #UIntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self arguments second generateHIRValueWith: context.
         context builder pointerOrIntegerReinterpretCast: pointer into: targetType type: self analyzedType
     }.
-    #IntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #IntPointer::reinterpretCastTo: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self arguments second generateHIRValueWith: context.
         context builder pointerOrIntegerReinterpretCast: pointer into: targetType type: self analyzedType
     }.
 
-    #PointerLikeType::reinterpretCast : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #PointerLikeType::reinterpretCast : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let targetType := self analyzedType.
         context builder pointerOrIntegerReinterpretCast: pointer into: (context builder literal: targetType) type: targetType
     }.
 
-    #PointerLikeType::at: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #PointerLikeType::at: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let pointer := self arguments first generateHIRValueWith: context.
         let index := self arguments second generateHIRValueWith: context.
         context builder pointer: pointer elementAt: index type: self analyzedType
     }.
 
-    #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let reference := self arguments first generateHIRValueWith: context.
         self analyzedType isTemporaryReferenceType ifTrue: {
             let valueType := (self analyzedType downCastTo: ReferenceLikeType) baseType.
@@ -474,14 +249,14 @@ let primitiveFunctionGenerators := #{
             context builder load: reference type: self analyzedType
         }.
     }.
-    #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #PointerLikeType::store: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let reference := self arguments first generateHIRValueWith: context.
         let value := self arguments second generateHIRValueWith: context.
         context builder store: value in: reference.
         reference
     }.
 
-    #FixedArray::at: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #FixedArray::at: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let reference := self arguments first generateHIRValueWith: context.
         let index := self arguments second generateHIRValueWith: context.
         let referenceType => PointerLikeType := self arguments first analyzedType.
@@ -490,7 +265,7 @@ let primitiveFunctionGenerators := #{
         let elementReference := context builder reference: reference elementAt: index type: elementReferenceType.
         context builder load: elementReference type: self analyzedType
     }.
-    #FixedArray::at:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #FixedArray::at:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let reference := self arguments first generateHIRValueWith: context.
         let index := self arguments second generateHIRValueWith: context.
         let value := self arguments third generateHIRValueWith: context.
@@ -502,20 +277,20 @@ let primitiveFunctionGenerators := #{
             store: value in: elementReference;
             literal: void
     }.
-    #FixedArray::refAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #FixedArray::refAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         let reference := self arguments first generateHIRValueWith: context.
         let index := self arguments second generateHIRValueWith: context.
         context builder reference: reference elementAt: index type: self analyzedType
     }.
 
-    #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #Void::fromAnyValue : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         self arguments do: {:(ASTNode)each :: Void | each generateHIRValueWith: context }.
         context builder literal: void
     }.
-    #yourself : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #yourself : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         self arguments first generateHIRValueWith: context
     }.
-    #RawTuple::typeSlotAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #RawTuple::typeSlotAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         self arguments second isLiteralNode ifTrue: {
             let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
@@ -525,7 +300,7 @@ let primitiveFunctionGenerators := #{
             nil
         }.
     }.
-    #RawTuple::typeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #RawTuple::typeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         self arguments second isLiteralNode ifTrue: {
             let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
@@ -536,7 +311,7 @@ let primitiveFunctionGenerators := #{
             nil
         }.
     }.
-    #RawTuple::refTypeSlotAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #RawTuple::refTypeSlotAt: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         self arguments second isLiteralNode ifTrue: {
             let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
@@ -546,7 +321,7 @@ let primitiveFunctionGenerators := #{
             nil
         }.
     }.
-    #RawTuple::refTypeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #RawTuple::refTypeSlotAt:put: : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         self arguments second isLiteralNode ifTrue: {
             let tuple := self arguments first generateHIRValueWith: context.
             let typeSlot => TypeSlot := self arguments second value.
@@ -558,16 +333,16 @@ let primitiveFunctionGenerators := #{
         }.
     }.
 
-    #ObjectModel::isLogical : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #ObjectModel::isLogical : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasLogicalObjectModel
     }.
-    #ObjectModel::isNative : {:(ASTFunctionApplicationNode)self :(HIRFunctionCompilationContext)context :: HIRValue |
+    #ObjectModel::isNative : {:(ASTFunctionApplicationNode)self :(HIRFunctionASTCompilationContext)context :: HIRValue |
         context builder literal: context compilationTarget hasNativeObjectModel
     }.
 }.
 
 ASTFunctionApplicationNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let primitiveGenerator := primitiveFunctionGenerators atOrNil: self functionExpression literalFunctionPrimitiveName.
         (primitiveGenerator ifNotNil: {
             primitiveGenerator(self, context)
@@ -594,32 +369,32 @@ ASTFunctionApplicationNode extend: {
 }.
 
 ASTLexicalBlockNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder withSourceEnvironment: self bodyEnvironment do: {:: HIRValue | self body generateHIRValueWith: context }.
 }.
 
 Type extend: {
-    public virtual method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public virtual method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder literal: literalNode value type: literalNode analyzedType.
 }.
 
 FunctionType extend: {
-    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context moduleCompilationContext translateFunction: literalNode value withBuilder: context builder.
 }.
 
 FunctionDefinition class extend: {
-    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method translateASTLiteralNode: (literalNode: ASTLiteralNode) intoHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context moduleCompilationContext translateFunctionDefinition: literalNode value withBuilder: context builder.
 }.
 
 ASTLiteralNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := self analyzedType translateASTLiteralNode: self intoHIRValueWith: context.
 }.
 
 ASTLambdaNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let functionDefinition := self functionDefinition.
         functionDefinition ensureAnalysis.
 
@@ -634,7 +409,7 @@ ASTLambdaNode extend: {
 }.
 
 ASTVariableDefinitionNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
         let value := self valueExpression generateHIRValueWith: context.
@@ -665,17 +440,17 @@ ASTVariableDefinitionNode extend: {
 }.
 
 SymbolBinding extend: {
-    public abstract method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public abstract method generateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := self subclassResponsibility.
 }.
 
 SymbolAnalysisBinding extend: {
-    public override method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method generateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context getValueForLocalBinding: self.
 }.
 
 SymbolValueBinding extend: {
-    public override method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method generateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         isMutable ifTrue: {
             context moduleCompilationContext getOrCreateGlobalVariableForSymbolValueBinding: self
         } ifFalse: {
@@ -685,19 +460,19 @@ SymbolValueBinding extend: {
 }.
 
 SymbolTupleSlotBinding extend: {
-    public override method generateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method generateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let tupleValue := tupleBinding generateHIRValueWith: context.
         context builder tuple: tupleValue typedSlotReferenceAt: typeSlot.
     }
 }.
 
 ASTIdentifierReferenceNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := self binding generateHIRValueWith: context.
 }.
 
 ASTIfNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
         ## Condition
@@ -797,7 +572,7 @@ ASTIfNode extend: {
 }.
 
 ASTDoWhileContinueWithNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
         let conditionExpression := self conditionExpression.
@@ -851,7 +626,7 @@ ASTDoWhileContinueWithNode extend: {
 }.
 
 ASTWhileContinueWithNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let builder := context builder.
 
         let conditionExpression := self conditionExpression.
@@ -905,12 +680,12 @@ ASTWhileContinueWithNode extend: {
 }.
 
 ASTMakeArrayNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder makeArray: (self elements collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }).
 }.
 
 ASTMakeAssociationNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder makeAssociationWithKey: (self key generateHIRValueWith: context)
             value: (self value
                 ifNotNil: (self value generateHIRValueWith: context)
@@ -918,17 +693,17 @@ ASTMakeAssociationNode extend: {
 }.
 
 ASTMakeByteArrayNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder makeByteArray: (self elements collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }).
 }.
 
 ASTMakeDictionaryNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder makeDictionary: (self elements collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context })
 }.
 
 ASTMessageSendNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let sendInstruction := context builder send: (self receiver generateHIRValueWith: context)
             receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: HIRValue | lookupTypeExpression generateHIRValueWith: context })
             selector: (self selector generateHIRValueWith: context)
@@ -957,12 +732,12 @@ ASTMessageSendNode extend: {
 }.
 
 ASTReturnNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue
         := context builder return: (self expression generateHIRValueWith: context)
 }.
 
 ASTSequenceNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         let voidLiteral :=  context builder literal: void.
         let result mutable => HIRValue := voidLiteral.
         self expressions do: {:(ASTNode)expression :: Void |
@@ -978,25 +753,25 @@ ASTSequenceNode extend: {
 }.
 
 ASTTupleSlotNamedAtNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         context builder tuple: (self tupleExpression generateHIRValueWith: context) typedSlotAt: self boundSlot.
     }.
 }.
 
 ASTTupleSlotNamedReferenceAtNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         context builder tuple: (self tupleExpression generateHIRValueWith: context) typedSlotReferenceAt: self boundSlot.
     }.
 }.
 
 ASTTupleSlotNamedAtPutNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         context builder tuple: (self tupleExpression generateHIRValueWith: context) typedSlotAt: self boundSlot put: (self valueExpression generateHIRValueWith: context).
     }.
 }.
 
 ASTUseNamedSlotsOfNode extend: {
-    public override method doGenerateHIRValueWith: (context: HIRFunctionCompilationContext) ::=> HIRValue := {
+    public override method doGenerateHIRValueWith: (context: HIRFunctionASTCompilationContext) ::=> HIRValue := {
         context setValue: (self tupleExpression generateHIRValueWith: context) forBinding: self binding.
         context builder literal: void.
     }.

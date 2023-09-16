@@ -112,9 +112,9 @@ FunctionBytecode definition: {
 
     public final method computeOperandCountForOpcode: (opcode: UInt8) ::=> Size := {
         if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
-        let standardOpcode := opcode & 16rF0 u8.
-        let opcodeVariantNumber := opcode & 16r0F u8.
-        (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
+            let standardOpcode := opcode & 16rF0 u8.
+            let opcodeVariantNumber := opcode & 16r0F u8.
+            (opcodeVariantNumber asSize) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
         } else: {
             (opcode >> 4u8) asSize
         }
@@ -161,6 +161,17 @@ FunctionBytecode definition: {
         }
     }.
 
+    public method allBranchTargetsDo: (aBlock: (IntPointer) => Void) := {
+        self decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :(Size)pc :(Size)nextPC :: Void |
+            (self isBranchOpcode: opcode) ifTrue: {
+                let jumpDelta => Int16 := operands last.
+                let jumpDestination := nextPC asIntPointer + jumpDelta asIntPointer.
+                aBlock(jumpDestination).
+                aBlock(nextPC asIntPointer).
+            }
+        }.
+    }.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream print: self class; nl;
             nextPutAll: "argumentCount: "; print: self argumentCount; nl;
@@ -177,7 +188,7 @@ FunctionBytecode definition: {
             operands doWithIndex: {:(Int16)each :(Size)operandIndex :: Void |
                 stream nextPut: ' 'c8.
                 if: isBranchInstruction && ((operandIndex + 1sz) = operands size) then: {
-                    stream print: each; nextPut: '|'c8; nextPutAll: ((nextPC asIntPointer + each asIntPointer) printString padLeft: 4sz with: '0'c8)
+                    stream print: each; nextPut: '|'c8; nextPutAll: ((nextPC asSize + each asSize) printString padLeft: 4sz with: '0'c8)
                 } else: {
                     let operandVector := each & FunctionBytecode::OperandVectorName::BitMask.
                     let operandIndex := each >> FunctionBytecode::OperandVectorName::Bits.

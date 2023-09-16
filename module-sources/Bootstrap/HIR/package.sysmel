@@ -1,5 +1,7 @@
 loadSourceNamed: "IR.sysmel".
-loadSourceNamed: "FrontEnd.sysmel".
+loadSourceNamed: "ModuleCompilationContext.sysmel".
+loadSourceNamed: "FunctionBytecodeCompilationContext.sysmel".
+loadSourceNamed: "FunctionASTCompilationContext.sysmel".
 
 loadSourceNamed: "TransformationPasses.sysmel".
 loadSourceNamed: "PromoteAllocaPass.sysmel".

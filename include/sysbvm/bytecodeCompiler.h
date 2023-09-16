@@ -67,6 +67,7 @@ typedef struct sysbvm_functionBytecodeAssembler_s
     sysbvm_tuple_t literals;
     sysbvm_tuple_t literalDictionary;
     sysbvm_tuple_t temporaries;
+    sysbvm_tuple_t temporaryTypes;
     sysbvm_tuple_t usedTemporaryCount;
 
     sysbvm_functionBytecodeAssemblerAbstractInstruction_t *firstInstruction;
@@ -152,7 +153,7 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
 /**
  * Makes a temporary.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler);
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t type);
 
 /**
  * Alloca with value.

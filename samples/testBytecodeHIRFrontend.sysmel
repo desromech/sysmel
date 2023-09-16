@@ -1,0 +1,19 @@
+
+{
+function returnVar() => Int32 := {
+    let var mutable => Int32 := 1i32.
+    let secondVar mutable := var + 3i32.
+
+    var + secondVar.
+
+    var < secondVar
+        ifTrue: (var + 42i32)
+        ifFalse: (secondVar + 42i32)
+}.
+
+printLine((returnVar ensureAnalysis; definition) bytecode fullPrintString).
+
+let module := returnVar asHIRModuleFromBytecode.
+printLine(module fullPrintString).
+
+}.

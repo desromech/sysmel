@@ -845,6 +845,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "instructions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
 
         "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
+
+        "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "captures", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "temporaryTypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+
         "pcToDebugListTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
         "debugSourceASTNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.arrayType,
         "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
@@ -1254,6 +1259,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "literals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "literalDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.identityDictionaryType,
         "temporaries", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "temporaryTypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "usedTemporaryCount", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
 
         "firstInstruction", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,

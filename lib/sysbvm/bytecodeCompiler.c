@@ -46,6 +46,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_create(sysbvm_context
     result->literals = sysbvm_orderedCollection_create(context);
     result->literalDictionary = sysbvm_identityDictionary_create(context);
     result->temporaries = sysbvm_orderedCollection_create(context);
+    result->temporaryTypes = sysbvm_orderedCollection_create(context);
     result->usedTemporaryCount = sysbvm_tuple_size_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
@@ -210,7 +211,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_getBindingValue(
     {
         sysbvm_symbolTupleSlotBinding_t *bindingObject = (sysbvm_symbolTupleSlotBinding_t*)binding;
         sysbvm_tuple_t tupleValue = sysbvm_functionBytecodeDirectCompiler_getBindingValue(context, compiler, bindingObject->tupleBinding);
-        sysbvm_tuple_t reference = sysbvm_functionBytecodeAssembler_newTemporary(context, compiler->assembler);
+        sysbvm_tuple_t reference = sysbvm_functionBytecodeAssembler_newTemporary(context, compiler->assembler, sysbvm_typeSlot_getType(bindingObject->typeSlot));
 
         sysbvm_symbolBinding_t *tupleBindingObject = (sysbvm_symbolBinding_t*)bindingObject->tupleBinding;
 
@@ -232,11 +233,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_getBindingValue(
     return value;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler)
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t type)
 {
     size_t temporaryIndex = sysbvm_orderedCollection_getSize(assembler->temporaries);
     sysbvm_tuple_t temporaryOperand = sysbvm_functionBytecodeAssemblerVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LOCAL, (int16_t)temporaryIndex);
     sysbvm_orderedCollection_add(context, assembler->temporaries, temporaryOperand);
+    sysbvm_orderedCollection_add(context, assembler->temporaryTypes, type);
     return temporaryOperand;
 }
 
@@ -906,6 +908,10 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
     gcFrame.bytecode->localVectorSize = gcFrame.compiler->assembler->usedTemporaryCount;
     gcFrame.bytecode->literalVector = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->assembler->literals);
 
+    gcFrame.bytecode->arguments = gcFrame.sourceAnalyzedDefinition->arguments;
+    gcFrame.bytecode->captures = gcFrame.sourceAnalyzedDefinition->captures;
+    gcFrame.bytecode->temporaryTypes = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->assembler->temporaryTypes);
+
     gcFrame.bytecode->jittedCode = sysbvm_tuple_systemHandle_encode(context, 0);
     gcFrame.bytecode->jittedCodeSessionToken = sysbvm_tuple_systemHandle_encode(context, 0);
     gcFrame.bytecode->jittedCodeTrampoline = sysbvm_tuple_systemHandle_encode(context, 0);
@@ -1013,7 +1019,7 @@ static sysbvm_tuple_t sysbvm_astCoerceValueNode_primitiveCompileIntoBytecode(sys
 
     gcFrame.typeOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->typeExpression);
     gcFrame.valueOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*coerceValueNode)->valueExpression);
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*coerceValueNode)->super.analyzedType);
     sysbvm_functionBytecodeAssembler_coerceValue(context, (*compiler)->assembler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1110,7 +1116,7 @@ static sysbvm_tuple_t sysbvm_astDownCastNode_primitiveCompileIntoBytecode(sysbvm
 
     gcFrame.typeOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*downCastNode)->typeExpression);
     gcFrame.valueOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*downCastNode)->valueExpression);
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*downCastNode)->super.analyzedType);
     if(sysbvm_tuple_boolean_decode((*downCastNode)->isUnchecked))
         sysbvm_functionBytecodeAssembler_uncheckedDownCastValue(context, (*compiler)->assembler, gcFrame.result, gcFrame.typeOperand, gcFrame.valueOperand);
     else
@@ -1185,7 +1191,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveCompileIntoByte
         gcFrame.argumentNode = sysbvm_array_at((*applicationNode)->arguments, 0);
         gcFrame.pointerOperand = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, gcFrame.argumentNode);
 
-        gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+        gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*applicationNode)->super.analyzedType);
         sysbvm_functionBytecodeAssembler_load(context, (*compiler)->assembler, gcFrame.result, gcFrame.pointerOperand);
         SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
         return gcFrame.result;
@@ -1212,7 +1218,7 @@ static sysbvm_tuple_t sysbvm_astFunctionApplicationNode_primitiveCompileIntoByte
         sysbvm_array_atPut(gcFrame.arguments, i, gcFrame.argumentOperand);
     }
 
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*applicationNode)->super.analyzedType);
 
     sysbvm_bitflags_t applicationFlags = sysbvm_tuple_bitflags_decode((*applicationNode)->applicationFlags);
     bool isNotypecheck = (applicationFlags & SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK) != 0;
@@ -1266,7 +1272,7 @@ static sysbvm_tuple_t sysbvm_astIfNode_primitiveCompileIntoBytecode(sysbvm_conte
         sysbvm_functionBytecodeAssembler_jumpIfFalse(context, (*compiler)->assembler, condition, gcFrame.falseLabel);
     }
 
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*ifNode)->super.analyzedType);
 
     // True branch.
     if((*ifNode)->trueExpression)
@@ -1313,7 +1319,7 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveCompileIntoBytecode(sysbvm_c
         sysbvm_array_atPut(captureVector, i, captureValue);
     }
 
-    sysbvm_tuple_t result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    sysbvm_tuple_t result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*lambdaNode)->super.analyzedType);
     sysbvm_functionBytecodeAssembler_makeClosureWithCaptures(context, (*compiler)->assembler, result, functionDefinitionOperand, captureVector);
 
     if((*lambdaNode)->binding)
@@ -1364,7 +1370,7 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytec
     bool isMutable = sysbvm_tuple_boolean_decode((*variableDefinitionNode)->isMutable);
     if(isMutable)
     {
-        sysbvm_tuple_t localVariable = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+        sysbvm_tuple_t localVariable = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*variableDefinitionNode)->super.analyzedType);
         sysbvm_functionBytecodeAssembler_allocaWithValue(context, (*compiler)->assembler, localVariable,
             sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*variableDefinitionNode)->super.analyzedType),
             value);
@@ -1402,7 +1408,7 @@ static sysbvm_tuple_t sysbvm_astMakeAssociationNode_primitiveCompileIntoBytecode
     else
         gcFrame.value = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_NULL_TUPLE);
 
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*associationNode)->super.analyzedType);
     sysbvm_functionBytecodeAssembler_makeAssociation(context, (*compiler)->assembler, gcFrame.result, gcFrame.key, gcFrame.value);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1434,7 +1440,7 @@ static sysbvm_tuple_t sysbvm_astMakeArrayNode_primitiveCompileIntoBytecode(sysbv
         sysbvm_array_atPut(gcFrame.elements, i, gcFrame.element);
     }
 
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*arrayNode)->super.analyzedType);
     sysbvm_functionBytecodeAssembler_makeArrayWithElements(context, (*compiler)->assembler, gcFrame.result, gcFrame.elements);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1466,7 +1472,7 @@ static sysbvm_tuple_t sysbvm_astMakeByteArrayNode_primitiveCompileIntoBytecode(s
         sysbvm_array_atPut(gcFrame.elements, i, gcFrame.element);
     }
 
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*arrayNode)->super.analyzedType);
     sysbvm_functionBytecodeAssembler_makeByteArrayWithElements(context, (*compiler)->assembler, gcFrame.result, gcFrame.elements);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1498,7 +1504,7 @@ static sysbvm_tuple_t sysbvm_astMakeDictionaryNode_primitiveCompileIntoBytecode(
         sysbvm_array_atPut(gcFrame.elements, i, gcFrame.element);
     }
 
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*dictionaryNode)->super.analyzedType);
     sysbvm_functionBytecodeAssembler_makeDictionaryWithElements(context, (*compiler)->assembler, gcFrame.result, gcFrame.elements);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
@@ -1538,7 +1544,7 @@ static sysbvm_tuple_t sysbvm_astMessageSendNode_primitiveCompileIntoBytecode(sys
         sysbvm_array_atPut(gcFrame.arguments, i, gcFrame.argument);
     }
 
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*sendNode)->super.analyzedType);
     if((*sendNode)->receiverLookupType)
         sysbvm_functionBytecodeAssembler_sendWithLookupReceiverType(context, (*compiler)->assembler, gcFrame.result, gcFrame.receiverLookupType, gcFrame.selector, gcFrame.receiver, gcFrame.arguments);
     else
@@ -1613,7 +1619,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecod
 
     gcFrame.tuple = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
     gcFrame.slot = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*slotNamedNode)->boundSlot);
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*slotNamedNode)->super.analyzedType);
     if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
         sysbvm_functionBytecodeAssembler_refSlotAt(context, (*compiler)->assembler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
     else
@@ -1642,7 +1648,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIn
 
     gcFrame.tuple = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*slotNamedNode)->tupleExpression);
     gcFrame.slot = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*slotNamedNode)->boundSlot);
-    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler);
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*slotNamedNode)->super.analyzedType);
     if(sysbvm_type_isPointerLikeType(sysbvm_astNode_getAnalyzedType((*slotNamedNode)->tupleExpression)))
         sysbvm_functionBytecodeAssembler_refSlotReferenceAt(context, (*compiler)->assembler, gcFrame.result, gcFrame.tuple, gcFrame.slot);
     else

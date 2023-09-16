@@ -1,0 +1,419 @@
+public final class HIRFunctionBytecodeCompilationContext superclass: Object; definition: {
+    public field moduleCompilationContext => HIRModuleCompilationContext.
+    public field functionDefinition => FunctionDefinition.
+    public field bytecode => FunctionBytecode.
+    public field ssaFunction => HIRFunctionDefinition.
+    public field builder => HIRInstructionBuilder.
+    public field pcToBasicBlockTable => Dictionary.
+    public field arguments => Array.
+    public field captures => Array.
+    public field temporaries => Array.
+    public field temporaryTypes => Array.
+
+    public override method initialize => Void := {
+        super initialize.
+
+        pcToBasicBlockTable := Dictionary new.
+    }.
+
+    public method ensureBasicBlockAtPC: (pc: Size)
+        := pcToBasicBlockTable at: pc ifAbsentPut: {:: HIRBasicBlock | 
+            builder newBasicBlockNamed: #pc
+        }.
+
+    public method useSourceInformationOfPC: (pc: Size) ::=> Void := {
+
+    }.
+    public method declareTemporaries => Void := {
+        let temporaryCount := bytecode localVectorSize asSize.
+        temporaries := Array new: temporaryCount.
+        temporaryTypes := bytecode temporaryTypes.
+        temporaryTypes ifNil: {
+            temporaryTypes := Array new: temporaryCount.
+            temporaryTypes atAllPut: Untyped
+        }.
+
+        let i mutable := 0sz.
+        while: (i < temporaryCount) do: {
+            let temporaryType := bytecode temporaryTypes at: i.
+            temporaries at: i put: (builder alloca: temporaryType type: temporaryType pointer).
+        } continueWith: (i := i + 1sz).
+    }.
+
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) into: (ssaFunction: HIRFunctionDefinition) ::=> Void := {
+        functionDefinition ensureAnalysis.
+        self assert: functionDefinition bytecode isNotNil.
+        self functionDefinition: functionDefinition.
+        self ssaFunction: ssaFunction.
+
+        self builder: (HIRInstructionBuilder new
+                    sourcePosition: functionDefinition sourcePosition;
+                    function: ssaFunction;
+                    beginBasicBlockNamed: #entry;
+                    yourself).
+
+        bytecode := functionDefinition bytecode.
+
+        ## Declare the temporaries.
+        self declareTemporaries.
+
+        ## Make sure all the required basic blocks exit.
+        let bytecodeSize := bytecode instructions size.
+        self ensureBasicBlockAtPC: 0sz.
+        bytecode allBranchTargetsDo: {:(IntPointer)branchTargetPC :: Void |
+            self assert: (branchTargetPC >= 0iptr) && (branchTargetPC asSize < bytecodeSize).
+            self ensureBasicBlockAtPC: branchTargetPC asSize
+        }.
+
+        ## Perform direct translation of the bytecodes.
+        bytecode decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :(Size)pc :(Size)nextPC :: Void |
+            (pcToBasicBlockTable includesKey: pc) ifTrue: {
+                let basicBlock := pcToBasicBlockTable at: pc.
+                builder isLastTerminator ifFalse: {
+                    builder branch: basicBlock.
+                }.
+
+                self useSourceInformationOfPC: pc.
+                builder beginBasicBlock: basicBlock
+            } ifFalse: {
+                self useSourceInformationOfPC: pc
+            }.
+
+            self compileInstructionWithOpcode: opcode operands: operands pc: pc nextPC: nextPC
+        }.
+    }.
+
+    public method storeInTemporary: (operand: Int16) value: (value: HIRValue) ::=> Void := {
+        let operandVector := operand & FunctionBytecode::OperandVectorName::BitMask.
+        let operandIndex := operand >> FunctionBytecode::OperandVectorName::Bits.
+        operandIndex < 0i16 ifTrue: {
+            return: void
+        }.
+
+        self assert: operandVector = FunctionBytecode::OperandVectorName::Local.
+        self assert: operandIndex asSize < temporaries size.
+
+        builder store: value in: (temporaries at: operandIndex asSize)
+    }.
+
+    public method typeOfTemporary: (operand: Int16) ifAbsent: (ifAbsentType: Type) ::=> Type := {
+        let operandVector := operand & FunctionBytecode::OperandVectorName::BitMask.
+        let operandIndex := operand >> FunctionBytecode::OperandVectorName::Bits.
+        operandIndex < 0i16 ifTrue: {
+            return: ifAbsentType
+        }.
+
+        self assert: operandVector = FunctionBytecode::OperandVectorName::Local.
+        self assert: operandIndex asSize < temporaries size.
+
+        temporaryTypes at: operandIndex asSize
+    }.
+
+    public method typeOfTemporary: (operand: Int16) ::=> Type
+        := self typeOfTemporary: operand ifAbsent: Untyped.
+
+    public method valueOfOperand: (operand: Int16) ::=> HIRValue := {
+        let operandVector := operand & FunctionBytecode::OperandVectorName::BitMask.
+        let operandIndex := (operand >> FunctionBytecode::OperandVectorName::Bits) asSize.
+
+        operandVector = FunctionBytecode::OperandVectorName::Literal ifTrue: {
+            self assert: operandIndex < bytecode literalVector size.
+            return: (builder literal: (bytecode literalVector at: operandIndex))
+        }.
+
+        operandVector = FunctionBytecode::OperandVectorName::Arguments ifTrue: {
+            self assert: operandIndex < ssaFunction arguments size.
+            return: (ssaFunction arguments at: operandIndex)
+        }.
+
+        operandVector = FunctionBytecode::OperandVectorName::Captures ifTrue: {
+            self assert: operandIndex < ssaFunction captures size.
+            return: (ssaFunction captures at: operandIndex)
+        }.
+
+        operandVector = FunctionBytecode::OperandVectorName::Local ifTrue: {
+            self assert: operandIndex < temporaries size.
+            return: (builder load: (temporaries at: operandIndex) type: (temporaryTypes at: operandIndex))
+        }.
+        
+        error("Unsupported operand vector value type.").
+    }.
+
+    public method evaluateLiteral: (operand: Int16) ::=> Untyped := {
+        let operandVector := operand & FunctionBytecode::OperandVectorName::BitMask.
+        let operandIndex := (operand >> FunctionBytecode::OperandVectorName::Bits) asSize.
+
+        self assert: operandVector = FunctionBytecode::OperandVectorName::Literal.
+        self assert: operandIndex < bytecode literalVector size.
+
+        bytecode literalVector untypedAt: operandIndex
+    }.
+
+    public method compileNop: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        ## Nothing is required here.
+    }.
+
+    public method compileTrap: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        builder trap
+    }.
+
+    public method compileJump: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let delta => Int16 := operands last.
+        let destination := (nextPC asIntPointer + delta asIntPointer) asSize.
+        let destinationBasicBlock => HIRBasicBlock := pcToBasicBlockTable at: destination.
+        builder branch: destinationBasicBlock.
+    }.
+
+    public method compileReturn: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        builder return: (self valueOfOperand: operands first)
+    }.
+
+    public method compileAlloca: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let pointerType => PointerLikeType := self evaluateLiteral: operands second.
+        let alloca := builder alloca: pointerType baseType type: pointerType.
+        self storeInTemporary: operands first value: alloca
+    }.
+
+    public method compileMove: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        self storeInTemporary: operands first value: (self valueOfOperand: operands second)
+    }.
+
+    public method compileLoad: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        self storeInTemporary: operands first value: (builder load: (self valueOfOperand: operands second) type: (self typeOfTemporary: operands first))
+    }.
+
+    public method compileStore: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        builder store: (self valueOfOperand: operands second) in: (self valueOfOperand: operands first)
+    }.
+
+    public method compileJumpIfTrue: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let condition := self valueOfOperand: operands first.
+        let branchDelta => Int16 := operands second.
+        let branchPC := (nextPC asIntPointer + branchDelta asIntPointer) asSize.
+        let nextBasicBlock := pcToBasicBlockTable at: nextPC.
+        let branchBasicBlock := pcToBasicBlockTable at: branchPC.
+
+        builder conditionalBranch: condition trueDestination: branchBasicBlock falseDestination: nextBasicBlock
+    }.
+
+    public method compileJumpIfFalse: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let condition := self valueOfOperand: operands first.
+        let branchDelta => Int16 := operands second.
+        let branchPC := (nextPC asIntPointer + branchDelta asIntPointer) asSize.
+        let nextBasicBlock := pcToBasicBlockTable at: nextPC.
+        let branchBasicBlock := pcToBasicBlockTable at: branchPC.
+
+        builder conditionalBranch: condition trueDestination: nextBasicBlock falseDestination: branchBasicBlock
+    }.
+
+    public method compileAllocaWithValue: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let pointerType => PointerLikeType := self evaluateLiteral: operands second.
+        let alloca := builder alloca: pointerType baseType type: pointerType.
+        builder store: (self valueOfOperand: operands third) in: alloca.
+        self storeInTemporary: operands first value: alloca
+    }.
+
+    public method compileCoerceValue: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let type := self valueOfOperand: operands second.
+        let value := self valueOfOperand: operands third.
+        self storeInTemporary: operands first value: (builder coerceValue: value into: type type: (self typeOfTemporary: operands first))
+    }.
+
+    public method compileDownCast: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let type := self valueOfOperand: operands second.
+        let value := self valueOfOperand: operands third.
+        self storeInTemporary: operands first value: (builder downCast: value into: type type: (self typeOfTemporary: operands first))
+    }.
+
+    public method compileUncheckedDownCast: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let type := self valueOfOperand: operands second.
+        let value := self valueOfOperand: operands third.
+        self storeInTemporary: operands first value: (builder unchecked: true downCast: value into: type type: (self typeOfTemporary: operands first))
+    }.
+
+    public method compileMakeAssociation: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let key := self valueOfOperand: operands second.
+        let value := self valueOfOperand: operands third.
+        self storeInTemporary: operands first value: (builder makeAssociationWithKey: key value: value)
+    }.
+
+    public method compileSlotAt: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let tuple := self valueOfOperand: operands second.
+        let typeSlot => TypeSlot := self evaluateLiteral: operands third.
+        self storeInTemporary: operands first value: (builder tuple: tuple typedSlotAt: typeSlot)
+    }.
+
+    public method compileSlotReferenceAt: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let tuple := self valueOfOperand: operands second.
+        let typeSlot => TypeSlot := self evaluateLiteral: operands third.
+        self storeInTemporary: operands first value: (builder tuple: tuple typedSlotReferenceAt: typeSlot)
+    }.
+
+    public method compileSlotAtPut: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let tuple := self valueOfOperand: operands first.
+        let typeSlot => TypeSlot := self evaluateLiteral: operands second.
+        let value := self valueOfOperand: operands third.
+        builder tuple: tuple typedSlotAt: typeSlot put: value
+    }.
+
+    public method compileRefSlotAt: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let tuple := self valueOfOperand: operands second.
+        let typeSlot => TypeSlot := self evaluateLiteral: operands third.
+        self storeInTemporary: operands first value: (builder tuple: tuple typedSlotAt: typeSlot)
+    }.
+
+    public method compileRefSlotReferenceAt: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let tuple := self valueOfOperand: operands second.
+        let typeSlot => TypeSlot := self evaluateLiteral: operands third.
+        self storeInTemporary: operands first value: (builder tuple: tuple typedSlotReferenceAt: typeSlot)
+    }.
+
+    public method compileRefSlotAtPut: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let tuple := self valueOfOperand: operands first.
+        let typeSlot => TypeSlot := self evaluateLiteral: operands second.
+        let value := self valueOfOperand: operands third.
+        builder tuple: tuple typedSlotAt: typeSlot put: value
+    }.
+
+    public method compileCall: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let calledFunction := self valueOfOperand: operands second.
+        let arguments := (operands allButFirst: 2sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        let result := builder call: calledFunction arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
+        self storeInTemporary: operands first value: result
+    }.
+
+    public method compileUncheckedCall: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let calledFunction := self valueOfOperand: operands second.
+        let arguments := (operands allButFirst: 2sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        let result := builder call: calledFunction arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
+        result isUnchecked: true.
+        self storeInTemporary: operands first value: result
+    }.
+
+    public method compileSend: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let selector := self valueOfOperand: operands second.
+        let receiver := self valueOfOperand: operands third.
+        let arguments := (operands allButFirst: 3sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        let result := builder send: receiver selector: selector arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
+        self storeInTemporary: operands first value: result
+    }.
+
+    public method compileSendWithLookup: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let receiverLookupType := self valueOfOperand: operands second.
+        let selector := self valueOfOperand: operands third.
+        let receiver := self valueOfOperand: operands fourth.
+        let arguments := (operands allButFirst: 4sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        let result := builder send: receiver receiverLookupType: receiverLookupType selector: selector arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
+        self storeInTemporary: operands first value: result
+    }.
+
+    public method compileMakeArrayWithElements: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let elements := operands allButFirst collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        self storeInTemporary: operands first value: (builder makeArray: elements)
+    }.
+
+    public method compileMakeByteArrayWithElements: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let elements := operands allButFirst collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        self storeInTemporary: operands first value: (builder makeArray: elements)
+    }.
+
+    public method compileMakeClosureWithCaptures: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let functionDefinition := self valueOfOperand: operands second.
+        let captures := (operands allButFirst: 2sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        self storeInTemporary: operands first value: (builder makeClosure: functionDefinition captures: captures type: (self typeOfTemporary: operands first ifAbsent: Function))
+    }.
+
+    public method compileMakeDictionaryWithElements: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let elements := operands allButFirst collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
+        self storeInTemporary: operands first value: (builder makeDictionary: elements)
+    }.
+
+    let OpcodeCompilationFunction := (HIRFunctionBytecodeCompilationContext, UInt8, Array, Size, Size) => Void.
+    let OpcodeDispatchTable := (Array new: 256)
+        at: FunctionBytecode::Opcode::Nop put: HIRFunctionBytecodeCompilationContext >> #compileNop:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Trap put: HIRFunctionBytecodeCompilationContext >> #compileTrap:operands:pc:nextPC:;
+
+        at: FunctionBytecode::Opcode::Jump put: HIRFunctionBytecodeCompilationContext >> #compileJump:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Return put: HIRFunctionBytecodeCompilationContext >> #compileReturn:operands:pc:nextPC:;
+
+        at: FunctionBytecode::Opcode::Alloca put: HIRFunctionBytecodeCompilationContext >> #compileAlloca:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Move put: HIRFunctionBytecodeCompilationContext >> #compileMove:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Load put: HIRFunctionBytecodeCompilationContext >> #compileLoad:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Store put: HIRFunctionBytecodeCompilationContext >> #compileStore:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::JumpIfTrue put: HIRFunctionBytecodeCompilationContext >> #compileJumpIfTrue:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::JumpIfFalse put: HIRFunctionBytecodeCompilationContext >> #compileJumpIfTrue:operands:pc:nextPC:;
+
+        at: FunctionBytecode::Opcode::AllocaWithValue put: HIRFunctionBytecodeCompilationContext >> #compileAllocaWithValue:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::CoerceValue put: HIRFunctionBytecodeCompilationContext >> #compileCoerceValue:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::DownCastValue put: HIRFunctionBytecodeCompilationContext >> #compileDownCastValue:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::UncheckedDownCastValue put: HIRFunctionBytecodeCompilationContext >> #compileUncheckedDownCastValue:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::MakeAssociation put: HIRFunctionBytecodeCompilationContext >> #compileMakeAssociation:operands:pc:nextPC:;
+
+        at: FunctionBytecode::Opcode::SlotAt put: HIRFunctionBytecodeCompilationContext >> #compileSlotAt:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::SlotReferenceAt put: HIRFunctionBytecodeCompilationContext >> #compileSlotReferenceAt:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::SlotAtPut put: HIRFunctionBytecodeCompilationContext >> #compileSlotAtPut:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::RefSlotAt put: HIRFunctionBytecodeCompilationContext >> #compileRefSlotAt:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::RefSlotReferenceAt put: HIRFunctionBytecodeCompilationContext >> #compileRefSlotReferenceAt:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::RefSlotAtPut put: HIRFunctionBytecodeCompilationContext >> #compileRefSlotAtPut:operands:pc:nextPC:;
+
+        at: FunctionBytecode::Opcode::Call put: HIRFunctionBytecodeCompilationContext >> #compileCall:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::UncheckedCall put: HIRFunctionBytecodeCompilationContext >> #compileUncheckedCall:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Send put: HIRFunctionBytecodeCompilationContext >> #compileSend:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::SendWithLookup put: HIRFunctionBytecodeCompilationContext >> #compileSendWithLookup:operands:pc:nextPC:;
+
+        at: FunctionBytecode::Opcode::MakeArrayWithElements put: HIRFunctionBytecodeCompilationContext >> #compileMakeArrayWithElements:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::MakeByteArrayWithElements put: HIRFunctionBytecodeCompilationContext >> #compileMakeByteArrayWithElements:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::MakeClosureWithCaptures put: HIRFunctionBytecodeCompilationContext >> #compileMakeClosureWithCaptures:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::MakeDictionaryWithElements put: HIRFunctionBytecodeCompilationContext >> #compileMakeDictionaryWithElements:operands:pc:nextPC:;
+
+        yourself.
+
+    public method compileInstructionWithOpcode: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let standardOpcode := opcode >= FunctionBytecode::Opcode::FirstVariable
+            ifTrue: opcode & 16rF0 u8
+            ifFalse: opcode.
+
+        let opcodeCompilationFunction => OpcodeCompilationFunction := OpcodeDispatchTable at: standardOpcode asSize.
+        opcodeCompilationFunction ifNil: {
+            error("TODO: compile " -- (FunctionBytecode::OpcodeNameDictionary at: standardOpcode) asString).
+        }.
+
+        opcodeCompilationFunction(self, opcode, operands, pc, nextPC)
+    }.
+}.
+
+FunctionDefinition extend: {
+    public method asHIRModuleFromBytecodeForTarget: (compilationTarget: HIRCompilationTarget) ::=> HIRModule
+        := (HIRModuleCompilationContext forTarget: compilationTarget)
+            exclusiveCompilationMode: true;
+            compileFromBytecode: true;
+            compileFunctionDefinition: self;
+            finish.
+
+    public method asHIRModuleFromBytecode => HIRModule
+        := HIRModuleCompilationContext forDefaultTarget
+            exclusiveCompilationMode: true;
+            compileFromBytecode: true;
+            compileFunctionDefinition: self;
+            finish.
+}.
+
+Function extend: {
+    public method asHIRModuleFromBytecodeForTarget: (compilationTarget: HIRCompilationTarget) ::=> HIRModule
+        := (HIRModuleCompilationContext forTarget: compilationTarget)
+            exclusiveCompilationMode: true;
+            compileFromBytecode: true;
+            declareFunctionDefinition: self definition;
+            declareFunction: self;
+            compileFunctionDefinition: self definition;
+            finish.
+
+    public method asHIRModuleFromBytecode => HIRModule
+        := HIRModuleCompilationContext forDefaultTarget
+            exclusiveCompilationMode: true;
+            compileFromBytecode: true;
+            declareFunctionDefinition: self definition;
+            declareFunction: self;
+            compileFunctionDefinition: self definition;
+            finish.
+}.

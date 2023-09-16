@@ -75,6 +75,11 @@ typedef struct sysbvm_functionBytecode_s
     sysbvm_tuple_t instructions;
 
     sysbvm_tuple_t definition;
+
+    sysbvm_tuple_t arguments;
+    sysbvm_tuple_t captures;
+    sysbvm_tuple_t temporaryTypes;
+    
     sysbvm_tuple_t pcToDebugListTable;
     sysbvm_tuple_t debugSourceASTNodes;
     sysbvm_tuple_t debugSourcePositions;
