@@ -317,6 +317,17 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jumpIfFalse(sysbvm_co
     return instruction;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_setDebugValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t value, sysbvm_tuple_t binding)
+{
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
+    sysbvm_array_atPut(operands, 0, value);
+    sysbvm_array_atPut(operands, 1, binding);
+
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_SET_DEBUG_VALUE, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
+    return instruction;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_load(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t pointer)
 {
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
@@ -813,7 +824,6 @@ static void sysbvm_functionBytecodeAssembler_lowerTemporaryPointerRank(sysbvm_co
 
 static void sysbvm_functionBytecodeAssembler_optimizeLocalOnlyAllocaAndSlotReferences(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction)
 {
-    //return;
     // Ignore labels.
     if(sysbvm_functionBytecodeAssemblerInstruction_isLabel(context, instruction))
         return;
@@ -1435,6 +1445,12 @@ static sysbvm_tuple_t sysbvm_astLiteralNode_primitiveCompileIntoBytecode(sysbvm_
     return sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*literalNode)->value);
 }
 
+static bool sysbvm_symbolBinding_hasValidNameForDebugging(sysbvm_context_t *context, sysbvm_tuple_t binding)
+{
+    sysbvm_tuple_t name = sysbvm_symbolBinding_getName(binding);
+    return name && !sysbvm_tuple_isKindOf(context, name, context->roots.generatedSymbolType);
+}
+
 static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
@@ -1456,12 +1472,20 @@ static sysbvm_tuple_t sysbvm_astVariableDefinitionNode_primitiveCompileIntoBytec
         sysbvm_functionBytecodeAssembler_allocaWithValue(context, (*compiler)->assembler, localVariable,
             sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*variableDefinitionNode)->super.analyzedType),
             value);
-        
+
+        if(sysbvm_symbolBinding_hasValidNameForDebugging(context, (*variableDefinitionNode)->binding))
+            sysbvm_functionBytecodeAssembler_setDebugValue(context, (*compiler)->assembler, localVariable,
+                sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*variableDefinitionNode)->binding));
+
         sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, localVariable);
         return localVariable;
     }
     else
     {
+        if(sysbvm_symbolBinding_hasValidNameForDebugging(context, (*variableDefinitionNode)->binding))
+            sysbvm_functionBytecodeAssembler_setDebugValue(context, (*compiler)->assembler, value,
+                sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (*variableDefinitionNode)->binding));
+
         sysbvm_functionBytecodeDirectCompiler_setBindingValue(context, *compiler, (*variableDefinitionNode)->binding, value);
         return value;
     }

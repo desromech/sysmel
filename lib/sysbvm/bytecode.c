@@ -324,6 +324,9 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
                 isBackwardBranch = decodedOperands[1 < 0];
             }
             break;
+        case SYSBVM_OPCODE_SET_DEBUG_VALUE:
+            // Nop.
+            break;
         case SYSBVM_OPCODE_SLOT_AT:
             {
                 size_t slotIndex = sysbvm_typeSlot_getIndex(operandRegisterFile[2]);
@@ -622,6 +625,7 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Store", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_STORE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfTrue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_JUMP_IF_TRUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::JumpIfFalse", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_JUMP_IF_FALSE));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SetDebugValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SET_DEBUG_VALUE));
 
     // Three operands.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::AllocaWithValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_ALLOCA_WITH_VALUE));

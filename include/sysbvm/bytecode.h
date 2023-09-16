@@ -26,6 +26,7 @@ typedef enum sysbvm_opcode_e
     SYSBVM_OPCODE_STORE, /// store <PointerLikeValue> <Value>
     SYSBVM_OPCODE_JUMP_IF_TRUE, /// jumpIfTrue <Condition> <Destination Relative PC>
     SYSBVM_OPCODE_JUMP_IF_FALSE, /// jumpIfFalse <Condition> <Destination Relative PC>
+    SYSBVM_OPCODE_SET_DEBUG_VALUE, /// setDebugValue <Value> <Binding>
 
     // Three operand instructions
     SYSBVM_OPCODE_ALLOCA_WITH_VALUE = 0x30, /// <Result> := alloca <Pointer Type> <Value>

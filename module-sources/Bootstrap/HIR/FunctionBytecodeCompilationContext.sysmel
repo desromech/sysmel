@@ -525,6 +525,12 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         builder conditionalBranch: condition trueDestination: nextBasicBlock falseDestination: branchBasicBlock
     }.
 
+    public method compileSetDebugValue: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        let value := self valueOfOperand: operands first.
+        let binding => SymbolBinding := self evaluateLiteral: operands second.
+        builder setDebugValue: value forBinding: binding
+    }.
+
     public method compileAllocaWithValue: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         let pointerType => PointerLikeType := self evaluateLiteral: operands second.
         let alloca := builder alloca: pointerType baseType type: pointerType.
@@ -659,6 +665,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         at: FunctionBytecode::Opcode::Store put: HIRFunctionBytecodeCompilationContext >> #compileStore:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::JumpIfTrue put: HIRFunctionBytecodeCompilationContext >> #compileJumpIfTrue:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::JumpIfFalse put: HIRFunctionBytecodeCompilationContext >> #compileJumpIfFalse:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::SetDebugValue put: HIRFunctionBytecodeCompilationContext >> #compileSetDebugValue:operands:pc:nextPC:;
 
         at: FunctionBytecode::Opcode::AllocaWithValue put: HIRFunctionBytecodeCompilationContext >> #compileAllocaWithValue:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::CoerceValue put: HIRFunctionBytecodeCompilationContext >> #compileCoerceValue:operands:pc:nextPC:;

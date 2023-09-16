@@ -388,6 +388,9 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
                 sysbvm_jit_callWithContextNoResult0(&jit, &sysbvm_gc_safepoint);
             sysbvm_jit_jumpRelativeIfFalse(&jit, decodedOperands[0], pc + decodedOperands[1]);
             break;
+        case SYSBVM_OPCODE_SET_DEBUG_VALUE:
+            // NOP
+            break;
 
         // Three operands.
         case SYSBVM_OPCODE_ALLOCA_WITH_VALUE:

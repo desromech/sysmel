@@ -208,6 +208,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jumpIfTrue(sysbvm_con
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_jumpIfFalse(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t condition, sysbvm_tuple_t destination);
 
 /**
+ * Set debug value instruction
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_setDebugValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t value, sysbvm_tuple_t binding);
+
+/**
  * Load instruction.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_load(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t pointer);
