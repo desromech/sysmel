@@ -1010,6 +1010,7 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
     gcFrame.bytecode->jittedCodeTrampolineSessionToken = sysbvm_tuple_systemHandle_encode(context, 0);
 
     // Tables for the debug information.
+    gcFrame.bytecode->sourcePosition = gcFrame.sourceAnalyzedDefinition->sourcePosition;
     gcFrame.pcToDebugListTable = sysbvm_orderedCollection_create(context);
     gcFrame.debugSourceASTNodes = sysbvm_orderedCollection_create(context);
     gcFrame.debugSourcePositions = sysbvm_orderedCollection_create(context);

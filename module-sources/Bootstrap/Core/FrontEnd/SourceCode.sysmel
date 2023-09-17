@@ -12,8 +12,17 @@ SourceCode definition: {
             := self text: text directory: FileSystem::dirname(filename) name: FileSystem::basename(filename) language: language.
     }.
 
+    public method ensureTextIsLoaded => Void := {
+        text ifNotNil: {return: void}.
+
+        text := {:: String |
+            IO::readWholeFileNamedAsString(directory FileSystem::joinPath: name)
+        } on: Error do: {:(Error)e :: String | "" }.
+    }.
+
     public method ensureLineStartIndexTableIsBuilt => Void := {
         lineStartIndexTable ifNotNil: {return: void}.
+        self ensureTextIsLoaded.
 
         let table := OrderedCollection new.
         table add: 0u32.
@@ -32,6 +41,7 @@ SourceCode definition: {
 
     public method findLineIndexForSourceIndex: (sourceCodeIndex: UInt32) ::=> UInt32 := {
         self ensureLineStartIndexTableIsBuilt.
+        sourceCodeIndex asSize > text size ifTrue: {return: 0u32}.
 
         let left mutable := 0u32.
         let right mutable := lineStartIndexTable size asUInt32.
@@ -55,9 +65,12 @@ SourceCode definition: {
         := (self findLineIndexForSourceIndex: index) + 1u32.
 
     public method columnNumberAtIndex: (index: UInt32) ::=> UInt32 := {
-            let lineIndex := self findLineIndexForSourceIndex: index.
-            let lineSourceIndex => UInt32 := lineStartIndexTable at: lineIndex asSize.
-            index - lineSourceIndex + 1u32
+        self ensureLineStartIndexTableIsBuilt.
+        index asSize > text size ifTrue: {return: 0u32}.
+
+        let lineIndex := self findLineIndexForSourceIndex: index.
+        let lineSourceIndex => UInt32 := lineStartIndexTable at: lineIndex asSize.
+        index - lineSourceIndex + 1u32
     }.
 }.
 

@@ -187,19 +187,14 @@ FunctionDefinition definition: {
     public method isTargetDefinedPrimitive => Boolean
         := (self hasAnyFlag: FunctionFlags::TargetDefinedPrimitive) || (self hasPragmaNamed: #targetDefinedPrimitive).
 
-    public method allAnalyzedNodesDo: (aBlock: (ASTNode) => Void) ::=> Void := {
+    public method allLiteralDependenciesDo: (aBlock: (Untyped) => Void) ::=> Void := {
         self ensureAnalysis.
-        sourceAnalyzedDefinition argumentNodes do: {:(ASTNode)each :: Void |
-            each withAllChildrenDo: aBlock
-        }.
-        sourceAnalyzedDefinition bodyNode ifNotNil: (sourceAnalyzedDefinition bodyNode withAllChildrenDo: aBlock).
-        sourceAnalyzedDefinition resultTypeNode ifNotNil: (sourceAnalyzedDefinition resultTypeNode withAllChildrenDo: aBlock).
-    }.
-
-    public method allLiteralDependenciesDo: (aBlock: (Untyped, Boolean) => Void) ::=> Void := {
-        self allAnalyzedNodesDo: {:(ASTNode)each :: Void |
-            each literalDependenciesDo: aBlock
-        }
+        let literals := bytecode literalVector.
+        let literalCount := literals size.
+        let i mutable := 0sz.
+        while: (i < literalCount) do: {
+            aBlock(literals untypedAt: i)
+        } continueWith: (i := i + 1sz)
     }.
 }.
 

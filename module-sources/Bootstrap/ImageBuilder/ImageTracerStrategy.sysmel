@@ -138,7 +138,7 @@ FunctionDefinition definition: {
             super imageTracer::traceMinimalReferencesOf: object with: tracer.
 
             let functionDefinition => FunctionDefinition := object.
-            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :(Boolean)isAnalysisIndirect :: Void |
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :: Void |
                 tracer enqueueObjectTrace: dependency
             }.
         }.
@@ -149,10 +149,8 @@ FunctionDefinition definition: {
             super imageTracer::traceMinimalReferencesOf: object with: tracer.
 
             let functionDefinition => FunctionDefinition := object.
-            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :(Boolean)isAnalysisIndirect :: Void |
-                isAnalysisIndirect ifFalse: {
-                    tracer enqueueObjectTrace: dependency
-                }.
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :: Void |
+                tracer enqueueObjectTrace: dependency
             }.
         }.
 
@@ -161,10 +159,8 @@ FunctionDefinition definition: {
             super imageTracer::traceNoRTTIReferencesOf: object with: tracer.
 
             let functionDefinition => FunctionDefinition := object.
-            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :(Boolean)isAnalysisIndirect :: Void |
-                isAnalysisIndirect ifFalse: {
-                    tracer enqueueObjectTrace: dependency                
-                }.
+            functionDefinition allLiteralDependenciesDo: {:(Untyped)dependency :: Void |
+                tracer enqueueObjectTrace: dependency
             }.
         }.
 

@@ -956,6 +956,11 @@ FunctionDefinition
         }
     };
     withSelector: #sourcePosition addMethod: {:(FunctionDefinition)self :: SourcePosition |
+        let: #bytecode with: self bytecode.
+        if: bytecode ~~ nil then: {
+            return: bytecode sourcePosition
+        }.
+
         let: #sourceAnalyzedDefinition with: self sourceAnalyzedDefinition.
         if: sourceAnalyzedDefinition ~~ nil then: {
             return: sourceAnalyzedDefinition sourcePosition

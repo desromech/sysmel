@@ -1380,6 +1380,7 @@ FunctionDefinition definition: {
 
     public eager override method ensureAnalysis => Void := {
         sourceDefinition ifNil: {return: void}.
+        bytecode ifNotNil: {return: void}.
         sourceAnalyzedDefinition isNotNil && sourceAnalyzedDefinition captures isNotNil ifTrue: {return: void}.
         
         self ensureTypeAnalysis.
