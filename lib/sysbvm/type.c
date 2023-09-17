@@ -146,6 +146,20 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousPrimitiveValueType(sysbvm_c
     return (sysbvm_tuple_t)result;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousAbstractPrimitiveValueType(sysbvm_context_t *context, sysbvm_tuple_t supertype, sysbvm_tuple_t metaclass)
+{
+    size_t typeSlotCount = sysbvm_type_getTotalSlotCount(metaclass);
+    SYSBVM_ASSERT(typeSlotCount >= SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_primitiveValueType_t));
+
+    sysbvm_primitiveValueType_t* result = (sysbvm_primitiveValueType_t*)sysbvm_context_allocatePointerTuple(context, metaclass, typeSlotCount);
+    result->super.super.supertype = supertype;
+    result->super.super.totalSlotCount = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceSize = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.instanceAlignment = sysbvm_tuple_size_encode(context, 0);
+    result->super.super.flags = sysbvm_tuple_bitflags_encode(SYSBVM_TYPE_FLAGS_ABSTRACT_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS);
+    return (sysbvm_tuple_t)result;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousValueMetatype(sysbvm_context_t *context, sysbvm_tuple_t supertype, size_t minimumSlotCount)
 {
     sysbvm_valueMetatype_t* result = (sysbvm_valueMetatype_t*)sysbvm_context_allocatePointerTuple(context, context->roots.valueMetatypeType, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_valueMetatype_t));
@@ -178,6 +192,25 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousPrimitiveValueTypeAndValueM
     sysbvm_tuple_t primitiveValueType = sysbvm_type_createAnonymousPrimitiveValueType(context, actualSuperType, metatype);
 
     sysbvm_type_setFlags(context, metatype, SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS);
+
+    // Link together the type with its metatype.
+    sysbvm_metatype_t *metatypeObject = (sysbvm_metatype_t*)metatype;
+    metatypeObject->thisType = primitiveValueType;
+    return primitiveValueType;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousAbstractPrimitiveValueTypeAndValueMetatype(sysbvm_context_t *context, sysbvm_tuple_t supertype)
+{
+    sysbvm_tuple_t metatypeSupertype = context->roots.primitiveValueType;
+    sysbvm_tuple_t actualSuperType = supertype;
+    sysbvm_tuple_t supertypeMetatype = sysbvm_tuple_getType(context, supertype);
+    if(sysbvm_type_isDirectSubtypeOf(supertypeMetatype, context->roots.primitiveValueType))
+        metatypeSupertype = supertypeMetatype;
+
+    sysbvm_tuple_t metatype = sysbvm_type_createAnonymousValueMetatype(context, metatypeSupertype, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_primitiveValueType_t));
+    sysbvm_tuple_t primitiveValueType = sysbvm_type_createAnonymousAbstractPrimitiveValueType(context, actualSuperType, metatype);
+
+    sysbvm_type_setFlags(context, metatype, SYSBVM_TYPE_FLAGS_ABSTRACT_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS);
 
     // Link together the type with its metatype.
     sysbvm_metatype_t *metatypeObject = (sysbvm_metatype_t*)metatype;

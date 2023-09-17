@@ -148,13 +148,6 @@ ASTDownCastNode
     withSelector: #transformWith: addMethod: {:(ASTDownCastNode)self :aBlock :: Void |
         if: (self typeExpression isNotNil) then: (self typeExpression: aBlock(self typeExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTDownCastNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
-            nextPutAll: " typeExpression: ("; fullPrint: self typeExpression;
-            nextPutAll: ") valueExpression: ("; fullPrint: self valueExpression;
-            nextPutAll: ")"
     } makeOverride.
 
 ASTDoWhileContinueWithNode
@@ -197,13 +190,6 @@ ASTFunctionApplicationNode
     withSelector: #transformWith: addMethod: {:(ASTFunctionApplicationNode)self :aBlock :: Void |
         if: (self functionExpression isNotNil) then: (self functionExpression: aBlock(self functionExpression)).
         self arguments: (self arguments collect: aBlock).
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTFunctionApplicationNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
-            nextPutAll: " functionExpression: ("; fullPrint: self functionExpression;
-            nextPutAll: ") arguments: "; fullPrint: self arguments;
-            nextPutAll: " applicationFlags: "; print: self applicationFlags
     } makeOverride.
 
 ASTLambdaNode
@@ -237,10 +223,6 @@ ASTLexicalBlockNode
     } makeOverride;
     withSelector: #transformWith: addMethod: {:(ASTLexicalBlockNode)self :aBlock :: Void |
         if: (self body isNotNil) then: (self body: aBlock(self body)).
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTLexicalBlockNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " body: ("; fullPrint: self body; nextPut: ')'c8
     } makeOverride.
 
 ASTLiteralNode
@@ -272,11 +254,6 @@ ASTLiteralNode
         if: (self value __type__ lookupSelector: #primitiveName) ~~ nil
             then: (self value ensureAnalysis; primitiveName)
             else: nil
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTLiteralNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
-            nextPutAll: " value: "; fullPrint: self value
     } makeOverride.
 
 ASTVariableDefinitionNode
@@ -289,12 +266,6 @@ ASTVariableDefinitionNode
     withSelector: #transformWith: addMethod: {:(ASTVariableDefinitionNode)self :aBlock :: Void |
         if: (self nameExpression isNotNil) then: (self nameExpression: aBlock(self nameExpression)).
         if: (self valueExpression isNotNil) then: (self valueExpression: aBlock(self valueExpression)).
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTVariableDefinitionNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
-            nextPutAll: " nameExpression: ("; fullPrint: self nameExpression;
-            nextPutAll: ") valueExpression: ("; fullPrint: self valueExpression; nextPut: ')'c8
     } makeOverride.
 
 ASTIdentifierReferenceNode
@@ -307,13 +278,7 @@ ASTIdentifierReferenceNode
             sourcePosition: self sourcePosition;
             value: self value;
             yourself
-    };
-    withSelector: #fullPrintOn: addMethod: {:(ASTIdentifierReferenceNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
-            nextPutAll: " value: ("; fullPrint: self value;
-            nextPutAll: ") binding: ("; fullPrint: self binding; nextPut: ')'c8
-    } makeOverride.
+    }.
 
 ASTIfNode
     withSelector: #isIfNode addMethod: {:(ASTNode)self :: Boolean | true } makeOverride;
@@ -400,13 +365,6 @@ ASTMessageSendNode
         if: (self receiverLookupType isNotNil) then: (self receiverLookupType: aBlock(self receiverLookupType)).
         if: (self selector isNotNil) then: (self selector: aBlock(self selector)).
         self arguments: (self arguments collect: aBlock)
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTMessageSendNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
-            nextPutAll: " receiver: ("; fullPrint: self receiver;
-            nextPutAll: ") selector: ("; fullPrint: self selector;
-            nextPutAll: ") arguments: "; fullPrint: self arguments
     } makeOverride.
 
 ASTMessageChainNode
@@ -553,12 +511,6 @@ ASTSequenceNode
     withSelector: #transformWith: addMethod: {:(ASTSequenceNode)self :aBlock :: Void |
         self pragmas: (self pragmas collect: aBlock).
         self expressions: (self expressions collect: aBlock)
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTSequenceNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " analyzedType: "; fullPrint: self analyzedType;
-            nextPutAll: " pragmas: "; fullPrint: self pragmas;
-            nextPutAll: " expressions: "; fullPrint: self expressions
     } makeOverride.
 
 ASTUnexpandedApplicationNode
@@ -782,10 +734,4 @@ ASTWhileContinueWithNode
         if: (self conditionExpression isNotNil) then: (self conditionExpression: aBlock(self conditionExpression)).
         if: (self bodyExpression isNotNil) then: (self bodyExpression: aBlock(self bodyExpression)).
         if: (self continueExpression isNotNil) then: (self continueExpression: aBlock(self continueExpression)).
-    } makeOverride;
-    withSelector: #fullPrintOn: addMethod: {:(ASTWhileContinueWithNode)self :(Stream)stream :: Void |
-        stream print: self class; 
-            nextPutAll: " conditionExpression: ("; fullPrint: self conditionExpression;
-            nextPutAll: ") bodyExpression: ("; fullPrint: self bodyExpression;
-            nextPutAll: ") continueExpression: ("; fullPrint: self continueExpression; nextPut: ')'c8
     } makeOverride.

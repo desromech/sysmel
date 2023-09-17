@@ -2700,13 +2700,13 @@ SimpleFunctionType
 (UInt64 >> #asIEEEFloat64Decoded) __type__: (UInt64 => Float64).
 
 let: #UInt32HashMultiplicationConstant with: 1103515245u32.
-let: #UInt32HashBitCount with: 32u32 - 4u32.
+let: #UInt32HashBitCount with: 32u32 - 5u32.
 let: #UInt32HashBitMask with: (1u32 << UInt32HashBitCount) - 1u32.
 let: #UInt32StoredIdentityHashBitCount with: 22u32.
 let: #UInt32StoredIdentityHashBitMask with: (1u32 << UInt32StoredIdentityHashBitCount) - 1u32.
 
 let: #UInt64HashMultiplicationConstant with: 1103515245u64.
-let: #UInt64HashBitCount with: 64u64 - 4u64.
+let: #UInt64HashBitCount with: 64u64 - 5u64.
 let: #UInt64HashBitMask with: (1u64 << UInt64HashBitCount) - 1u64.
 let: #UInt64StoredIdentityHashBitCount with: 22u64.
 let: #UInt64StoredIdentityHashBitMask with: (1u64 << UInt64StoredIdentityHashBitCount) - 1u64.

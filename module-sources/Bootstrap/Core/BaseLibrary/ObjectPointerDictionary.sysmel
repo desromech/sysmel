@@ -76,18 +76,17 @@ public final class ObjectPointerDictionary superclass: HashedCollection; definit
             let methodIndex := index asSize*2sz.
             let storageKey := myStorage __uncheckedSlotAt__: methodIndex.
             (Untyped::==)(storageKey, __hashtableEmptyElement__) ifTrue: {
-                self error: "Key not found in method dictionary."
+                self error: "Key not found in object pointer dictionary."
             }.
 
             myStorage at: methodIndex + 1sz
         } ifFalse: {
-            self error: "Key not found in method dictionary."
+            self error: "Key not found in object pointer dictionary."
         }
     }.
 
-    public method at: key := {
-        self untypedAt: key
-    }.
+    public method at: key
+        := self untypedAt: key.
 
     public method untypedAt: (key: Untyped) put: value ::=> Void := {
         let index mutable := self scanFor: key.

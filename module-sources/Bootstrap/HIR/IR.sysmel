@@ -66,6 +66,8 @@ HIRValue definition: {
     public virtual method hasSideEffects => Boolean := true.
     public virtual method isPureFunction => Boolean := false.
 
+    public virtual method parentFunction => HIRFunctionDefinition := nil.
+
     public virtual method primitiveName => Symbol := nil.
     public virtual method callingConventionNameOrNil => Symbol := nil.
     public virtual method evaluateAsHIRFunctionDefinitionOrNil => HIRFunctionDefinition := nil.
@@ -159,6 +161,8 @@ HIRValue definition: {
 
     public virtual method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
         := false.
+
+    public virtual method validate => Void := {}.
 
     public method hasOnlyDebugUsers => Boolean
         := users isNil || (users allSatisfy: {:(HIRValue)user :: Boolean | user isSetDebugValueForBindingInstruction}).
@@ -321,17 +325,29 @@ HIRFunction definition: {
 }.
 
 HIRFunctionCapture definition: {
+    public field parentFunction => HIRFunctionDefinition.
     public field sourceBinding => SymbolBinding.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        parentFunction := nil
+    }.
 }.
 
 HIRFunctionArgument definition: {
+    public field parentFunction => HIRFunctionDefinition.
     public field sourceBinding => SymbolBinding.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        parentFunction := nil
+    }.
 }.
 
 HIRFunctionDefinition definition: {
     public field sourceObject => FunctionDefinition.
-    public field arguments => Array.
-    public field captures => Array.
+    private field arguments => Array.
+    private field captures => Array.
     public field functionType => FunctionType.
     public field importedSymbols => Array.
     public field primitiveName => Symbol.
@@ -359,6 +375,22 @@ HIRFunctionDefinition definition: {
         arguments := #().
         captures := #().
         importedSymbols := #().
+    }.
+
+    public inline method arguments => Array := arguments.
+    public method arguments: (newArguments: Array) ::=> Void := {
+        arguments := newArguments.
+        newArguments do: {:(HIRFunctionArgument)eachArgument :: Void |
+            eachArgument parentFunction: self
+        }
+    }.
+
+    public inline method captures => Array := captures.
+    public method captures: (newCaptures: Array) ::=> Void := {
+        captures := newCaptures.
+        newCaptures do: {:(HIRFunctionCapture)eachCapture :: Void |
+            eachCapture parentFunction: self
+        }
     }.
 
     HIRValue extend: {
@@ -541,6 +573,7 @@ HIRFunctionDefinition definition: {
 
         self useBasicBlockSortingOrder: self traverseAndKeepLiveBasicBlocks.
         self normalizePhiInstructions.
+        self postTransformValidation: "ComputeControlFlowAndNormalizeBasicBlocks"
     }.
 
     public method computeDominance => Void := {
@@ -880,9 +913,15 @@ HIRFunctionDefinition definition: {
         stream nextPutAll: "}"; nl.
     }.
 
-    public method computeBasicBlockPredecessors => Void := {
+    public override method validate => Void := {
+        self enumerateLocalValueIndices.
         self basicBlocksDo: {:(HIRBasicBlock)each :: Void |
-        }.
+            each validate
+        }
+    }.
+
+    public method postTransformValidation: (transformName: String) ::=> Void := {
+
     }.
 }.
 
@@ -938,6 +977,9 @@ HIRBasicBlock definition: {
     public field dominanceFrontier => OrderedCollection.
 
     public override method isBasicBlock => Boolean := true.
+
+    public override method parentFunction => HIRFunctionDefinition
+        := parent.
 
     public method markWhite => Void := {
         self traversalColor: 0u8
@@ -1558,6 +1600,26 @@ HIRBasicBlock definition: {
             stream nl.
         }.
     }.
+
+    public override method validate => Void := {
+        firstInstruction ifNil: {
+            self error: "Validation error in function:\n" -- self parentFunction fullPrintString
+                -- "\nEmpty basic block: " -- self printString
+        }.
+        lastInstruction isTerminatorInstruction ifFalse: {
+            self error: "Validation error in function:\n" -- self parentFunction fullPrintString
+                -- "\nMissing last terminator instruction in basic block " -- self printString
+        }.
+
+        self instructionsDo: {:(HIRInstruction)each :: Void |
+            each validate.
+
+            each isTerminatorInstruction && each nextInstruction isNotNil ifTrue: {
+                self error: "Validation error in function:\n" -- self parentFunction fullPrintString
+                    -- "\nTerminator instruction " -- each fullPrintString -- " is not the last one in basic block " -- self printString
+            }.
+        }.
+    }.
 }.
 
 HIRInstruction definition: {
@@ -1566,7 +1628,7 @@ HIRInstruction definition: {
     public field previousInstruction => HIRInstruction.
     public field nextInstruction => HIRInstruction.
 
-    public method parentFunction => HIRFunctionDefinition
+    public override method parentFunction => HIRFunctionDefinition
         := self parent ifNil: nil ifNotNil: {:(HIRBasicBlock)parentBlock | parentBlock parent }.
 
     public override method isInstruction => Boolean := true.
@@ -1622,6 +1684,31 @@ HIRInstruction definition: {
 
     public method deleteFromParent => Void
         := parent deleteInstruction: self.
+
+    public override method validate => Void := {
+        self assert: self parentFunction isNotNil.
+
+        self usedValuesDo: {:(HIRValue)eachValue :: Void |
+            eachValue isFunctionLocalValue ifFalse: {
+                return: void
+            }.
+
+            let localValue := eachValue uncheckedDownCastTo: HIRFunctionLocalValue.
+            localValue parentFunction == self parentFunction ifFalse: {
+                self error: "Validation failure in function:\n" -- self parentFunction fullPrintString
+                    -- "\n\nInfringing instruction:\n" -- self fullPrintString
+                    -- "\nOperand:\n" -- localValue fullPrintString
+            }.
+
+            self isPhiInstruction || localValue isBasicBlock ifFalse: {
+                localValue localValueIndex < self localValueIndex ifFalse: {
+                    self error: "Validation failure in function:\n" -- self parentFunction fullPrintString
+                        -- "\n\nInfringing instruction:\n" -- self fullPrintString
+                        -- "\nHas future operand:\n" -- localValue fullPrintString
+                }
+            }.
+        }
+    }.
 }.
 
 public final class HIRAllocaInstruction superclass: HIRInstruction; definition: {
@@ -2512,6 +2599,10 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
         }.
 
         descriptor
+    }.
+
+    public method optimizeLookup => Void := {
+
     }.
 
     public method boxingApplicationSignature => Array

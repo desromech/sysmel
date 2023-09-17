@@ -9,6 +9,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
     public field captures => Array.
     public field temporaries => Array.
     public field temporaryTypes => Array.
+    public field literals => Array.
 
     public field currentPCToDebugTableIndex => Size.
 
@@ -117,6 +118,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         }.
 
         bytecode := functionDefinition bytecode.
+        literals := Array new: bytecode literalVector size.
 
         ## Declare the temporaries.
         self declareTemporaries.
@@ -149,6 +151,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         }.
 
         ## Simplify the temporaries.
+        ssaFunction validate.
         HIRPromoteSSAAllocaPass runInFunctionDefinition: ssaFunction
     }.
 
@@ -184,13 +187,22 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
     public method typeOfTemporary: (operand: Int16) ::=> Type
         := self typeOfTemporary: operand ifAbsent: Untyped.
 
+    public method valueForLiteralWithIndex: (literalIndex: Size) ::=> HIRValue := {
+        (literals at: literalIndex) ifNil: {
+            let literalValue := bytecode literalVector untypedAt: literalIndex.
+            let literalHirValue := (RawTuple::type(literalValue) ifNil: Untyped) translateLiteral: literalValue forHIRBytecodeWith: self.
+            literals at: literalIndex put: literalHirValue.
+            literalHirValue
+        }
+    }.
+
     public method valueOfOperand: (operand: Int16) ::=> HIRValue := {
         let operandVector := operand & FunctionBytecode::OperandVectorName::BitMask.
         let operandIndex := (operand >> FunctionBytecode::OperandVectorName::Bits) asSize.
 
         operandVector = FunctionBytecode::OperandVectorName::Literal ifTrue: {
             self assert: operandIndex < bytecode literalVector size.
-            return: (builder literal: (bytecode literalVector at: operandIndex))
+            return: (self valueForLiteralWithIndex: operandIndex)
         }.
 
         operandVector = FunctionBytecode::OperandVectorName::Arguments ifTrue: {
@@ -457,6 +469,17 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         }.
     }.
 
+    public method compileSend: (receiver: HIRValue) receiverLookupType: (receiverLookupType: HIRValue) selector: (selector: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) resultTemporary: (resultTemporary: Int16) ::=> Void := {
+        let result := builder send: receiver receiverLookupType: receiverLookupType selector: selector arguments: arguments resultType: resultType.
+        result optimizeLookup.
+
+        (resultType isSubtypeOf: ControlFlowEscapeType) ifTrue: {
+            builder unreachable
+        } ifFalse: {
+            self storeInTemporary: resultTemporary value: result
+        }
+    }.
+
     public method compileNop: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         ## Nothing is required here.
     }.
@@ -616,8 +639,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         let selector := self valueOfOperand: operands second.
         let receiver := self valueOfOperand: operands third.
         let arguments := (operands allButFirst: 3sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
-        let result := builder send: receiver selector: selector arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
-        self storeInTemporary: operands first value: result
+        self compileSend: receiver receiverLookupType: nil selector: selector arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void) resultTemporary: operands first
     }.
 
     public method compileSendWithLookup: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
@@ -625,8 +647,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         let selector := self valueOfOperand: operands third.
         let receiver := self valueOfOperand: operands fourth.
         let arguments := (operands allButFirst: 4sz) collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
-        let result := builder send: receiver receiverLookupType: receiverLookupType selector: selector arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void).
-        self storeInTemporary: operands first value: result
+        self compileSend: receiver receiverLookupType: receiverLookupType selector: selector arguments: arguments resultType: (self typeOfTemporary: operands first ifAbsent: Void) resultTemporary: operands first
     }.
 
     public method compileMakeArrayWithElements: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
@@ -704,6 +725,21 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
 
         opcodeCompilationFunction(self, opcode, operands, pc, nextPC)
     }.
+}.
+
+Type extend: {
+    public virtual method translateLiteral: (value: Untyped) forHIRBytecodeWith: (context: HIRFunctionBytecodeCompilationContext) ::=> HIRValue
+        := context builder literal: value type: self
+}.
+
+FunctionType extend: {
+    public override method translateLiteral: (value: Untyped) forHIRBytecodeWith: (context: HIRFunctionBytecodeCompilationContext) ::=> HIRValue
+        := context moduleCompilationContext translateFunction: value withBuilder: context builder
+}.
+
+FunctionDefinition class extend: {
+    public override method translateLiteral: (value: Untyped) forHIRBytecodeWith: (context: HIRFunctionBytecodeCompilationContext) ::=> HIRValue
+        := context moduleCompilationContext translateFunctionDefinition: value withBuilder: context builder.
 }.
 
 FunctionDefinition extend: {

@@ -80,6 +80,7 @@ public final class HIRInlinerState definition: {
 
         hasInlinedAnyCall ifTrue: {
             functionDefinition
+                postTransformValidation: "Inlining";
                 computeControlFlowAndNormalizeBasicBlocks;
                 computeNewCalledFunctionDefinitions.
 

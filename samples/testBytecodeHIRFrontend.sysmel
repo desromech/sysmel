@@ -42,7 +42,7 @@ printLine(module fullPrintString).
 }
 *#
 
-{
+#*{
 public struct MyStruct definition: {
     public field x => Int32.
     public field y => Int32.
@@ -56,5 +56,15 @@ function myStruct() => Int32 := {
 printLine((myStruct ensureAnalysis; definition) bytecode fullPrintString).
 
 let module := myStruct asHIRModuleFromBytecode.
+printLine(module fullPrintString).
+}.
+*#
+
+{
+let function := Array >> #hash.
+printLine((function ensureAnalysis; definition) sourceAnalyzedDefinition bodyNode fullPrintString).
+printLine((function ensureAnalysis; definition) bytecode fullPrintString).
+
+let module := function asHIRModule.
 printLine(module fullPrintString).
 }.

@@ -8,6 +8,8 @@ public class HIRPromoteSSAAllocaPass superclass: HIRFunctionDefinitionPass; defi
                 self processAlloca: alloca
             }
         }.
+
+        function postTransformValidation: "PromoteSSAAllocaPass".
     }.
 
     public method processAlloca: (alloca: HIRAllocaInstruction) ::=> Void := {

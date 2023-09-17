@@ -82,6 +82,9 @@ typedef enum sysbvm_typeFlags_e
     SYSBVM_TYPE_FLAGS_VALUE_TYPE_DEFAULT_FLAGS = SYSBVM_TYPE_FLAGS_VALUE,
     SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS = SYSBVM_TYPE_FLAGS_VALUE | SYSBVM_TYPE_FLAGS_IMMEDIATE | SYSBVM_TYPE_FLAGS_FINAL,
     SYSBVM_TYPE_FLAGS_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS = SYSBVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS | SYSBVM_TYPE_FLAGS_FINAL,
+
+    SYSBVM_TYPE_FLAGS_ABSTRACT_PRIMITIVE_VALUE_TYPE_DEFAULT_FLAGS = SYSBVM_TYPE_FLAGS_VALUE | SYSBVM_TYPE_FLAGS_IMMEDIATE,
+    SYSBVM_TYPE_FLAGS_ABSTRACT_PRIMITIVE_VALUE_TYPE_METATYPE_FLAGS = SYSBVM_TYPE_FLAGS_METATYPE_REQUIRED_FLAGS,
 } sysbvm_typeFlags_t;
 
 typedef struct sysbvm_class_s
@@ -285,6 +288,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousValueMetatype(sysbvm_contex
  * Creates an anonymous primitive type with respective meta value type.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousPrimitiveValueTypeAndValueMetatype(sysbvm_context_t *context, sysbvm_tuple_t supertype);
+
+/**
+ * Creates an anonymous primitive type with respective meta value type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_createAnonymousAbstractPrimitiveValueTypeAndValueMetatype(sysbvm_context_t *context, sysbvm_tuple_t supertype);
 
 /**
  * Creates a type with the specified name.

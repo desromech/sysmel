@@ -88,6 +88,6 @@ public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; d
             }.
         }.
 
-        function computeDominance
+        function postTransformValidation: "ConstantPropagationPass"; computeDominance
     }.
 }.

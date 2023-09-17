@@ -65,6 +65,8 @@ HIRFunctionASTCompilationContext definition: {
                 }.
                 self builder isLastTerminator ifFalse: (self builder return: resultValue).
             }.
+
+            ssaFunction validate
         }.
     }.
 

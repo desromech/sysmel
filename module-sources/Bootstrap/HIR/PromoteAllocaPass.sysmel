@@ -200,5 +200,7 @@ public class HIRPromoteAllocaPass superclass: HIRFunctionDefinitionPass; definit
         allocaInstructions do: {:(HIRAllocaInstruction)each :: Void |
             HIRAllocaPromotionState new promote: each
         }.
+
+        function postTransformValidation: "PromoteAllocaPass"
     }
 }.

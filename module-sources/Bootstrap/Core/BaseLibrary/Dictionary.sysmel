@@ -123,4 +123,14 @@ Dictionary definition: {
             nil
         }
     }.
+
+    public method keysAndValuesDo: aBlock ::=> Void := {
+        storage ifNotNil: {
+            storage do: {:element :: Void |
+                if: element ~~ nil then: {
+                    aBlock(element key, element value).
+                }
+            }
+        }
+    }.
 }.
