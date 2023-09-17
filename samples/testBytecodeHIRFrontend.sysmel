@@ -19,16 +19,16 @@ printLine(module fullPrintString).
 }.
 *#
 
-#*{
-let function := Elf64::Header >> #initialize.##Namespace >> #basicInitialize.
+{
+let function := Stream >> #nextPutAllBytesOf:.
 printLine((function ensureAnalysis; definition) bytecode fullPrintString).
 
-let module := function asHIRModule.
+let module := function asHIRModuleFromBytecodeForTarget: AsmCompilationTarget x86_64 asMirCompilationTarget asHIRCompilationTarget.
 printLine(module fullPrintString).
 
 module performStandardOptimizations.
 printLine(module fullPrintString).
-}*#
+}
 
 #*{
 let function := Elf64::Header >> #initialize .##Namespace >> #basicInitialize.
@@ -60,6 +60,7 @@ printLine(module fullPrintString).
 }.
 *#
 
+#*
 {
 let function := Array >> #hash.
 printLine((function ensureAnalysis; definition) sourceAnalyzedDefinition bodyNode fullPrintString).
@@ -68,3 +69,4 @@ printLine((function ensureAnalysis; definition) bytecode fullPrintString).
 let module := function asHIRModule.
 printLine(module fullPrintString).
 }.
+*#

@@ -765,7 +765,7 @@ Stream
         let: #i mutableWith: 0sz.
         while: i < size do: {
             self nextPut: (RawTuple::byteSlotAt:)(anObject, i)
-        } continueWith: (i := i+ 1sz)
+        } continueWith: (i := i + 1sz)
     } makeVirtual;
     withSelector: #print: addMethod: {:(Stream)self :value :: Void | 
         value printOn: self

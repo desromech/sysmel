@@ -99,6 +99,10 @@ HIRValue definition: {
         }
     }.
 
+    public method deleteFromAllUsers => Void := {
+        self replaceWith: (HIRUndefinedConstant new type: self type; yourself)
+    }.
+
     public virtual method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
         := false.
 
@@ -859,7 +863,6 @@ HIRFunctionDefinition definition: {
                     firstInlinedBlock addInstruction: (HIRSetDebugValueForBindingInstruction new
                         value: value;
                         binding: sourceBinding;
-                        type: Void;
                         registerInUsedValues;
                         yourself) before: debugInsertionPosition
                 }.
@@ -921,7 +924,7 @@ HIRFunctionDefinition definition: {
     }.
 
     public method postTransformValidation: (transformName: String) ::=> Void := {
-
+        ##self validate
     }.
 }.
 
@@ -1275,7 +1278,7 @@ HIRBasicBlock definition: {
 
     public method deleteInstructions => Void := {
         self instructionsDo: {:(HIRInstruction)instruction :: Void |
-            instruction unregisterFromUsedValues
+            instruction deleteFromAllUsers
         }.
         firstInstruction := lastInstruction := nil.
     }.
@@ -1658,6 +1661,11 @@ HIRInstruction definition: {
             instruction parent dominates: self parent
         }
     }.
+
+    public method isDominatedByValue: (value: HIRValue) ::=> Boolean
+        := value isInstruction
+            ifTrue: (self isDominatedByInstruction: (value downCastTo: HIRInstruction))
+            ifFalse: true.
 
     public override method postCopy => Void := {
         super postCopy.
@@ -2453,10 +2461,28 @@ HIRPhiInstruction definition: {
         -1iptr
     }.
 
+    public method indexOfIncomingValue: (value: HIRValue) ::=> IntPointer := {
+        let i mutable := 0sz.
+        while: i < incomingBlocksAndValues size do: {
+            let assoc => Association := incomingBlocksAndValues at: i.
+            assoc value == value ifTrue: {
+                return: i asIntPointer
+            }
+        } continueWith: (i := i + 1sz).
+        -1iptr
+    }.
+
     public method removeIncomingBlock: (block: HIRBasicBlock) ::=> Void := {
         let blockIndex := self indexOfIncomingBlock: block.
         blockIndex >= 0iptr ifTrue: {
             incomingBlocksAndValues := incomingBlocksAndValues copyWithoutElementAt: blockIndex asSize
+        }.
+    }.
+
+    public method removeIncomingValue: (value: HIRValue) ::=> Void := {
+        let valueIndex := self indexOfIncomingValue: value.
+        valueIndex >= 0iptr ifTrue: {
+            incomingBlocksAndValues := incomingBlocksAndValues copyWithoutElementAt: valueIndex asSize
         }.
     }.
 
@@ -2509,34 +2535,42 @@ HIRPhiInstruction definition: {
 
         let valueCount := incomingBlocksAndValues size.
         valueCount = 1sz ifTrue: {
-            return: incomingBlocksAndValues first value
+            bestResult := incomingBlocksAndValues first value.
+        } ifFalse: {
+            let i mutable := 0sz.
+            while: (i < valueCount) do: {
+                let association => Association := incomingBlocksAndValues at: i.
+                let value => HIRValue := association value.
+
+                bestResult ifNil: {
+                    bestResult := value.
+                    continue()
+                }.
+
+                value isConstant && bestResult isUndefinedConstant ifTrue: {
+                    bestResult := value.
+                    continue().
+                }.
+
+                value isUndefinedConstant ifTrue: {
+                    continue()
+                }.
+
+                bestResult == value ifFalse: {
+                    return: self
+                }.
+            } continueWith: (i := i + 1sz).
         }.
 
-        let i mutable := 0sz.
-        while: (i < valueCount) do: {
-            let association => Association := incomingBlocksAndValues at: i.
-            let value => HIRValue := association value.
+        bestResult isNil || (bestResult == self) ifTrue: {
+            return: (HIRUndefinedConstant new type: self type; yourself)
+        }.
 
-            bestResult ifNil: {
-                bestResult := value.
-                continue()
-            }.
-
-            value isConstant && bestResult isUndefinedConstant ifTrue: {
-                bestResult := value.
-                continue().
-            }.
-
-            value isUndefinedConstant ifTrue: {
-                continue()
-            }.
-
-            bestResult == value ifFalse: {
-                return: self
-            }.
-        } continueWith: (i := i + 1sz).
-
-        bestResult ifNil: (HIRUndefinedConstant new type: self type; yourself)
+        (self isDominatedByValue: bestResult) ifTrue: {
+            bestResult
+        } ifFalse: {
+            self
+        }
     }.
 
     public method simplify => Void := {

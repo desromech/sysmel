@@ -71,7 +71,8 @@ public class HIRPromoteSSAAllocaPass superclass: HIRFunctionDefinitionPass; defi
                 let setDebugValueInstruction := user uncheckedDownCastTo: HIRSetDebugValueForBindingInstruction.
                 setDebugValueInstruction
                     value: valueAtUsage;
-                    promotedFromAlloca: true.
+                    promotedFromAlloca: true;
+                    registerInUsedValues.
                 alloca unregisterUser: setDebugValueInstruction.
                 return: void
             }.

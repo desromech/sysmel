@@ -167,7 +167,6 @@ public final class HIRAllocaPromotionState definition: {
                 value: value;
                 binding: oldDebugBinding binding;
                 promotedFromAlloca: true;
-                type: Void;
                 registerInUsedValues;
                 yourself.
             block addInstruction: newDebugBinding before: position
