@@ -1,5 +1,6 @@
 public final class HIRModuleCompilationContext superclass: Object; definition: {
     public field compilationTarget => HIRCompilationTarget.
+    public field hirContext => HIRContext.
     public field hirModule => HIRModule.
     public field usedModules => OrderedCollection.
     public field exclusiveCompilationMode => Boolean.
@@ -19,7 +20,8 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
 
     public method initializeWithTarget: (theCompilationTarget: HIRCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
-        hirModule := HIRModule new.
+        hirContext := HIRContext new.
+        hirModule := HIRModule forContext: hirContext.
         translatedValueDictionary := ObjectPointerDictionary new.
         usedModules := OrderedCollection new.
         compileFromBytecode := true.
@@ -76,7 +78,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
     }.
 
     public method generateArgumentForBinding: (binding: SymbolArgumentBinding) ::=> HIRFunctionArgument := {
-        HIRFunctionArgument new
+        (HIRFunctionArgument forContext: hirContext)
             name: binding name;
             type: binding type;
             sourceBinding: binding;
@@ -98,7 +100,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
     }.
 
     public method generateCaptureForBinding: (captureBinding: SymbolCaptureBinding) ::=> HIRFunctionCapture := {
-        HIRFunctionCapture new
+        (HIRFunctionCapture forContext: hirContext)
             name: captureBinding name;
             type: captureBinding type;
             sourceBinding: captureBinding;
@@ -128,7 +130,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
             functionDefinition boxDescriptor: functionDefinition type applicationBoxDescriptor
         }.
 
-        let translatedValue := HIRFunctionDefinition new
+        let translatedValue := (HIRFunctionDefinition forContext: hirContext)
             type: FunctionDefinition;
             sourceObject: functionDefinition;
             name: functionDefinition programEntityQualifiedNameSymbol;
@@ -165,7 +167,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         }.
         
         function ensureAnalysis.
-        let translatedValue := HIRFunction new
+        let translatedValue := (HIRFunction forContext: hirContext)
             sourceObject: function;
             name: function programEntityQualifiedNameSymbol;
             primitiveName: function primitiveName;

@@ -98,7 +98,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
             return: void
         }.
 
-        self builder: (HIRInstructionBuilder new
+        self builder: ((HIRInstructionBuilder forContext: ssaFunction context)
                     sourcePosition: functionDefinition sourcePosition;
                     function: ssaFunction;
                     beginBasicBlockNamed: #entry;

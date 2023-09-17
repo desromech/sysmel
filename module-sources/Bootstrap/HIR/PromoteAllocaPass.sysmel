@@ -62,7 +62,7 @@ public final class HIRAllocaPromotionState definition: {
 
         let addPhiAtBlock := {:(HIRBasicBlock)phiBlockCandidate :: Void |
             (blockPhiDictionary includesKey: phiBlockCandidate) ifFalse: {
-                let phi := HIRPhiInstruction new
+                let phi := (HIRPhiInstruction forContext: phiBlockCandidate context)
                     type: valueType;
                     yourself.
                 blockPhiDictionary at: phiBlockCandidate put: phi.
@@ -162,7 +162,7 @@ public final class HIRAllocaPromotionState definition: {
 
         ## Copy the debug bindings onto the new location.
         debugBindings do: {:(HIRSetDebugValueForBindingInstruction)oldDebugBinding :: Void |
-            let newDebugBinding := HIRSetDebugValueForBindingInstruction new
+            let newDebugBinding := (HIRSetDebugValueForBindingInstruction forContext: oldDebugBinding context)
                 useSourceInformationOfValue: position;
                 value: value;
                 binding: oldDebugBinding binding;
@@ -174,7 +174,7 @@ public final class HIRAllocaPromotionState definition: {
     }.
 
     public method validUndefinedConstant ::=> HIRUndefinedConstant
-        := undefinedConstant ifNil: (undefinedConstant := HIRUndefinedConstant new type: valueType; yourself).
+        := undefinedConstant ifNil: (undefinedConstant := alloca context undefined: valueType).
 
     public method validValueAtInstruction: (startInstruction: HIRInstruction) inBlock: (block: HIRBasicBlock) ::=> HIRValue := {
         (self valueAtInstruction: startInstruction inBlock: block) ifNil: self validUndefinedConstant

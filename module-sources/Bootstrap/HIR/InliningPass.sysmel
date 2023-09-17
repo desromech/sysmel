@@ -113,7 +113,7 @@ public final class HIRInlinerState definition: {
         exitBlock name: #inlineExit.
         self assert: exitBlock firstInstruction isNotNil.
 
-        let builder := HIRInstructionBuilder new
+        let builder := (HIRInstructionBuilder forContext: call context)
             useSourceInformationOfValue: call;
             function: exitBlock parent;
             basicBlock: exitBlock;
@@ -123,10 +123,7 @@ public final class HIRInlinerState definition: {
         ## Create the result value
         let resultPhi => HIRPhiInstruction := call type isVoidType ifTrue: {
             call userCount > 0sz ifTrue: {
-                call replaceWith: (HIRLiteralConstant new
-                    type: Void;
-                    value: void;
-                    yourself)
+                call replaceWith: (call context literal: void)
             } ifFalse: {
                 call deleteFromParent
             }.

@@ -86,7 +86,7 @@ public class HIRPromoteSSAAllocaPass superclass: HIRFunctionDefinitionPass; defi
         (usageLocation isDominatedByInstruction: storeLocation) ifTrue: {
             storedValue
         } ifFalse: {
-            HIRUndefinedConstant new type: storedValue type; yourself
+            usageLocation context undefined: storedValue type
         }
     }.
 }.

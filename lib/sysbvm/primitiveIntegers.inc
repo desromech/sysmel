@@ -122,6 +122,8 @@ static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_divide)(sysbvm_contex
 
     integer_t left = primitiveInteger_decode(arguments[0]);
     integer_t right = primitiveInteger_decode(arguments[1]);
+    if(right == 0)
+        sysbvm_error("Division by zero");
     return primitiveInteger_encode(left / right);
 }
 
@@ -133,6 +135,8 @@ static sysbvm_tuple_t PRIMITIVE_INTEGER_FUNCTION(primitive_remainder)(sysbvm_con
 
     integer_t left = primitiveInteger_decode(arguments[0]);
     integer_t right = primitiveInteger_decode(arguments[1]);
+    if(right == 0)
+        sysbvm_error("Division by zero");
     return primitiveInteger_encode(left % right);
 }
 

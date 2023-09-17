@@ -51,7 +51,7 @@ HIRFunctionASTCompilationContext definition: {
 
         functionDefinition importedSymbols size = 0sz ifTrue: {
             functionDefinition sourceAnalyzedDefinition bodyNode ifNotNil: {:bodyNode |
-                self builder: (HIRInstructionBuilder new
+                self builder: ((HIRInstructionBuilder forContext: ssaFunction context)
                     sourcePosition: bodyNode sourcePosition;
                     function: ssaFunction;
                     beginBasicBlockNamed: #entry;

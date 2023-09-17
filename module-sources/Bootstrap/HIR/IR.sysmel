@@ -1,4 +1,5 @@
 public abstract class HIRCompilationTarget superclass: Object.
+public final class HIRContext superclass: Object.
 
 public class HIRValue superclass: Object.
 public class HIRConstant superclass: HIRValue.
@@ -15,11 +16,14 @@ public final class HIRPhiInstruction superclass: HIRInstruction.
 public final class HIRInstructionBuilder superclass: Object.
 
 HIRValue definition: {
+    public field context => HIRContext.
     public field type => Type.
-    public field sourcePosition => SourcePosition.
-    public field sourceASTNode => ASTNode.
-    public field sourceEnvironment => Environment.
     private field users => WeakOrderedCollection.
+
+    __Meta__ definition: {
+        public virtual method forContext: (context: HIRContext) ::=> self
+            := self new context: context; yourself.
+    }.
 
     public virtual method isConstant => Boolean := false.
     public virtual method isLiteralConstant => Boolean := false.
@@ -75,6 +79,10 @@ HIRValue definition: {
     public abstract method evaluateAsConstantType => Type :=
         self subclassResponsibility.
 
+    public virtual method sourcePosition => SourcePosition := nil.
+    public virtual method sourceASTNode => ASTNode := nil.
+    public virtual method sourceEnvironment => Environment := nil.
+
     public virtual method usedValuesDo: (aBlock: (HIRValue) => Void) ::=> Void := {}.
 
     public abstract method evaluateConstant => Untyped
@@ -100,7 +108,10 @@ HIRValue definition: {
     }.
 
     public method deleteFromAllUsers => Void := {
-        self replaceWith: (HIRUndefinedConstant new type: self type; yourself)
+        context ifNil: {
+            printLine(self fullPrintString).
+        }.
+        self replaceWith: (context undefined: self type)
     }.
 
     public virtual method isEscapingValue: (usedValueToTest: HIRValue) ::=> Boolean
@@ -151,17 +162,8 @@ HIRValue definition: {
         users := nil
     }.
 
-    public method clearSourceInformation => Void := {
-        self sourcePosition: nil.
-        self sourceASTNode: nil.
-        self sourceEnvironment: nil.
-    }.
-
-    public method useSourceInformationOfValue: (value: HIRValue) ::=> Void := {
-        self sourcePosition: value sourcePosition.
-        self sourceASTNode: value sourceASTNode.
-        self sourceEnvironment: value sourceEnvironment.
-    }.
+    public virtual method clearSourceInformation => Void := {}.
+    public virtual method useSourceInformationOfValue: (value: HIRValue) ::=> Void := {}.
 
     public virtual method shouldBeInlinedIn: (callerFunction: HIRFunctionDefinition) ::=> Boolean
         := false.
@@ -210,9 +212,7 @@ public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     public method asBoxedLiteralConstant => HIRLiteralConstant
         := isBoxed || RawTuple::type(self __slotNamedAt__: #value) isValueType not
             ifTrue: (self)
-            ifFalse: (self copy
-                isBoxed: true;
-                yourself).
+            ifFalse: (context literal: (self __slotNamedAt__: #value) boxed: true type: type).
 
     public override method primitiveName => Symbol := {
         if: (RawTuple::type(self __slotNamedAt__: #value) isSubtypeOf: Function)
@@ -235,10 +235,87 @@ public final class HIRLiteralConstant superclass: HIRConstant; definition: {
     }.
 }.
 
+HIRContext definition: {
+    private field literals => ObjectPointerDictionary.
+    private field literalWithDifferentTypes => Dictionary.
+    private field boxedLiterals => ObjectPointerDictionary.
+    private field undefinedConstants => ObjectPointerDictionary.
+
+    public override method initialize => Void := {
+        super initialize.
+        literals := ObjectPointerDictionary new.
+        literalWithDifferentTypes := Dictionary new.
+        boxedLiterals := ObjectPointerDictionary new.
+        undefinedConstants := ObjectPointerDictionary new.
+    }.
+
+    public method literal: (value: Untyped) ::=> HIRLiteralConstant
+        := literals untypedAt: value ifAbsentPut: {:: HIRLiteralConstant |
+            (HIRLiteralConstant forContext: self)
+                value: value;
+                type: RawTuple::type(value);
+                yourself
+        }.
+
+    public method literal: (value: Untyped) type: (type: Type) ::=> HIRLiteralConstant := {
+        let valueType := RawTuple::type(value).
+        valueType == type ifTrue: {
+            return: (self literal: value)
+        }.
+
+        let directLiteral := self literal: value.
+        let key := (directLiteral, type).
+        literalWithDifferentTypes at: key ifAbsentPut: {:: HIRLiteralConstant |
+            (HIRLiteralConstant forContext: self)
+                value: value;
+                type: type;
+                yourself
+        }
+    }.
+
+    public method literal: (value: Untyped) boxed: (isBoxed: Boolean) type: (type: Type) ::=> HIRLiteralConstant := {
+        isBoxed && type isValueType ifFalse: {
+            return: (self literal: value type: type)
+        }.
+
+        let unboxedLiteral := self literal: value type: type.
+        boxedLiterals at: unboxedLiteral ifAbsentPut: {:: HIRLiteralConstant |
+            (HIRLiteralConstant forContext: self)
+                value: unboxedLiteral value;
+                type: unboxedLiteral type;
+                isBoxed: true;
+                yourself
+        }.
+    }.
+
+    public method undefined: (type: Type) ::=> HIRUndefinedConstant
+        := undefinedConstants at: type ifAbsentPut: {:: HIRUndefinedConstant |
+            (HIRUndefinedConstant forContext: self)
+                type: type;
+                yourself
+        }.
+}.
+
 HIRGlobalValue definition: {
     public field name => Symbol.
 
+    public field sourcePosition => SourcePosition.
+    public field sourceASTNode => ASTNode.
+    public field sourceEnvironment => Environment.
+
     public virtual method sourceObject := nil.
+
+    public override method clearSourceInformation => Void := {
+        self sourcePosition: nil.
+        self sourceASTNode: nil.
+        self sourceEnvironment: nil.
+    }.
+
+    public override method useSourceInformationOfValue: (value: HIRValue) ::=> Void := {
+        self sourcePosition: value sourcePosition.
+        self sourceASTNode: value sourceASTNode.
+        self sourceEnvironment: value sourceEnvironment.
+    }.
 }.
 
 HIRGlobalVariable definition: {
@@ -802,7 +879,7 @@ HIRFunctionDefinition definition: {
         ## Second pass: fix the used values.
         let withoutSourceDebugging := self shouldInlineWithoutSourceDebugging.
         let firstBasicBlock => HIRBasicBlock := inlinedBasicBlocks first.
-        let builder := HIRInstructionBuilder new
+        let builder := (HIRInstructionBuilder forContext: targetFunctionDefinition context)
             function: targetFunctionDefinition;
             basicBlock: firstBasicBlock;
             insertionPoint: firstBasicBlock firstInstruction;
@@ -841,7 +918,7 @@ HIRFunctionDefinition definition: {
                     }.
 
                     ## Replace the return with a branch.
-                    let exitBranch := HIRBranchInstruction new
+                    let exitBranch := (HIRBranchInstruction forContext: context)
                         useSourceInformationOfValue: returnInstruction;
                         destination: exitBlock;
                         type: Void;
@@ -860,7 +937,7 @@ HIRFunctionDefinition definition: {
             let debugInsertionPosition := firstInlinedBlock firstInstruction.
             let addDebugValue := {:(HIRValue)value :(SymbolBinding)sourceBinding :: Void |
                 sourceBinding ifNotNil: {
-                    firstInlinedBlock addInstruction: (HIRSetDebugValueForBindingInstruction new
+                    firstInlinedBlock addInstruction: ((HIRSetDebugValueForBindingInstruction forContext: context)
                         value: value;
                         binding: sourceBinding;
                         registerInUsedValues;
@@ -929,6 +1006,10 @@ HIRFunctionDefinition definition: {
 }.
 
 HIRFunctionLocalValue definition: {
+    public field sourcePosition => SourcePosition.
+    public field sourceASTNode => ASTNode.
+    public field sourceEnvironment => Environment.
+
     public field name.
     public field localValueIndex => Size.
 
@@ -938,6 +1019,18 @@ HIRFunctionLocalValue definition: {
     }.
 
     public override method isFunctionLocalValue => Boolean := true.
+
+    public override method clearSourceInformation => Void := {
+        self sourcePosition: nil.
+        self sourceASTNode: nil.
+        self sourceEnvironment: nil.
+    }.
+
+    public override method useSourceInformationOfValue: (value: HIRValue) ::=> Void := {
+        self sourcePosition: value sourcePosition.
+        self sourceASTNode: value sourceASTNode.
+        self sourceEnvironment: value sourceEnvironment.
+    }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream nextPut: '$'c8; print: self localValueIndex.
@@ -1186,6 +1279,7 @@ HIRBasicBlock definition: {
     }.
 
     public method addInstruction: (instruction: HIRInstruction) before: (position: HIRInstruction) ::=> Void := {
+        self assert: instruction context == context.
         self assert: instruction parent isNil.
 
         let before := position ifNotNil: position previousInstruction ifNil: lastInstruction.
@@ -1209,6 +1303,7 @@ HIRBasicBlock definition: {
     }.
 
     public method addInstruction: (instruction: HIRInstruction) after: (position: HIRInstruction) ::=> Void := {
+        self assert: instruction context == context.
         self assert: instruction parent isNil.
 
         let before := position .
@@ -1241,7 +1336,7 @@ HIRBasicBlock definition: {
         self assert: position isNotNil && (position parent == self).
 
         ## Make the new block.
-        let afterBlock := HIRBasicBlock new
+        let afterBlock := (HIRBasicBlock forContext: context)
             useSourceInformationOfValue: self;
             yourself.
 
@@ -1334,7 +1429,7 @@ HIRBasicBlock definition: {
             let newIncomingBlocksAndValues := predecessors collect: {:(HIRBasicBlock)eachRequiredPredecessor :: Association |
                 (phi findIncomingBlockAndValueFor: eachRequiredPredecessor)
                     ifNotNil: {:(Association)found | found }
-                    ifNil: { eachRequiredPredecessor -> (HIRUndefinedConstant new type: phi type; yourself) }.
+                    ifNil: { eachRequiredPredecessor -> (context undefined: phi type) }.
             } as: Array.
 
             phi incomingBlocksAndValues: newIncomingBlocksAndValues
@@ -1414,7 +1509,7 @@ HIRBasicBlock definition: {
         self assert: incomingBlock successors size > 1sz.
         self assert: incomingBlock lastInstruction isTerminatorInstruction.
 
-        let builder := HIRInstructionBuilder new
+        let builder := (HIRInstructionBuilder forContext: incomingBlock context)
             function: incomingBlock parent;
             useSourceInformationOfValue: incomingBlock lastInstruction;
             yourself.
@@ -1767,7 +1862,7 @@ public final class HIRBranchInstruction superclass: HIRInstruction; definition: 
         let actualDestination := destination incomingBranchDestinationReplacementIncomingFrom: ownerBlock.
 
         destination ~~ actualDestination ifTrue: {
-            let newBranch := HIRBranchInstruction new
+            let newBranch := (HIRBranchInstruction forContext: context)
                 useSourceInformationOfValue: self;
                 destination: actualDestination;
                 registerInUsedValues;
@@ -1801,10 +1896,7 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
         }.
 
         let evaluatedConstant := calledFunctionValue applyWithArguments: argumentValues.
-        HIRLiteralConstant new
-            value: evaluatedConstant;
-            type: RawTuple::type(evaluatedConstant);
-            yourself
+        context literal: evaluatedConstant
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -1946,7 +2038,7 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
         let ownerBlock := parent.
         self assert: ownerBlock isNotNil.
         self condition isLiteralConstantTrue ifTrue: {
-            let newBranch := HIRBranchInstruction new
+            let newBranch := (HIRBranchInstruction forContext: context)
                 useSourceInformationOfValue: self;
                 destination: trueDestination;
                 registerInUsedValues;
@@ -1956,7 +2048,7 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
         }.
 
         self condition isLiteralConstantFalse ifTrue: {
-            let newBranch := HIRBranchInstruction new
+            let newBranch := (HIRBranchInstruction forContext: context)
                 useSourceInformationOfValue: self;
                 destination: falseDestination;
                 registerInUsedValues;
@@ -1969,7 +2061,7 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
         let actualFalseDestination := falseDestination incomingBranchDestinationReplacementIncomingFrom: ownerBlock.
 
         (trueDestination ~~ actualTrueDestination) || (falseDestination ~~ actualFalseDestination) ifTrue: {
-            let newBranch := HIRConditionalBranchInstruction new
+            let newBranch := (HIRConditionalBranchInstruction forContext: context)
                 useSourceInformationOfValue: self;
                 condition: condition;
                 trueDestination: actualTrueDestination;
@@ -2213,7 +2305,7 @@ public final class HIRLoadInstruction superclass: HIRInstruction; definition: {
         storage isTypeSlotReferenceAtInstruction ifTrue: {
             let typeSlotReference := storage downCastTo: HIRTypeSlotReferenceAtInstruction.
 
-            let typeSlotAt := HIRTypeSlotAtInstruction new
+            let typeSlotAt := (HIRTypeSlotAtInstruction forContext: context)
                 useSourceInformationOfValue: self;
                 tuple: typeSlotReference tuple;
                 typeSlot: typeSlotReference typeSlot;
@@ -2563,7 +2655,7 @@ HIRPhiInstruction definition: {
         }.
 
         bestResult isNil || (bestResult == self) ifTrue: {
-            return: (HIRUndefinedConstant new type: self type; yourself)
+            return: (context undefined: self type)
         }.
 
         (self isDominatedByValue: bestResult) ifTrue: {
@@ -2791,7 +2883,7 @@ public final class HIRStoreInstruction superclass: HIRInstruction; definition: {
         storage isTypeSlotReferenceAtInstruction ifTrue: {
             let typeSlotReference := storage downCastTo: HIRTypeSlotReferenceAtInstruction.
 
-            let typeSlotAtPut := HIRTypeSlotAtPutInstruction new
+            let typeSlotAtPut := (HIRTypeSlotAtPutInstruction forContext: context)
                 useSourceInformationOfValue: self;
                 tuple: typeSlotReference tuple;
                 typeSlot: typeSlotReference typeSlot;
@@ -2839,9 +2931,15 @@ public final class HIRUnreachableInstruction superclass: HIRInstruction; definit
 }.
 
 public final class HIRModule superclass: Object; definition: {
+    public field context => HIRContext.
     public field globalValues => OrderedCollection.
     public field virtualTableSetSource => VirtualTableSetSource.
     private field globalValueDictionary => ObjectPointerDictionary.
+
+    __Meta__ definition: {
+        public method forContext: (context: HIRContext) ::=> self
+            := self new context: context; yourself
+    }.
 
     public override method initialize => Void := {
         globalValues := OrderedCollection new.
@@ -2872,6 +2970,8 @@ public final class HIRModule superclass: Object; definition: {
 }.
 
 HIRInstructionBuilder definition: {
+    public field context => HIRContext.
+    
     public field sourcePosition => SourcePosition.
     public field sourceASTNode => ASTNode.
     public field sourceEnvironment => Environment.
@@ -2881,12 +2981,15 @@ HIRInstructionBuilder definition: {
     public field insertionPoint => HIRInstruction.
 
     __Meta__ definition: {
+        public method forContext: (context: HIRContext)
+            := self new context: context; yourself.
+
         public method for: (function: HIRFunctionDefinition)
-            := self new function: function; yourself.
+            := self new context: function context; function: function; yourself.
     }.
 
     public method newBasicBlockNamed: name ::=> HIRBasicBlock := {
-        let newBasicBlock := HIRBasicBlock new
+        let newBasicBlock := (HIRBasicBlock forContext: context)
             name: name;
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
@@ -2952,21 +3055,21 @@ HIRInstructionBuilder definition: {
     }.
 
     public method alloca: (valueType: Type) type: (type: Type) ::=> HIRAllocaInstruction
-        := self addInstruction: (HIRAllocaInstruction new
+        := self addInstruction: ((HIRAllocaInstruction forContext: context)
             valueType: valueType;
             type: type;
             registerInUsedValues;
             yourself).
 
     public method branch: (destination: HIRBasicBlock) ::=> HIRBranchInstruction
-        := self addInstruction: (HIRBranchInstruction new
+        := self addInstruction: ((HIRBranchInstruction forContext: context)
             destination: destination;
             type: Void;
             registerInUsedValues;
             yourself).
 
     public method call: (calledFunction: HIRValue) callingConvention: (callingConvention: Symbol) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRCallInstruction
-        := self addInstruction: (HIRCallInstruction new
+        := self addInstruction: ((HIRCallInstruction forContext: context)
             calledFunction: calledFunction;
             callingConvention: callingConvention;
             arguments: arguments;
@@ -2984,7 +3087,7 @@ HIRInstructionBuilder definition: {
         (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
             value
         } ifFalse: {
-            self addInstruction: (HIRAddressSpaceCastInstruction new
+            self addInstruction: ((HIRAddressSpaceCastInstruction forContext: context)
                 value: value;
                 targetType: targetType;
                 type: type;
@@ -2997,7 +3100,7 @@ HIRInstructionBuilder definition: {
         (targetType == nil) || (targetType isLiteralConstant && (value type == targetType evaluateAsConstantType)) ifTrue: {
             value
         } ifFalse: {
-            self addInstruction: (HIRBitcastInstruction new
+            self addInstruction: ((HIRBitcastInstruction forContext: context)
                 value: value;
                 targetType: targetType;
                 type: type;
@@ -3013,14 +3116,14 @@ HIRInstructionBuilder definition: {
             let sourceAddressSpace := value type validAddressSpace.
             let destinationAddressSpace := type validAddressSpace.
             sourceAddressSpace ~~ destinationAddressSpace ifTrue: {
-                self addInstruction: (HIRAddressSpaceCastInstruction new
+                self addInstruction: ((HIRAddressSpaceCastInstruction forContext: context)
                     value: value;
                     targetType: targetType;
                     type: type;
                     registerInUsedValues;
                     yourself)
             } ifFalse: {
-                self addInstruction: (HIRBitcastInstruction new
+                self addInstruction: ((HIRBitcastInstruction forContext: context)
                     value: value;
                     targetType: targetType;
                     type: type;
@@ -3040,7 +3143,7 @@ HIRInstructionBuilder definition: {
             || (targetType isLiteralConstant not && value type isUndefinedType) ifTrue: {
             value
         } ifFalse: {
-            self addInstruction: (HIRCoerceValueInstruction new
+            self addInstruction: ((HIRCoerceValueInstruction forContext: context)
                 value: value;
                 targetType: targetType;
                 type: type;
@@ -3050,7 +3153,7 @@ HIRInstructionBuilder definition: {
     }.
 
     public method conditionalBranch: (condition: HIRValue) trueDestination: (trueDestination: HIRBasicBlock) falseDestination: (falseDestination: HIRBasicBlock) ::=> HIRConditionalBranchInstruction
-        := self addInstruction: (HIRConditionalBranchInstruction new
+        := self addInstruction: ((HIRConditionalBranchInstruction forContext: context)
             condition: condition;
             trueDestination: trueDestination;
             falseDestination: falseDestination;
@@ -3066,7 +3169,7 @@ HIRInstructionBuilder definition: {
         (targetType == nil) || (targetType isLiteralConstant && (value type isDirectlyConversibleTo: targetType evaluateAsConstantType)) ifTrue: {
             value
         } ifFalse: {
-            self addInstruction: (HIRDownCastInstruction new
+            self addInstruction: ((HIRDownCastInstruction forContext: context)
                 value: value;
                 targetType: targetType;
                 isUnchecked: isUnchecked;
@@ -3083,15 +3186,10 @@ HIRInstructionBuilder definition: {
         := self downCast: value into: (self literal: type) type: type.
 
     public method undefined: (type: Type) ::=> HIRUndefinedConstant
-        := HIRUndefinedConstant new
-            sourcePosition: self sourcePosition;
-            sourceASTNode: self sourceASTNode;
-            sourceEnvironment: self sourceEnvironment;
-            type: type;
-            yourself.
+        := context undefined: type.
 
     public method unreachable ::=> HIRUnreachableInstruction
-        := self addInstruction: (HIRUnreachableInstruction new
+        := self addInstruction: ((HIRUnreachableInstruction forContext: context)
             sourcePosition: self sourcePosition;
             sourceASTNode: self sourceASTNode;
             sourceEnvironment: self sourceEnvironment;
@@ -3099,19 +3197,13 @@ HIRInstructionBuilder definition: {
             yourself).
 
     public method literal: (value: Untyped) type: (type: Type) ::=> HIRLiteralConstant
-        := HIRLiteralConstant new
-            sourcePosition: self sourcePosition;
-            sourceASTNode: self sourceASTNode;
-            sourceEnvironment: self sourceEnvironment;
-            value: value;
-            type: type;
-            yourself.
+        := context literal: value type: type.
 
     public method literal: (value: Untyped) ::=> HIRLiteralConstant
-        := self literal: value type: RawTuple::type(value).
+        := context literal: value.
 
     public method load: (storage: HIRValue) type: (type: Type) ::=> HIRLoadInstruction
-        := self addInstruction: (HIRLoadInstruction new
+        := self addInstruction: ((HIRLoadInstruction forContext: context)
             storage: storage;
             type: type;
             registerInUsedValues;
@@ -3121,7 +3213,7 @@ HIRInstructionBuilder definition: {
         elements isEmpty ifTrue: {
             self literal: #()
         } ifFalse: {
-            self addInstruction: (HIRMakeArrayInstruction new
+            self addInstruction: ((HIRMakeArrayInstruction forContext: context)
                 elements: elements;
                 type: Array;
                 registerInUsedValues;
@@ -3133,7 +3225,7 @@ HIRInstructionBuilder definition: {
         elements isEmpty ifTrue: {
             self literal: #[]
         } ifFalse: {
-            self addInstruction: (HIRMakeByteArrayInstruction new
+            self addInstruction: ((HIRMakeByteArrayInstruction forContext: context)
                 elements: elements;
                 type: ByteArray;
                 registerInUsedValues;
@@ -3142,7 +3234,7 @@ HIRInstructionBuilder definition: {
     }.
 
     public method makeAssociationWithKey: (key: HIRValue) value: (value: HIRValue) ::=> HIRMakeAssociationInstruction
-        := self addInstruction: (HIRMakeAssociationInstruction new
+        := self addInstruction: ((HIRMakeAssociationInstruction forContext: context)
             key: key;
             value: value;
             type: Association;
@@ -3150,14 +3242,14 @@ HIRInstructionBuilder definition: {
             yourself).
 
     public method makeDictionary: (elements: Array) ::=> HIRMakeDictionaryInstruction
-        := self addInstruction: (HIRMakeDictionaryInstruction new
+        := self addInstruction: ((HIRMakeDictionaryInstruction forContext: context)
             elements: elements;
             type: Dictionary;
             registerInUsedValues;
             yourself).
 
     public method makeClosure: (functionDefinition: HIRValue) captures: (captures: Array) type: (type: Type) ::=> HIRMakeClosureInstruction
-        := self addInstruction: (HIRMakeClosureInstruction new
+        := self addInstruction: ((HIRMakeClosureInstruction forContext: context)
             functionDefinition: functionDefinition;
             captures: captures;
             type: type;
@@ -3165,13 +3257,13 @@ HIRInstructionBuilder definition: {
             yourself).
 
     public method phi: (type: Type) ::=> HIRPhiInstruction
-        := self addInstruction: (HIRPhiInstruction new
+        := self addInstruction: ((HIRPhiInstruction forContext: context)
             type: type;
             registerInUsedValues;
             yourself).
 
     public method return: (value: HIRValue) ::=> HIRReturnInstruction
-        := self addInstruction: (HIRReturnInstruction new
+        := self addInstruction: ((HIRReturnInstruction forContext: context)
             type: Void;
             value: value;
             registerInUsedValues;
@@ -3181,7 +3273,7 @@ HIRInstructionBuilder definition: {
         := self return: (self literal: void).
 
     public method send: (receiver: HIRValue) receiverLookupType: (receiverLookupType: HIRValue) selector: (selector: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) ::=> HIRSendInstruction
-        := self addInstruction: (HIRSendInstruction new
+        := self addInstruction: ((HIRSendInstruction forContext: context)
             receiver: receiver;
             receiverLookupType: receiverLookupType;
             selector: selector;
@@ -3197,21 +3289,21 @@ HIRInstructionBuilder definition: {
         := self send: receiver receiverLookupType: nil selector: selector arguments: arguments resultType: nil.
 
     public method setDebugValue: (value: HIRValue) forBinding: (binding: SymbolBinding) ::=> HIRSetDebugValueForBindingInstruction
-        := self addInstruction: (HIRSetDebugValueForBindingInstruction new
+        := self addInstruction: ((HIRSetDebugValueForBindingInstruction forContext: context)
             value: value;
             binding: binding;
             registerInUsedValues;
             yourself).
 
     public method store: (value: HIRValue) in: (storage: HIRValue) ::=> HIRStoreInstruction
-        := self addInstruction: (HIRStoreInstruction new
+        := self addInstruction: ((HIRStoreInstruction forContext: context)
             value: value;
             storage: storage;
             registerInUsedValues;
             yourself).
 
     public method reference: (reference: HIRValue) elementAt: (index: HIRValue) type: (type: Type) ::=> HIRReferenceElementAtInstruction
-        := self addInstruction: (HIRReferenceElementAtInstruction new
+        := self addInstruction: ((HIRReferenceElementAtInstruction forContext: context)
             reference: reference;
             index: index;
             type: type;
@@ -3219,7 +3311,7 @@ HIRInstructionBuilder definition: {
             yourself).
 
     public method pointer: (pointer: HIRValue) elementAt: (index: HIRValue) type: (type: Type) ::=> HIRPointerElementAtInstruction
-        := self addInstruction: (HIRPointerElementAtInstruction new
+        := self addInstruction: ((HIRPointerElementAtInstruction forContext: context)
             pointer: pointer;
             index: index;
             type: type;
@@ -3227,10 +3319,10 @@ HIRInstructionBuilder definition: {
             yourself).
 
     public method trap ::=> HIRTrapInstruction
-        := self addInstruction: HIRTrapInstruction new.
+        := self addInstruction: (HIRTrapInstruction forContext: context).
 
     public method tuple: (tuple: HIRValue) typedSlotAt: (typeSlot: TypeSlot) ::=> HIRTypeSlotAtInstruction
-        := self addInstruction: (HIRTypeSlotAtInstruction new
+        := self addInstruction: ((HIRTypeSlotAtInstruction forContext: context)
             tuple: tuple;
             typeSlot: typeSlot;
             type: typeSlot type;
@@ -3238,7 +3330,7 @@ HIRInstructionBuilder definition: {
             yourself).
 
     public method tuple: (tuple: HIRValue) typedSlotReferenceAt: (typeSlot: TypeSlot) ::=> HIRTypeSlotReferenceAtInstruction
-        := self addInstruction: (HIRTypeSlotReferenceAtInstruction new
+        := self addInstruction: ((HIRTypeSlotReferenceAtInstruction forContext: context)
             tuple: tuple;
             typeSlot: typeSlot;
             type: typeSlot referenceType;
@@ -3246,7 +3338,7 @@ HIRInstructionBuilder definition: {
             yourself).
 
     public method tuple: (tuple: HIRValue) typedSlotAt: (typeSlot: TypeSlot) put: (value: HIRValue) ::=> HIRTypeSlotAtPutInstruction
-        := self addInstruction: (HIRTypeSlotAtPutInstruction new
+        := self addInstruction: ((HIRTypeSlotAtPutInstruction forContext: context)
             tuple: tuple;
             typeSlot: typeSlot;
             value: value;
