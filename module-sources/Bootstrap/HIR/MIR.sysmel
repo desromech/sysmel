@@ -2822,11 +2822,12 @@ HIRMakeDictionaryInstruction extend: {
 
 HIRSendInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
+        ## FIXME: Avoid requiring to box the receiver and its lookup type.
         let mirReceiver := codegen translateBoxedValue: self receiver.
         let mirReceiverLookupType := self receiverLookupType ifNotNil: (codegen translateBoxedValue: self receiverLookupType).
         let mirSelector := codegen translateBoxedValue: self selector.
 
-        let vtableIndex := codegen moduleCodeGenerator getVirtualTableIndexValueForSelector: self boundSelector type: self boundType.
+        let vtableIndex := codegen moduleCodeGenerator getVirtualTableIndexValueForSelector: self boundSelector type: self boundMethodOwner.
 
         isUnchecked ifTrue: {
             ## Perform the lookup.
@@ -2871,20 +2872,39 @@ HIRSendInstruction extend: {
                 withBlockBuilder: codegen blockBuilder)
         }.
     
-        let mirArguments := self arguments collect: {:(HIRValue)eachArgument :: MIRValue | codegen translateBoxedValue: eachArgument}.
+        vtableIndex ifNotNil: {
+            let foundMethod := mirReceiverLookupType ifNil: {
+                codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupMethodWithReceiverAndVirtualTableIndex)
+                    with: mirReceiver with: vtableIndex
+                    type: UIntPointer.
+            } ifNotNil: {
+                codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupMethodWithReceiverTypeAndVirtualTableIndex)
+                    with: mirReceiverLookupType with: vtableIndex
+                    type: UIntPointer.
+            }.
 
-        mirReceiverLookupType ifNil: {
-            let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendTrampolines at: self arguments size).
+            let mirArguments := self arguments collect: {:(HIRValue)eachArgument :: MIRValue | codegen translateBoxedValue: eachArgument}.
+            let trampoline := codegen translateRuntimeFunction: (ObjectModel::CheckedFunctionApplicationTrampolines at: self arguments size + 1sz).
             self type
                 emitMirUnboxingCall: trampoline convention: trampoline callingConvention
-                withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector) -- mirArguments
+                withArguments: (Array with: foundMethod with: mirReceiver) -- mirArguments
                 withHIRCodeGenerator: codegen.
-        } ifNotNil: {
-            let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendWithReceiverTypeTrampolines at: self arguments size).
-            self type
-                emitMirUnboxingCall: trampoline convention: trampoline callingConvention
-                withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector) -- mirArguments
-                withHIRCodeGenerator: codegen.
+        } ifNil: {
+            let mirArguments := self arguments collect: {:(HIRValue)eachArgument :: MIRValue | codegen translateBoxedValue: eachArgument}.
+
+            mirReceiverLookupType ifNil: {
+                let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendTrampolines at: self arguments size).
+                self type
+                    emitMirUnboxingCall: trampoline convention: trampoline callingConvention
+                    withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector) -- mirArguments
+                    withHIRCodeGenerator: codegen.
+            } ifNotNil: {
+                let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendWithReceiverTypeTrampolines at: self arguments size).
+                self type
+                    emitMirUnboxingCall: trampoline convention: trampoline callingConvention
+                    withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector) -- mirArguments
+                    withHIRCodeGenerator: codegen.
+            }.
         }.
     }.
 }.

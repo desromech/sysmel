@@ -2526,7 +2526,7 @@ FunctionDefinition extend: {
             subprogram type: (debugGenerator getOrCreateDieForType: type canonicalResultType)
         }.
 
-        subprogram declaredArguments: (sourceAnalyzedDefinition arguments collect: {:(SymbolArgumentBinding)binding :: Dwarf::DebugInfoEntry |
+        subprogram declaredArguments: (bytecode arguments collect: {:(SymbolArgumentBinding)binding :: Dwarf::DebugInfoEntry |
             let argument := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_formal_parameter.
             argument sourceBinding: binding.
             subprogram addChild: argument.

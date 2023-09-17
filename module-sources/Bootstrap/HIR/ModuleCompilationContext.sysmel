@@ -22,7 +22,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         hirModule := HIRModule new.
         translatedValueDictionary := ObjectPointerDictionary new.
         usedModules := OrderedCollection new.
-        compileFromBytecode := false.
+        compileFromBytecode := true.
     }.
 
     public method virtualTableSetSource: (virtualTableSetSource: VirtualTableSetSource) ::=> Void := {

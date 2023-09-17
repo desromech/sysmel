@@ -776,7 +776,7 @@ ASTFunctionApplicationNode definition: {
     }.
 }.
 
-public final class MessageSendNodeStaticLookupResult superclass: Object; definition: {
+public final class MessageSendStaticLookupResult superclass: Object; definition: {
     public field foundMethod => AnyValue.
     public field owner => Type.
     public field selector => Symbol.
@@ -892,7 +892,7 @@ Type definition: {
             arguments: (node arguments collect: {:(ASTNode)each :: ASTNode | environment analyzeWithDecayedType: each});
             yourself.
 
-    public virtual eager method messageSendNodeStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult := {
+    public virtual eager method messageSendStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendStaticLookupResult := {
         let foundMethod mutable => AnyValue := nil.
         foundMethod := self lookupMacroSelector: selector.
         foundMethod ifNil: {
@@ -902,14 +902,14 @@ Type definition: {
             }.
         }.
 
-        foundMethod ifNotNil: (MessageSendNodeStaticLookupResult new
+        foundMethod ifNotNil: (MessageSendStaticLookupResult new
             foundMethod: foundMethod;
             owner: self;
             selector: selector;
             yourself)
     }.
 
-    public virtual eager method messageSendNodeStaticLookupDoesNotUnderstandSelector ::=> MessageSendNodeStaticLookupResult := {
+    public virtual eager method messageSendStaticLookupDoesNotUnderstandSelector ::=> MessageSendStaticLookupResult := {
         let foundMethod mutable => AnyValue := nil.
         let selector := #doesNotUnderstand:.
         foundMethod := self lookupMacroSelector: selector.
@@ -920,7 +920,7 @@ Type definition: {
             }.
         }.
 
-        foundMethod ifNotNil: (MessageSendNodeStaticLookupResult new
+        foundMethod ifNotNil: (MessageSendStaticLookupResult new
             foundMethod: foundMethod;
             owner: self;
             selector: selector;
@@ -928,15 +928,15 @@ Type definition: {
             yourself)
     }.
 
-    public virtual eager method messageSendNodeStaticLookupSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult
-        := (self messageSendNodeStaticLookupDirectSelector: selector) ifNil: (self messageSendNodeStaticLookupDoesNotUnderstandSelector).
+    public virtual eager method messageSendStaticLookupSelector: (selector: Symbol) ::=> MessageSendStaticLookupResult
+        := (self messageSendStaticLookupDirectSelector: selector) ifNil: (self messageSendStaticLookupDoesNotUnderstandSelector).
 
     public virtual eager method analyzeAndEvaluateUnboundMessageSendNode: (node: ASTMessageSendNode) forReceiver: (receiver: Untyped) selector: (selector: Symbol) withEnvironment: (environment: Environment) ::=> Untyped
         := node semanticError: "Message " -- selector printString -- " not understood by " -- self printString -- ".".
 
     public virtual eager method analyzeAndEvaluateOrdinaryMessageSendNode: (node: ASTMessageSendNode) forReceiver: (receiver: Untyped) withEnvironment: (environment: Environment) ::=> Untyped := {
         let selector => Symbol := node selector analyzeAndEvaluateWithEnvironment: environment.
-        let staticMethod := self messageSendNodeStaticLookupSelector: selector.
+        let staticMethod := self messageSendStaticLookupSelector: selector.
 
         staticMethod ifNotNil: {
             ## Is this a macro that we should expand?
@@ -1003,7 +1003,7 @@ Type definition: {
         node selector: (environment analyze: node selector withExpectedType: Symbol).
 
         let staticMethod := node selector isLiteralNode
-            ifTrue: (self messageSendNodeStaticLookupSelector: (node selector downCastTo: ASTLiteralNode) value)
+            ifTrue: (self messageSendStaticLookupSelector: (node selector downCastTo: ASTLiteralNode) value)
             ifFalse: (nil).
 
         staticMethod ifNotNil: {
@@ -1077,11 +1077,11 @@ PointerType definition: {
 }.
 
 ReferenceLikeType definition: {
-    public override eager method messageSendNodeStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendNodeStaticLookupResult
-        := (super messageSendNodeStaticLookupDirectSelector: selector) ifNil: (baseType messageSendNodeStaticLookupDirectSelector: selector).
+    public override eager method messageSendStaticLookupDirectSelector: (selector: Symbol) ::=> MessageSendStaticLookupResult
+        := (super messageSendStaticLookupDirectSelector: selector) ifNil: (baseType messageSendStaticLookupDirectSelector: selector).
 
-    public override eager method messageSendNodeStaticLookupDoesNotUnderstandSelector ::=> MessageSendNodeStaticLookupResult
-        := super messageSendNodeStaticLookupDoesNotUnderstandSelector ifNil: (baseType messageSendNodeStaticLookupDoesNotUnderstandSelector).
+    public override eager method messageSendStaticLookupDoesNotUnderstandSelector ::=> MessageSendStaticLookupResult
+        := super messageSendStaticLookupDoesNotUnderstandSelector ifNil: (baseType messageSendStaticLookupDoesNotUnderstandSelector).
 }.
 
 SimpleFunctionType definition: {

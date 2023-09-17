@@ -1103,10 +1103,10 @@ ValueBox
 Collection
     withSelector: #isEmpty addMethod: {:(Collection)self :: Boolean |
         self size = 0sz
-    };
+    } makeInline;
     withSelector: #isNotEmpty addMethod: {:(Collection)self :: Boolean |
         self size ~= 0sz
-    };
+    } makeInline;
     withSelector: #size addMethod: {:(Collection)self :: Size |
         self subclassResponsibility
     } makeAbstract;
@@ -1119,7 +1119,7 @@ Collection
         self do: {:each :: Void |
             if: __tombstone__ ~~ each then: aBlock(each)
         }
-    };
+    } makeInline;
 
     withSelector: #doWithIndex: addMethod: {:(Collection)self :aBlock :: Void |
         let: #i mutableWith: 0sz.

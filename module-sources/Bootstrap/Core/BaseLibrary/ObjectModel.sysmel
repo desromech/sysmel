@@ -1466,6 +1466,10 @@ if: ObjectModel::PointerSize = 4sz then: {
         tag = ObjectModel::Tag::Char32 asIntPointer ifTrue: {
             (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asChar32
         } ifFalse: {
+            tag ~= 0iptr ifTrue: {
+                error("Expected a Char32 value").
+            }.
+
             pointerValue = 0uptr ifTrue: {
                 error("Expected an Char32 boxed value instead of nil.").
             }.
@@ -1486,6 +1490,10 @@ if: ObjectModel::PointerSize = 4sz then: {
         tag = ObjectModel::Tag::UInt32 asIntPointer ifTrue: {
             (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt32
         } ifFalse: {
+            tag ~= 0iptr ifTrue: {
+                error("Expected an UInt32 value").
+            }.
+
             pointerValue = 0uptr ifTrue: {
                 error("Expected an UInt32 boxed value instead of nil.").
             }.
@@ -1506,8 +1514,12 @@ if: ObjectModel::PointerSize = 4sz then: {
         tag = ObjectModel::Tag::Int32 asIntPointer ifTrue: {
             (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt32
         } ifFalse: {
+            tag ~= 0iptr ifTrue: {
+                error("Expected an Int32 value").
+            }.
+
             pointerValue = 0iptr ifTrue: {
-                error("Expected an UInt32 value instead of nil.").
+                error("Expected an Int32 value instead of nil.").
             }.
 
             let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
@@ -1526,6 +1538,10 @@ if: ObjectModel::PointerSize = 4sz then: {
         tag = ObjectModel::Tag::Float32 asUIntPointer ifTrue: {
             (pointerValue >> ObjectModel::Tag::Bits asUIntPointer) asUInt32 asIEEEFloat32Decoded
         } ifFalse: {
+            tag ~= 0iptr ifTrue: {
+                error("Expected a Float32 value").
+            }.
+
             pointerValue = 0uptr ifTrue: {
                 error("Expected a Float32 boxed value instead of nil.").
             }.
@@ -1587,6 +1603,10 @@ public function ObjectModel::checkAndUnboxUInt64(value: Untyped) => UInt64 := {
     tag = ObjectModel::Tag::UInt64 asIntPointer ifTrue: {
         (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asUInt64
     } ifFalse: {
+        tag ~= 0iptr ifTrue: {
+            error("Expected an UInt64 value.").
+        }.
+
         pointerValue = 0iptr ifTrue: {
             error("Expected an UInt64 boxed value instead of nil.").
         }.
@@ -1607,14 +1627,18 @@ public function ObjectModel::checkAndUnboxInt64(value: Untyped) => Int64 := {
     tag = ObjectModel::Tag::Int64 asIntPointer ifTrue: {
         (pointerValue >> ObjectModel::Tag::Bits asIntPointer) asInt64
     } ifFalse: {
+        tag ~= 0iptr ifTrue: {
+            error("Expected an Int64 value.").
+        }.
+
         pointerValue = 0iptr ifTrue: {
-            error("Expected an UInt32 value instead of nil.").
+            error("Expected an Int64 value instead of nil.").
         }.
 
         let objectHeader := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
         let objectType := objectHeader _ type.
         objectType ~~ Int64 ifTrue: {
-            error("Expected an UInt32 boxed value.").
+            error("Expected an Int64 boxed value.").
         }.
 
         (objectHeader + 1iptr reinterpretCastTo: Int64 pointer) load

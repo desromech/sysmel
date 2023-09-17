@@ -1,4 +1,5 @@
 loadSourceNamed: "IR.sysmel".
+loadSourceNamed: "TypeChecking.sysmel".
 loadSourceNamed: "ModuleCompilationContext.sysmel".
 loadSourceNamed: "FunctionBytecodeCompilationContext.sysmel".
 loadSourceNamed: "FunctionASTCompilationContext.sysmel".

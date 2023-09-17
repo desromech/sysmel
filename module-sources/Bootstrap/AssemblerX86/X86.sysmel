@@ -254,7 +254,7 @@ AsmInstructionOperand extend: {
 
 AsmX86RegisterAddress definition: {
     public field scaleShift => UInt8.
-    public field size => UInt8.
+    private field size => UInt8.
 
     public field base => AsmX86Register.
     public field index => AsmX86Register.
@@ -290,6 +290,13 @@ AsmX86RegisterAddress definition: {
                 segment: segment;
                 yourself.
     }.
+
+    public method size: (newSize: UInt8) ::=> Void := {
+        size := newSize
+    }.
+
+    public override method size => Size
+        := size asSize.
 
     public override method x86::isRegisterAddress => Boolean
         := true.

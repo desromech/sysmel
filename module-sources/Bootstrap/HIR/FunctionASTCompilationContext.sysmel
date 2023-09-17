@@ -717,10 +717,15 @@ ASTMessageSendNode extend: {
         self boundMethodOwner isNotNil && self selector isLiteralNode ifTrue: {
             sendInstruction
                 boundSelector: (self selector downCastTo: ASTLiteralNode) value;
-                boundType: self boundMethodOwner
+                boundMethodOwner: self boundMethodOwner
+        }.
+
+        self boundMethod ifNotNil: {
+            sendInstruction boundMethodType: (self boundMethod __type__)
         }.
 
         sendInstruction isUnchecked: self isNoTypechecked.
+        sendInstruction optimizeLookup.
 
         (sendInstruction type isSubtypeOf: ControlFlowEscapeType) ifTrue: {
             context builder

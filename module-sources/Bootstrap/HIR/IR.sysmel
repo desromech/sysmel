@@ -2610,8 +2610,11 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
     public field selector => HIRValue.
     public field arguments => Array.
     public field isUnchecked => Boolean.
-    public field boundType => Type.
+    public field boundMethodOwner => Type.
     public field boundSelector => Symbol.
+    public field boundMethodType => Type.
+    public field boundMethod.
+    public field boundMethodShouldBeCalledDirectly => Boolean.
 
     public override method isSendInstruction => Boolean := true.
 
@@ -2635,12 +2638,58 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
         descriptor
     }.
 
-    public method optimizeLookup => Void := {
+    public method fetchSelector => Void := {
+        boundSelector ifNil: {
+            selector isLiteralConstant ifTrue: {
+                boundSelector := selector evaluateConstant
+            }
+        }.
+    }.
 
+    public method fetchBoundReceiverLookupType => Type := {
+        receiverLookupType ifNotNil: {
+            receiverLookupType isLiteralConstant ifTrue: {
+                receiverLookupType evaluateAsConstantType
+            } ifFalse: {
+                receiverLookupType type asCanonicalPendingInstanceType
+            }
+        } ifNil: {
+            receiver type
+        }
+    }.
+
+    public method fetchBoundMethod => Void := {
+        boundSelector ifNil: { return: void }.
+
+        let staticLookupResult := self fetchBoundReceiverLookupType messageSendStaticLookupSelector: boundSelector.
+        staticLookupResult ifNil: { return: void }.
+
+        boundMethod := staticLookupResult foundMethod.
+        boundMethodOwner := staticLookupResult owner.
+        boundMethodType := self boundMethod __type__.
+        boundMethodShouldBeCalledDirectly := staticLookupResult shouldOptimizeLookup.
+    }.
+
+    public method fetchUncheckedSend => Void := {
+        isUnchecked ifTrue: { return: void }.
+        boundMethodType ifNil: { return: void }.
+
+        isUnchecked := boundMethodType verifyHIRSendInstruction: self.
+    }.
+
+    public method optimizeLookup => Void := {
+        self fetchSelector.
+        self fetchBoundMethod.
+        self fetchUncheckedSend.
     }.
 
     public method boxingApplicationSignature => Array
         := (Array with: receiver type) -- (arguments collect: {:(HIRValue)arg :: Type | arg type}) -- (Array with: self type).
+
+    public override method evaluateConstantFolding => HIRValue := {
+        self optimizeLookup.
+        self
+    }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream
@@ -2657,7 +2706,15 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
                 ifTrue: (stream nextPut: ' 'c8)
                 ifFalse: (stream nextPutAll: ", ").
             stream print: argument
-        }
+        }.
+
+        isUnchecked ifTrue: {
+            stream nextPutAll: " unchecked"
+        }.
+
+        boundMethodShouldBeCalledDirectly ifTrue: {
+            stream nextPutAll: " shouldBeCalledDirectly"
+        }.
     }.
 
     public override method postCopy => Void := {
