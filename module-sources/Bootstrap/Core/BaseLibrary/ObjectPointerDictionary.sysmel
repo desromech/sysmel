@@ -159,7 +159,7 @@ public final class ObjectPointerDictionary superclass: HashedCollection; definit
         let entry := myStorage __uncheckedSlotAt__: entryIndex * 2sz.
         (Untyped::==)(entry, __hashtableEmptyElement__) ifTrue: {
             let value := ifAbsentBlock().
-            self at: key put: value.
+            self untypedAt: key put: value.
             value
         } ifFalse: {
             myStorage __uncheckedSlotAt__: entryIndex *2sz + 1sz

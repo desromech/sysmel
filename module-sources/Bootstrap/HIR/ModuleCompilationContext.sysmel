@@ -167,14 +167,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         }.
         
         function ensureAnalysis.
-        let translatedValue := (HIRFunction forContext: hirContext)
-            sourceObject: function;
-            name: function programEntityQualifiedNameSymbol;
-            primitiveName: function primitiveName;
-            exportedSymbols: function exportedSymbols asArray;
-            type: function __type__;
-            yourself.
-
+        let translatedValue := hirContext getOrCreateTranslatedFunctionFor: function.
         hirModule addGlobalValue: translatedValue.
         translatedValueDictionary at: function put: translatedValue.
 

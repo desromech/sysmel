@@ -240,6 +240,7 @@ HIRContext definition: {
     private field literalWithDifferentTypes => Dictionary.
     private field boxedLiterals => ObjectPointerDictionary.
     private field undefinedConstants => ObjectPointerDictionary.
+    private field translatedFunctions => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         super initialize.
@@ -247,6 +248,7 @@ HIRContext definition: {
         literalWithDifferentTypes := Dictionary new.
         boxedLiterals := ObjectPointerDictionary new.
         undefinedConstants := ObjectPointerDictionary new.
+        translatedFunctions := ObjectPointerDictionary new.
     }.
 
     public method literal: (value: Untyped) ::=> HIRLiteralConstant
@@ -294,6 +296,35 @@ HIRContext definition: {
                 type: type;
                 yourself
         }.
+
+    public method getOrCreateTranslatedFunctionFor: (function: Function) ::=> HIRFunction
+        := translatedFunctions at: function ifAbsentPut: {:: HIRFunction | 
+            (HIRFunction forContext: self)
+                sourceObject: function;
+                name: function programEntityQualifiedNameSymbol;
+                primitiveName: function primitiveName;
+                exportedSymbols: function exportedSymbols asArray;
+                type: function __type__;
+                yourself.
+        }.
+
+    public method convertedLiteral: (value: Untyped) ::=> HIRValue
+        := (RawTuple::type(value) ifNil: Untyped) getHirLiteralForValue: value context: self.
+}.
+
+Type definition: {
+    public virtual method getHirLiteralForValue: (value: Untyped) context: (context: HIRContext) ::=> HIRValue
+        := context literal: value type: self
+}.
+
+FunctionType definition: {
+    public override method getHirLiteralForValue: (value: Untyped) context: (context: HIRContext) ::=> HIRValue := {
+        (self isSubtypeOf: Function) ifTrue: {
+            context getOrCreateTranslatedFunctionFor: value
+        } ifFalse: {
+            super getHirLiteralForValue: value context: context
+        }
+    }.
 }.
 
 HIRGlobalValue definition: {
@@ -1896,7 +1927,7 @@ public final class HIRCallInstruction superclass: HIRInstruction; definition: {
         }.
 
         let evaluatedConstant := calledFunctionValue applyWithArguments: argumentValues.
-        context literal: evaluatedConstant
+        context convertedLiteral: evaluatedConstant
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -2780,6 +2811,20 @@ public final class HIRSendInstruction superclass: HIRInstruction; definition: {
 
     public override method evaluateConstantFolding => HIRValue := {
         self optimizeLookup.
+
+        boundMethodShouldBeCalledDirectly ifTrue: {
+            let newCall := (HIRCallInstruction forContext: context)
+                useSourceInformationOfValue: self;
+                calledFunction: (context convertedLiteral: self boundMethod);
+                arguments: (Array with: receiver) -- arguments;
+                type: type;
+                isUnchecked: isUnchecked;
+                registerInUsedValues;
+                yourself.
+            parent addInstruction: newCall after: self.
+            return: newCall
+        }.
+
         self
     }.
 
@@ -3201,6 +3246,9 @@ HIRInstructionBuilder definition: {
 
     public method literal: (value: Untyped) ::=> HIRLiteralConstant
         := context literal: value.
+
+    public method convertedLiteral: (value: Untyped) ::=> HIRValue
+        := context convertedLiteral: value.
 
     public method load: (storage: HIRValue) type: (type: Type) ::=> HIRLoadInstruction
         := self addInstruction: ((HIRLoadInstruction forContext: context)
