@@ -1,5 +1,6 @@
 let PrintingDebugInfo := false.
 
+public final class MIRContext superclass: Object.
 public abstract class MIRCompilationTarget superclass: Object.
 public abstract class MIRCallingConvention superclass: Object.
 public abstract class MIRValue superclass: Object.
@@ -273,12 +274,29 @@ Int64 class extend: {
     public override method valueIsSignedExtended => Boolean := true.
 }.
 
+MIRContext definition: {
+    private field constants => ObjectPointerDictionary.
+
+    public override method initialize => Void := {
+        super initialize.
+        constants := ObjectPointerDictionary new.
+    }.
+}.
+
 MIRValue definition: {
+    public field context => MIRContext.
+
     private field users => WeakOrderedCollection.
-    public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
-    public field debugSourceEnvironment => Environment.
     public field sourceProgramEntity => ProgramEntity.
+
+    __Meta__ definition: {
+        public method forContext: (context: MIRContext) ::=> self
+            := self new context: context; yourself
+    }.
+
+    public virtual method debugSourcePosition => SourcePosition := nil.
+    public virtual method debugSourceNode => ASTNode := nil.
+    public virtual method debugSourceEnvironment => Environment := nil.
 
     public virtual method type => Type
         := self subclassResponsibility.
@@ -356,8 +374,8 @@ MIRValue definition: {
     public virtual method markCoalescedMemoryCopyRequired => Void := {}.
 
     public method printDebugInfoOn: (stream: Stream) ::=> Void := {
-        debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
-            stream space; nextPutAll: "# at"; print: debugSourcePosition
+        self debugSourcePosition isNotNil && PrintingDebugInfo ifTrue: {
+            stream space; nextPutAll: "# at"; print: self debugSourcePosition
         }
     }.
 
@@ -427,6 +445,10 @@ MIRValue definition: {
 public final class MIRBasicBlock superclass: MIRLocalValue.
 
 public abstract class MIRProgramEntity superclass: MIRValue; definition: {
+    public field debugSourcePosition => SourcePosition.
+    public field debugSourceNode => ASTNode.
+    public field debugSourceEnvironment => Environment.
+
     public field name => Symbol.
     public field compilationTarget => MIRCompilationTarget.
     public field exportedSymbols => Array.
@@ -502,6 +524,10 @@ public final class MIRImportedFunction superclass: MIRImportedProgramEntity; def
 }.
 
 MIRLocalValue definition: {
+    public field debugSourcePosition => SourcePosition.
+    public field debugSourceNode => ASTNode.
+    public field debugSourceEnvironment => Environment.
+
     public field name => Symbol.
     public field index => UInt32.
 
@@ -869,11 +895,6 @@ public final class MIRConstantInt8 superclass: MIRConstantInteger; definition: {
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i8"
     }.
-
-    Int8 extend: {
-        public method asMirConstant => MIRConstantInt8
-            := MIRConstantInt8 new value: self; yourself
-    }.
 }.
 
 public final class MIRConstantUInt8 superclass: MIRConstantInteger; definition: {
@@ -896,11 +917,6 @@ public final class MIRConstantUInt8 superclass: MIRConstantInteger; definition: 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u8"
     }.
-
-    UInt8 extend: {
-        public method asMirConstant => MIRConstantUInt8
-            := MIRConstantUInt8 new value: self; yourself
-    }
 }.
 
 public final class MIRConstantInt16 superclass: MIRConstantInteger; definition: {
@@ -923,11 +939,6 @@ public final class MIRConstantInt16 superclass: MIRConstantInteger; definition: 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i16"
     }.
-
-    Int16 extend: {
-        public method asMirConstant => MIRConstantInt16
-            := MIRConstantInt16 new value: self; yourself
-    }
 }.
 
 public final class MIRConstantUInt16 superclass: MIRConstantInteger; definition: {
@@ -949,11 +960,6 @@ public final class MIRConstantUInt16 superclass: MIRConstantInteger; definition:
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u16"
     }.
-
-    UInt16 extend: {
-        public method asMirConstant => MIRConstantUInt16
-            := MIRConstantUInt16 new value: self; yourself
-    }
 }.
 
 public final class MIRConstantInt32 superclass: MIRConstantInteger; definition: {
@@ -976,11 +982,6 @@ public final class MIRConstantInt32 superclass: MIRConstantInteger; definition: 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i32"
     }.
-
-    Int32 extend: {
-        public method asMirConstant => MIRConstantInt32
-            := MIRConstantInt32 new value: self; yourself
-    }
 }.
 
 public final class MIRConstantUInt32 superclass: MIRConstantInteger; definition: {
@@ -1002,11 +1003,6 @@ public final class MIRConstantUInt32 superclass: MIRConstantInteger; definition:
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u32"
     }.
-
-    UInt32 extend: {
-        public method asMirConstant => MIRConstantUInt32
-            := MIRConstantUInt32 new value: self; yourself
-    }
 }.
 
 public final class MIRConstantUInt32x2 superclass: MIRConstantInteger; definition: {
@@ -1045,11 +1041,6 @@ public final class MIRConstantInt64 superclass: MIRConstantInteger; definition: 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "i64"
     }.
-
-    Int64 extend: {
-        public method asMirConstant => MIRConstantInt64
-            := MIRConstantInt64 new value: self; yourself
-    }
 }.
 
 public final class MIRConstantUInt64 superclass: MIRConstantInteger; definition: {
@@ -1070,11 +1061,6 @@ public final class MIRConstantUInt64 superclass: MIRConstantInteger; definition:
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "u64"
-    }.
-
-    UInt64 extend: {
-        public method asMirConstant => MIRConstantUInt64
-            := MIRConstantUInt64 new value: self; yourself
     }.
 }.
 
@@ -1115,11 +1101,6 @@ public final class MIRConstantFloat32 superclass: MIRConstantFloatingPoint; defi
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f32"
     }.
-
-    Float32 extend: {
-        public method asMirConstant => MIRConstantFloat32
-            := MIRConstantFloat32 new value: self; yourself
-    }.
 }.
 
 public final class MIRConstantFloat64 superclass: MIRConstantFloatingPoint; definition: {
@@ -1135,11 +1116,82 @@ public final class MIRConstantFloat64 superclass: MIRConstantFloatingPoint; defi
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: value; nextPutAll: "f64"
     }.
+}.
 
-    Float64 extend: {
-        public method asMirConstant => MIRConstantFloat64
-            := MIRConstantFloat64 new value: self; yourself
-    }.
+MIRContext definition: {
+    public method uint8: (value: UInt8) ::=> MIRConstantUInt8
+        := constants at: value ifAbsentPut: {:: MIRConstantUInt8 |
+            (MIRConstantUInt8 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method int8: (value: Int8) ::=> MIRConstantInt8
+        := constants at: value ifAbsentPut: {:: MIRConstantInt8 |
+            (MIRConstantInt8 forContext: self)
+                value: value;
+                yourself
+        }.
+
+
+    public method uint16: (value: UInt16) ::=> MIRConstantUInt16
+        := constants at: value ifAbsentPut: {:: MIRConstantUInt16 |
+            (MIRConstantUInt16 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method int16: (value: Int16) ::=> MIRConstantInt16
+        := constants at: value ifAbsentPut: {:: MIRConstantInt16 |
+            (MIRConstantInt16 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method uint32: (value: UInt32) ::=> MIRConstantUInt32
+        := constants at: value ifAbsentPut: {:: MIRConstantUInt32 |
+            (MIRConstantUInt32 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method int32: (value: Int32) ::=> MIRConstantInt32
+        := constants at: value ifAbsentPut: {:: MIRConstantInt32 |
+            (MIRConstantInt32 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method uint64: (value: UInt64) ::=> MIRConstantUInt64
+        := constants at: value ifAbsentPut: {:: MIRConstantUInt64 |
+            (MIRConstantUInt64 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method int64: (value: Int64) ::=> MIRConstantInt64
+        := constants at: value ifAbsentPut: {:: MIRConstantInt64 |
+            (MIRConstantInt64 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method float32: (value: Float32) ::=> MIRConstantFloat32
+        := constants at: value ifAbsentPut: {:: MIRConstantFloat32 |
+            (MIRConstantFloat32 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method float64: (value: Float64) ::=> MIRConstantFloat64
+        := constants at: value ifAbsentPut: {:: MIRConstantFloat64 |
+            (MIRConstantFloat64 forContext: self)
+                value: value;
+                yourself
+        }.
+
+    public method voidConstant => MIRConstant
+        := self uint8: 0u8.
 }.
 
 public final class MIROperationTargetSpecific superclass: Object; definition: {
@@ -1217,11 +1269,6 @@ public final class MIROperation superclass: Object; definition: {
     public override method printOn: (stream: Stream) ::=> Void := {
         stream string: name
     }.
-}.
-
-Void extend: {
-    public method asMirConstant => MIRConstant
-        := 0u8 asMirConstant.
 }.
 
 MIRValue definition: {
@@ -2049,6 +2096,8 @@ MIRFunction definition: {
 }.
 
 public final class MIRBlockBuilder superclass: Object; definition: {
+    public field context => MIRContext.
+
     public field block => MIRBasicBlock.
     public field function => MIRFunction.
     public field insertionPoint => MIRInstruction.
@@ -2057,6 +2106,11 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public field debugSourcePosition => SourcePosition.
     public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
+
+    __Meta__ definition: {
+        public method forContext: (context: MIRContext) ::=> self
+            := self new context: context; yourself
+    }.
 
     public method addInstruction: (instruction: MIRInstruction) ::=> MIRInstruction := {
         block addInstruction: instruction before: insertionPoint.
@@ -2083,6 +2137,36 @@ public final class MIRBlockBuilder superclass: Object; definition: {
     public method pointerSize => Size := function compilationTarget pointerSize.
     public method uintPointerType => Type := function compilationTarget uintPointerType.
     public method has64BitsPointers => Boolean := self pointerSize = 8sz.
+
+    public method uint8: (value: UInt8) ::=> MIRConstantUInt8
+        := context uint8: value.
+
+    public method int8: (value: Int8) ::=> MIRConstantInt8
+        := context int8: value.
+
+    public method uint16: (value: UInt16) ::=> MIRConstantUInt16
+        := context uint16: value.
+
+    public method int16: (value: Int16) ::=> MIRConstantInt16
+        := context int16: value.
+
+    public method uint32: (value: UInt32) ::=> MIRConstantUInt32
+        := context uint32: value.
+
+    public method int32: (value: Int32) ::=> MIRConstantInt32
+        := context int32: value.
+
+    public method uint64: (value: UInt64) ::=> MIRConstantUInt64
+        := context uint64: value.
+
+    public method int64: (value: Int64) ::=> MIRConstantInt64
+        := context int64: value.
+
+    public method float32: (value: Float32) ::=> MIRConstantFloat32
+        := context float32: value.
+
+    public method float64: (value: Float64) ::=> MIRConstantFloat64
+        := context float64: value.
 
     public method operation: (operation: MIROperation) ::=> MIRInstruction
         := self addInstruction: ((MIRInstruction withType: Void compilationTarget: self compilationTarget)
@@ -2327,8 +2411,8 @@ public final class MIRBlockBuilder superclass: Object; definition: {
         
     public method constantOffsetImmediateFor: (constantOffset: Int64) ::=> MIRValue
         := self has64BitsPointers && (constantOffset asInt32 asInt64 ~= constantOffset)
-            ifTrue: (constantOffset asMirConstant)
-            ifFalse: (constantOffset asInt32 asMirConstant).
+            ifTrue: (self int64: constantOffset)
+            ifFalse: (self int32: constantOffset asInt32).
 
     public method loadInt8: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::LoadInt8 with: pointer with: (self constantOffsetImmediateFor: constantOffset) type: Int8.
@@ -2390,8 +2474,8 @@ public final class MIRBlockBuilder superclass: Object; definition: {
 
     public method pointerConstantWith: (value: UInt64) ::=> MIRValue
         := self has64BitsPointers
-            ifTrue: (value asMirConstant)
-            ifFalse: (value asUInt32 asMirConstant).
+            ifTrue: (self uint64: value)
+            ifFalse: (self uint32: value asUInt32).
 
     public method storeInt8: (value: MIRValue) into: (pointer: MIRValue) constantOffset: (constantOffset: Int64) ::=> MIRInstruction
         := self operation: MIR::Operation::StoreInt8 with: value with: pointer with: (self constantOffsetImmediateFor: constantOffset).
@@ -2560,10 +2644,10 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     }.
 
     public method basicBlock: (name: Symbol) build: (aBlock: (MIRBlockBuilder) => Void) ::=> Void := {
-        let block := MIRBasicBlock new name: name; yourself.
+        let block := (MIRBasicBlock forContext: function context) name: name; yourself.
         function addBasicBlock: block.
 
-        let blockBuilder := MIRBlockBuilder new
+        let blockBuilder := (MIRBlockBuilder forContext: function context)
             block: block;
             function: function;
             yourself.
@@ -2571,7 +2655,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
         block.
     }.
 
-    public method setValueDebugInfo: (value: MIRValue) ::=> Void := {
+    public method setValueDebugInfo: (value: MIRLocalValue) ::=> Void := {
         value
             debugSourcePosition: debugSourcePosition;
             debugSourceNode: debugSourceNode;

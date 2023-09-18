@@ -33,6 +33,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public field hirModule => HIRModule.
     public field targetModule => MIRModule.
     public field globalValueDictionary => ObjectPointerDictionary.
+    public field mirContext => MIRContext.
 
     public field runtimeFunctionDictionary => ObjectPointerDictionary.
     public field importRuntimeFunction => Boolean.
@@ -47,9 +48,14 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public field nullPointerConstant => MIRConstant.
     public field nullFatPointerConstant => MIRConstant.
 
+    private field genericObjectPointerConstants => ObjectPointerDictionary.
+    private field structureConstants => ObjectPointerDictionary.
+    private field cstringConstants => Dictionary.
+
     public method initializeWithTarget: (theCompilationTarget: MIRCompilationTarget) ::=> Void := {
         compilationTarget := theCompilationTarget.
-        targetModule := MIRModule new
+        mirContext := MIRContext new.
+        targetModule := (MIRModule forContext: mirContext)
             compilationTarget: compilationTarget;
             yourself.
         globalValueDictionary := ObjectPointerDictionary new.
@@ -59,6 +65,9 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         checkedEntryPointDictionary := ObjectPointerDictionary new.
         uncheckedInterpreterTrampolinesDictionary := Dictionary new.
         boxingApplicationTrampolinesDictionary := Dictionary new.
+        genericObjectPointerConstants := ObjectPointerDictionary new.
+        structureConstants := ObjectPointerDictionary new.
+        cstringConstants := Dictionary new.
     }.
 
     public method compileHIRModule: (module: HIRModule) patchingFunctions: (patchedFunctionList: SequenceableCollection) definitions: (patchedFunctionDefinitionList: SequenceableCollection) ::=> MIRModule := {
@@ -177,7 +186,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public method compileCapturelessUncheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {
         let importedSymbols := functionDefinition importedSymbols.
         importedSymbols isEmpty ifTrue: {
-            let entryPoint := MIRFunction new
+            let entryPoint := (MIRFunction forContext: mirContext)
                 compilationTarget: compilationTarget;
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 name: functionDefinition name asCapturelessUncheckedEntryPointNameSymbol;
@@ -196,7 +205,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
 
             entryPoint
         } ifFalse: {
-            let importedEntity := MIRImportedFunction new
+            let importedEntity := (MIRImportedFunction forContext: mirContext)
                 name: importedSymbols first;
                 compilationTarget: compilationTarget;
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
@@ -210,7 +219,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method compileUncheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {
-        let entryPoint := MIRFunction new
+        let entryPoint := (MIRFunction forContext: mirContext)
             compilationTarget: compilationTarget;
             callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
             name: functionDefinition name asUncheckedEntryPointNameSymbol;
@@ -239,7 +248,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method compileCheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {
-        let entryPoint := MIRFunction new
+        let entryPoint := (MIRFunction forContext: mirContext)
             compilationTarget: compilationTarget;
             callingConvention: compilationTarget defaultCallingConvention;
             name: functionDefinition name asCheckedEntryPointNameSymbol;
@@ -269,7 +278,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             nameBuilder nextPutAll: "uncheckedInterpreterTrampoline"; print: signature size; nextPutAll: ".SUIT".
             signature hash printHexOn: nameBuilder.
 
-            let trampoline := MIRFunction new
+            let trampoline := (MIRFunction forContext: mirContext)
                 compilationTarget: compilationTarget;
                 callingConvention: compilationTarget defaultCallingConvention;
                 name: nameBuilder asSymbol;
@@ -291,7 +300,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             nameBuilder nextPutAll: "boxingApplicationTrampoline"; print: signature size; nextPutAll: ".SUIT".
             signature hash printHexOn: nameBuilder.
 
-            let trampoline := MIRFunction new
+            let trampoline := (MIRFunction forContext: mirContext)
                 compilationTarget: compilationTarget;
                 callingConvention: compilationTarget defaultCallingConvention;
                 name: nameBuilder asSymbol;
@@ -320,8 +329,8 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 vtableIndexOrNil ifNotNil: {
                     let vtableIndex := vtableIndexOrNil downCastTo: Size.
                     compilationTarget pointerSize = 4sz
-                        ifTrue: vtableIndex asUInt32 asMirConstant
-                        ifFalse: vtableIndex asUInt64 asMirConstant
+                        ifTrue: (mirContext uint32: vtableIndex asUInt32)
+                        ifFalse: (mirContext uint64: vtableIndex asUInt64)
                 }
             }.
         } ifFalse: {
@@ -387,7 +396,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 self translateCapturelessUncheckedFunctionEntryPoint: ssaRuntimeFunction
             } ifNil: {
                 importRuntimeFunction ifTrue: {
-                    let importedRuntimeFunction := MIRImportedFunction new
+                    let importedRuntimeFunction := (MIRImportedFunction forContext: mirContext)
                         name: function definition capturelessUncheckedEntryPointNameSymbol;
                         compilationTarget: compilationTarget;
                         callingConvention: (compilationTarget callingConventionNamed: function definition callingConventionName);
@@ -407,41 +416,50 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
 
     public method translateGenericObjectPointer: (object: Untyped) ::=> MIRValue := {
         (compilationTarget objectModel isImmediateReference: object) ifTrue: {
-            compilationTarget objectModel mirImmediateReferenceFor: object 
+            compilationTarget objectModel mir: mirContext immediateReferenceFor: object 
         } ifFalse: {
-            MIRGenericObjectPointerConstant new
-                size: compilationTarget pointerSize;
-                alignment: compilationTarget pointerAlignment;
-                object: object;
-                type: compilationTarget uintPointerType;
-                yourself
+            genericObjectPointerConstants untypedAt: object ifAbsentPut: {:: MIRGenericObjectPointerConstant |
+                (MIRGenericObjectPointerConstant forContext: mirContext)
+                    size: compilationTarget pointerSize;
+                    alignment: compilationTarget pointerAlignment;
+                    object: object;
+                    type: compilationTarget uintPointerType;
+                    yourself
+            }
         }.
     }.
 
-    public method translateStructureConstant: (structure: AnyValue) ::=> MIRValue := {
-        let structureType := structure __type__.
-        MIRStructureConstant new
-            value: structure;
-            size: structureType validInstanceSize;
-            alignment: structureType validInstanceAlignment;
-            type: structureType;
-            yourself.
-    }.
+    public method translateStructureConstant: (structure: AnyValue) ::=> MIRValue
+        := structureConstants untypedAt: structure ifAbsentPut: {:: MIRStructureConstant |
+            let structureType := structure __type__.
+            (MIRStructureConstant forContext: mirContext)
+                value: structure;
+                size: structureType validInstanceSize;
+                alignment: structureType validInstanceAlignment;
+                type: structureType;
+                yourself.
+        }.
 
     public method translateCStringConstant: (string: String) ::=> MIRValue
-        := MIRStringLiteralPointerConstant new
-            size: compilationTarget pointerSize;
-            alignment: compilationTarget pointerAlignment;
-            string: string;
-            type: compilationTarget uintPointerType;
-            nullTerminated: true;
-            yourself.
+        := cstringConstants at: string ifAbsentPut: {:: MIRStringLiteralPointerConstant |
+            (MIRStringLiteralPointerConstant forContext: mirContext)
+                size: compilationTarget pointerSize;
+                alignment: compilationTarget pointerAlignment;
+                string: string;
+                type: compilationTarget uintPointerType;
+                nullTerminated: true;
+                yourself
+        }.
 
     public method nullPointerConstant => MIRConstant
-        := nullPointerConstant ifNil: (nullPointerConstant := compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant).
+        := nullPointerConstant ifNil: (nullPointerConstant := compilationTarget pointerSize = 4sz
+            ifTrue: (mirContext uint32: 0u32)
+            ifFalse: (mirContext uint64: 0u64)).
 
     public method nullFatPointerConstant => MIRConstant
-        := nullFatPointerConstant ifNil: (nullFatPointerConstant := compilationTarget pointerSize = 4sz ifTrue: MIRConstantUInt32x2 new ifFalse: MIRConstantUInt64x2 new).
+        := nullFatPointerConstant ifNil: (nullFatPointerConstant := compilationTarget pointerSize = 4sz
+            ifTrue: MIRConstantUInt32x2 new
+            ifFalse: MIRConstantUInt64x2 new).
 }.
 
 public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeGenerator; definition: {
@@ -454,6 +472,9 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
     protected field valueDictionary => ObjectPointerDictionary.
     public field functionArgument => MIRValue.
     protected field boxedValueDictionary => ObjectPointerDictionary.
+
+    public inline method mirContext => MIRContext
+        := moduleCodeGenerator mirContext.
 
     public override method initialize => Void := {
         valueDictionary := ObjectPointerDictionary new.
@@ -724,7 +745,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
 
     public method declareValues => Void := {
         ssaFunctionDefinition basicBlocksDo: {:(HIRBasicBlock)eachBlock :: Void |
-            let mirBlock := MIRBasicBlock new
+            let mirBlock := (MIRBasicBlock forContext: self mirContext)
                 name: eachBlock name;
                 debugSourcePosition: eachBlock sourcePosition;
                 debugSourceNode: eachBlock sourceASTNode;
@@ -779,7 +800,7 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
     }.
 
     public method compileBasicBlock: (ssaBasicBlock: HIRBasicBlock) into: (mirBlock: MIRBasicBlock) ::=> Void := {
-        blockBuilder := MIRBlockBuilder new
+        blockBuilder := (MIRBlockBuilder forContext: self mirContext)
             block: mirBlock;
             function: mirFunction;
             yourself.
@@ -1001,7 +1022,7 @@ Type extend: {
         := codegen translateGenericObjectPointer: constant value.
 
     public virtual method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := codegen compilationTarget pointerSize = 4sz ifTrue: 0u32 asMirConstant ifFalse: 0u64 asMirConstant.
+        := codegen nullPointerConstant.
 
     public virtual method translateHIRLiteralConstant: (constant: HIRLiteralConstant) pointerType: (pointerType: PointerLikeType) storage: storage base: base offset: (offset: IntPointer) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
         := codegen translateGenericObjectPointer: constant value.
@@ -1020,18 +1041,18 @@ Type extend: {
 }.
 
 ObjectModelVariant extend: {
-    public abstract method mirImmediateReferenceFor: (object: Untyped) ::=> MIRValue
+    public abstract method mir: (context: MIRContext) immediateReferenceFor: (object: Untyped) ::=> MIRValue
         := self subclassResponsibility.
 }.
 
 ObjectModelVariant32 extend: {
-    public override method mirImmediateReferenceFor: (object: Untyped) ::=> MIRValue
-        := (RawTuple::type(object) encodeImmediateReference32: object) asMirConstant.
+    public override method mir: (context: MIRContext) immediateReferenceFor: (object: Untyped) ::=> MIRValue
+        := context uint32: (RawTuple::type(object) encodeImmediateReference32: object).
 }.
 
 ObjectModelVariant64 extend: {
-    public override method mirImmediateReferenceFor: (object: Untyped) ::=> MIRValue
-        := (RawTuple::type(object) encodeImmediateReference64: object) asMirConstant.
+    public override method mir: (context: MIRContext) immediateReferenceFor: (object: Untyped) ::=> MIRValue
+        := context uint64: (RawTuple::type(object) encodeImmediateReference64: object).
 }.
 
 String class extend: {
@@ -1308,10 +1329,10 @@ Char8 __type__ extend: {
         := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u8 asMirConstant.
+        := codegen mirContext uint8: 0u8.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asUInt8 asMirConstant.
+        := codegen mirContext uint8: constant value asUInt8.
 }.
 
 Int8 __type__ extend: {
@@ -1349,10 +1370,10 @@ Int8 __type__ extend: {
         := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0i8 asMirConstant.
+        := codegen mirContext int8: 0i8.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asInt8 asMirConstant.
+        := codegen mirContext int8: constant value asInt8.
 }.
 
 UInt8 __type__ extend: {
@@ -1390,10 +1411,10 @@ UInt8 __type__ extend: {
         := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u8 asMirConstant.
+        := codegen mirContext uint8: 0u8.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asUInt8 asMirConstant.
+        := codegen mirContext uint8: constant value asUInt8.
 }.
 
 Boolean __type__ extend: {
@@ -1431,18 +1452,17 @@ Boolean __type__ extend: {
         := builder int8NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u8 asMirConstant.
+        := codegen mirContext uint8: 0u8.
 }.
 
 False __type__ extend: {
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u8 asMirConstant.
-
+        := codegen mirContext uint8: 0u8.
 }.
 
 True __type__ extend: {
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 1u8 asMirConstant.
+        := codegen mirContext uint8: 1u8.
 }.
 
 Char16 __type__ extend: {
@@ -1480,10 +1500,10 @@ Char16 __type__ extend: {
         := builder int16NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u16 asMirConstant.
+        := codegen mirContext uint16: 0u16.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asUInt16 asMirConstant.
+        := codegen mirContext uint16: constant value asUInt16.
 }.
 
 Int16 __type__ extend: {
@@ -1521,10 +1541,10 @@ Int16 __type__ extend: {
         := builder int16NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0i16 asMirConstant.
+        := codegen mirContext int16: 0i16.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asInt16 asMirConstant.
+        := codegen mirContext int16: constant value asInt16.
 }.
 
 UInt16 __type__ extend: {
@@ -1562,10 +1582,10 @@ UInt16 __type__ extend: {
         := builder int16NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u16 asMirConstant.
+        := codegen mirContext uint16: 0u16.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asUInt16 asMirConstant.
+        := codegen mirContext uint16: constant value asUInt16.
 }.
 
 Char32 __type__ extend: {
@@ -1603,10 +1623,10 @@ Char32 __type__ extend: {
         := builder int32NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u32 asMirConstant.
+        := codegen mirContext uint32: 0u32.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asUInt32 asMirConstant.
+        := codegen mirContext uint32: constant value asUInt32.
 }.
 
 Int32 __type__ extend: {
@@ -1644,10 +1664,10 @@ Int32 __type__ extend: {
         := builder int32NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0i32 asMirConstant.
+        := codegen mirContext int32: 0i32.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asInt32 asMirConstant.
+        := codegen mirContext int32: constant value asInt32.
 }.
 
 UInt32 __type__ extend: {
@@ -1685,10 +1705,10 @@ UInt32 __type__ extend: {
         := builder int32NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u32 asMirConstant.
+        := codegen mirContext uint32: 0u32.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asUInt32 asMirConstant.
+        := codegen mirContext uint32: constant value asUInt32.
 }.
 
 Int64 __type__ extend: {
@@ -1726,10 +1746,10 @@ Int64 __type__ extend: {
         := builder int64NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0i64 asMirConstant.
+        := codegen mirContext int64: 0i64.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asInt64 asMirConstant.
+        := codegen mirContext int64: constant value asInt64.
 }.
 
 UInt64 __type__ extend: {
@@ -1767,10 +1787,10 @@ UInt64 __type__ extend: {
         := builder int64NotEquals: left with: right.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0u64 asMirConstant.
+        := codegen mirContext uint64: 0u64.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := constant value asUInt64 asMirConstant.
+        := codegen mirContext uint64: constant value asUInt64.
 }.
 
 Float32 __type__ extend: {
@@ -1802,12 +1822,10 @@ Float32 __type__ extend: {
         := codegen blockBuilder storeFloat32: value into: pointer constantOffset: constantOffset.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0.0f32 asMirConstant.
+        := codegen mirContext float32: 0f32.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue := {
-        let floatValue => Float32 := constant value.
-        floatValue asMirConstant
-    }.
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := codegen mirContext float32: constant value.
 }.
 
 Float64 __type__ extend: {
@@ -1839,49 +1857,47 @@ Float64 __type__ extend: {
         := codegen blockBuilder storeFloat64: value into: pointer constantOffset: constantOffset.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := 0.0 asMirConstant.
+        := codegen mirContext float64: 0f64.
 
-    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue := {
-        let floatValue => Float64 := constant value.
-        floatValue asMirConstant
-    }.
+    public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
+        := codegen mirContext float64: constant value.
 }.
 
 Void __type__ extend: {
     public override method emitMirUncheckedUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
-        := void asMirConstant.
+        := codegen mirContext voidConstant.
 
     public override method emitMirCheckAndUnbox: (boxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
-        := void asMirConstant.
+        := codegen mirContext voidConstant.
 
     public override method emitMirBox: (unboxedValue: MIRValue) withHIRCodeGenerator: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
         := codegen moduleCodeGenerator translateGenericObjectPointer: void.
 
     public override method emitMirCall: (function: MIRValue) convention: (callingConvention: MIRCallingConvention) withArguments: (arguments: Array) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue := {
         builder callVoid: function convention: callingConvention arguments: arguments.
-        void asMirConstant
+        builder context voidConstant
     }.
 
     public override method emitMirMove: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := void asMirConstant.
+        := builder context voidConstant.
 
     public override method emitMirPhiWithBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := void asMirConstant.
+        := builder context voidConstant.
 
     public override method emitMirReturn: (value: MIRValue) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
         := builder returnVoid.
 
     public override method emitMirLoadFromPointer: (pointer: MIRValue) constantOffset: (constantOffset: Float64) withBlockBuilder: (builder: MIRBlockBuilder) ::=> MIRValue
-        := void asMirConstant.
+        := builder context voidConstant.
 
     public override method emitMirStore: (value: MIRValue) intoPointer: (pointer: MIRValue) constantOffset: (constantOffset: Int64) in: (object: MIRValue) with: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue
-        := void asMirConstant.
+        := codegen mirContext voidConstant.
 
     public override method translateUndefinedConstant: (constant: HIRUndefinedConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := void asMirConstant.
+        := codegen mirContext voidConstant.
 
     public override method translateHIRLiteralConstant: (constant: HIRLiteralConstant) intoMirWith: (codegen: HIRModuleMIRCodeGenerator) ::=> MIRValue
-        := void asMirConstant.
+        := codegen mirContext voidConstant.
 }.
 
 HIRValue extend: {
@@ -2046,7 +2062,7 @@ public global HIRMirPrimitiveCallGenerationTable := #{
 
     #Exception::setjmp : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
         codegen blockBuilder exceptionSetjmp: (codegen translateValue: arguments first).
-        0u8 asMirConstant.
+        codegen mirContext uint8: 0u8.
     }.
 
     #Exception::longjmp : {:(Array)arguments :(Type)type :(HIRFunctionDefinitionMIRCodeGenerator)codegen :: MIRValue |
@@ -2844,18 +2860,18 @@ HIRSendInstruction extend: {
             } ifNil: {
                 mirReceiverLookupType ifNil: {
                     codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverAndInlineCache)
-                        with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector
+                        with: (MIRPolymorphicInlineCache forContext: codegen mirContext) with: mirReceiver with: mirSelector
                         type: UIntPointer.
                 } ifNotNil: {
                     codegen blockBuilder callPointer: (codegen translateRuntimeFunction: ObjectModel::lookupValidMethodWithReceiverTypeAndInlineCache)
-                        with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector
+                        with: (MIRPolymorphicInlineCache forContext: codegen mirContext) with: mirReceiver with: mirReceiverLookupType with: mirSelector
                         type: UIntPointer.
                 }
             }.
 
             ## Get the trampoline for the conversion case.
             let boxingTrampoline := codegen moduleCodeGenerator getOrCreateBoxingApplicationTrampolineWithSignature: self boxingApplicationSignature.
-            let applicationBoxDescriptor := self applicationBoxDescriptor asMirConstant.
+            let applicationBoxDescriptor := codegen blockBuilder pointerConstantWith: self applicationBoxDescriptor asUInt64.
 
             ## Fetch the entry point to use
             let entryPoint := codegen blockBuilder
@@ -2896,13 +2912,13 @@ HIRSendInstruction extend: {
                 let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendTrampolines at: self arguments size).
                 self type
                     emitMirUnboxingCall: trampoline convention: trampoline callingConvention
-                    withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirSelector) -- mirArguments
+                    withArguments: (Array with: (MIRPolymorphicInlineCache forContext: codegen mirContext) with: mirReceiver with: mirSelector) -- mirArguments
                     withHIRCodeGenerator: codegen.
             } ifNotNil: {
                 let trampoline := codegen translateRuntimeFunction: (ObjectModel::SendWithReceiverTypeTrampolines at: self arguments size).
                 self type
                     emitMirUnboxingCall: trampoline convention: trampoline callingConvention
-                    withArguments: (Array with: MIRPolymorphicInlineCache new with: mirReceiver with: mirReceiverLookupType with: mirSelector) -- mirArguments
+                    withArguments: (Array with: (MIRPolymorphicInlineCache forContext: codegen mirContext) with: mirReceiver with: mirReceiverLookupType with: mirSelector) -- mirArguments
                     withHIRCodeGenerator: codegen.
             }.
         }.
@@ -3016,7 +3032,7 @@ HIRTypeSlotAtPutInstruction extend: {
 
 HIRReturnInstruction extend: {
     public override method compileIntoMIRWith: (codegen: HIRFunctionDefinitionMIRCodeGenerator) ::=> MIRValue := {
-        (self value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {return: void asMirConstant}.
+        (self value type isSubtypeOf: ControlFlowEscapeType) ifTrue: {return: codegen mirContext voidConstant}.
 
         let canonicalResultType := codegen ssaFunctionDefinition functionType canonicalResultType.
         canonicalResultType emitMirReturn: (codegen translateValue: self value withExpectedType: canonicalResultType) withBlockBuilder: codegen blockBuilder
