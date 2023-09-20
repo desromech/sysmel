@@ -163,6 +163,11 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t metaclassType;
     sysbvm_tuple_t methodDictionaryType;
     sysbvm_tuple_t namespaceType;
+    sysbvm_tuple_t nativeCodeType;
+    sysbvm_tuple_t nativeCodeSymbolTableType;
+    sysbvm_tuple_t nativeCodeSymbolType;
+    sysbvm_tuple_t nativeCodeSectionType;
+    sysbvm_tuple_t nativeCodeRelocationTableType;
     sysbvm_tuple_t objectType;
     sysbvm_tuple_t pendingMemoizationValueType;
     sysbvm_tuple_t pointerLikeType;

@@ -240,7 +240,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
 
     public method computeActualCallResultType: (calledFunction: HIRValue) withResultTemporaryType: (resultType: Type) ::=> Type := {
         let canonicalResultType := calledFunction type canonicalResultType.
-        (canonicalResultType isSubtypeOf: resultType) ifTrue: {
+        resultType isVoidType || (canonicalResultType isSubtypeOf: resultType) ifTrue: {
             canonicalResultType
         } ifFalse: {
             resultType

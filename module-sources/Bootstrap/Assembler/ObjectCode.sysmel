@@ -557,10 +557,13 @@ public global AsmSymbol::Type::None := 0u8.
 public global AsmSymbol::Type::Function := 1u8.
 public global AsmSymbol::Type::Variable := 2u8.
 public global AsmSymbol::Type::TLS := 3u8.
+public global AsmSymbol::Type::GCPointerTable := 4u8.
+public global AsmSymbol::Type::GCFatPointerTable := 5u8.
 
 AsmSymbol definition: {
     public field name => Symbol.
     public field section => AsmObjectCodeSection.
+    public field objectValue => UInt64.
     public field value => UInt64.
     public field size => UInt64.
     public field visibility => UInt8.
@@ -607,6 +610,20 @@ AsmSymbol definition: {
 
     public method isTLS => Boolean
         := type = AsmSymbol::Type::TLS.
+
+    public method makeGCPointerTable => Void := {
+        type := AsmSymbol::Type::GCPointerTable.
+    }.
+
+    public method isGCPointerTable => Boolean
+        := type = AsmSymbol::Type::GCPointerTable.
+
+    public method makeGCFatPointerTable => Void := {
+        type := AsmSymbol::Type::GCFatPointerTable.
+    }.
+
+    public method isGCFatPointerTable => Boolean
+        := type = AsmSymbol::Type::GCFatPointerTable.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         self isPrivate ifTrue: (stream nextPut: '.'c8).

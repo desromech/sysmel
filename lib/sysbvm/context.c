@@ -405,6 +405,12 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.functionBytecodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionNativeCodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
+    context->roots.nativeCodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeSymbolTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeSectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeRelocationTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+
     // Create the function type classes.
     context->roots.functionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
     context->roots.dependentFunctionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.functionTypeType);
@@ -878,7 +884,35 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "jittedCodeTrampolineSessionToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionNativeCodeType, "FunctionNativeCodeDefinition", SYSBVM_NULL_TUPLE,
+        "nativeCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeType,
+        "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         NULL);
+
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeType, "NativeCode", SYSBVM_NULL_TUPLE,
+        "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolTableType,
+        "sections", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSymbolType, "NativeCodeSymbol", SYSBVM_NULL_TUPLE,
+        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "section", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSectionType,
+        "objectValue", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
+        "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.intptrType,
+        "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSymbolTableType, "NativeCodeSymbolTable", SYSBVM_NULL_TUPLE,
+        "symbols", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSectionType, "NativeCodeSection", SYSBVM_NULL_TUPLE,
+        "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolTableType,
+        "relocations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeRelocationTableType,
+        "data", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeRelocationTableType, "NativeCodeRelocationTable", SYSBVM_NULL_TUPLE,
+        NULL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.nativeCodeRelocationTableType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionTypeType, "FunctionType", SYSBVM_NULL_TUPLE,
         "functionFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
