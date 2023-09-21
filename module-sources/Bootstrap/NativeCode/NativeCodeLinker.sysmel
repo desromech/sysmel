@@ -1,0 +1,47 @@
+public class NativeCodeLinker superclass: Object; definition: {
+    private field sectionNameTable => Dictionary.
+    private field sections => OrderedCollection.
+    private field symbolTable => NativeCodeLinkerSymbolTable.
+    private field sourceSymbolTables => OrderedCollection.
+
+    public override method initialize => Void := {
+        sectionNameTable := Dictionary new.
+        sections := OrderedCollection new.
+        symbolTable := NativeCodeLinkerSymbolTable new.
+        sourceSymbolTables := OrderedCollection new.
+    }.
+
+    public method addNativeCode: (nativeCode: NativeCode) ::=> Void := {
+        nativeCode symbolTable ifNotNil: {
+            sourceSymbolTables add: nativeCode symbolTable
+        }.
+
+        nativeCode sections do: {:(NativeCodeSection)sourceSection :: Void |
+            (self getOrCreateSectionNamed: sourceSection name)
+                addSourceSection: sourceSection
+        }
+    }.
+
+    public method getOrCreateSectionNamed: (name: Symbol) ::=> NativeCodeLinkerSection
+        := sectionNameTable at: name ifAbsentPut: {:: NativeCodeLinkerSection  |
+            let linkerSection := NativeCodeLinkerSection new.
+            sections add: linkerSection.
+            linkerSection
+        }.
+
+    public method finish => NativeCode := {
+        let linkedSymbolTable := symbolTable
+            addSections: sections;
+            addSymbolTables: sourceSymbolTables;
+            link.
+
+        NativeCode new
+            sections: (sections collect: {:(NativeCodeLinkerSection)eachSection :: NativeCodeSection |
+                (eachSection linkWithSymbolTable: symbolTable)
+                    symbolTable: linkedSymbolTable;
+                    yourself
+            }) asArray;
+            symbolTable: linkedSymbolTable;
+            yourself
+    }.
+}.

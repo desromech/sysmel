@@ -1,0 +1,60 @@
+public class NativeCodeLinkerSection superclass: Object; definition: {
+    public field sourceSections => OrderedCollection.
+    public field linkedSection => NativeCodeSection.
+
+    public override method initialize => Void := {
+        sourceSections := OrderedCollection new.
+        linkedSection := NativeCodeSection new.
+        linkedSection alignment. 1sz.
+    }.
+
+    public method addSourceSection: (sourceSection: NativeCodeSection) ::=> Void := {
+        linkedSection name ifNil: {
+            linkedSection name: sourceSection name.
+            linkedSection machoSectionName: sourceSection machoSectionName.
+            linkedSection machoSegmentName: sourceSection machoSegmentName.
+        }.
+
+        linkedSection size: (linkedSection size alignedTo: sourceSection alignment).
+        linkedSection alignment: (linkedSection alignment max: sourceSection alignment).
+        linkedSection size: linkedSection size + sourceSection size.
+        linkedSection flags: linkedSection flags | sourceSection flags.
+
+        sourceSections add: sourceSection
+    }.
+
+    public method linkWithSymbolTable: (symbolTable: NativeCodeLinkerSymbolTable) ::=> NativeCodeSection := {
+        linkedSection size: (linkedSection size alignedTo: linkedSection alignment).
+        linkedSection isNoBits ifFalse: {
+            linkedSection data: (ByteArray new: linkedSection size).
+        }.
+        
+        let writePosition mutable := 0sz.
+        let encoder := NativeCodeRelocationEncoder new.
+        sourceSections do: {:(NativeCodeSection)sourceSection :: Void |
+            writePosition := writePosition alignedTo: sourceSection alignment.
+            sourceSection isNoBits ifFalse: {
+                sourceSection data ifNotNil: {
+                    linkedSection data replaceBytesFrom: writePosition count: sourceSection data size with: sourceSection data
+                }
+            }.
+
+            ## Convert the relocations.
+            sourceSection relocations ifNotNil: {
+                let symbolTableMap := symbolTable convertSymbolTable: sourceSection symbolTable.
+
+                sourceSection relocations decodedRelocationsDo: {:(UInt8)type :(UInt32)symbolIndex :(UInt32)offset :(Int64)addend :: Void |
+                    let convertedSymbolIndex := symbolTableMap convertSymbolIndex: symbolIndex.
+                    let convertedSymbolAddend := symbolTableMap convertSymbolAddend: symbolIndex.
+                    encoder type: type symbolIndex: convertedSymbolIndex offset: writePosition asUInt32 + offset addend: convertedSymbolAddend + addend
+                }.
+            }.
+
+            writePosition := writePosition + sourceSection size
+        }.
+
+        linkedSection
+            relocations: encoder finish;
+            yourself
+    }.
+}.

@@ -154,6 +154,13 @@ NativeCodeSection definition: {
 }.
 
 NativeCodeSymbol definition: {
+
+    public method isGCObject => Boolean
+        := (type = NativeCodeSymbol::Type::GCPointerTable) || (type = NativeCodeSymbol::Type::GCFatPointerTable).
+
+    public method isPrivate => Boolean
+        := visibility = NativeCodeSymbol::Visibility::Private.
+
     public override method printOn: (stream: Stream) ::=> Void := {
         name
             ifNil: (stream print: section; nextPut: '+'c8; print: value);
@@ -251,5 +258,29 @@ public final class NativeCodeRelocationEncoder superclass: Object; definition: {
 
     public method type: (type: UInt8) symbolIndex: (symbolIndex: UInt32) offset: (offset: UInt32) addend64: (addend: Int64)::=> Void := {
         out nextPutUInt32: type asUInt32 | (symbolIndex << 8u32); nextPutUInt32: offset; nextPutInt64: addend
+    }.
+
+    public method type: (type: UInt8) symbolIndex: (symbolIndex: UInt32) offset: (offset: UInt32) addend: (addend: Int64)::=> Void := {
+        out nextPutUInt32: type asUInt32 | (symbolIndex << 8u32); nextPutUInt32: offset.
+
+        let addendSize := type >> 6u8.
+        addendSize = NativeCodeRelocation::Addend::Size8 ifTrue: {
+            out nextPutInt8: addend asInt8.
+            return: void.
+        }.
+        addendSize = NativeCodeRelocation::Addend::Size16 ifTrue: {
+            out nextPutInt16: addend asInt16.
+            return: void.
+        }.
+        addendSize = NativeCodeRelocation::Addend::Size32 ifTrue: {
+            out nextPutInt32: addend asInt32.
+            return: void.
+        }.
+        addendSize = NativeCodeRelocation::Addend::Size64 ifTrue: {
+            out nextPutInt64: addend.
+            return: void.
+        }.
+
+        self error: "Unsupported addend size.".
     }.
 }.
