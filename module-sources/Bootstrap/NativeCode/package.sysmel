@@ -1,0 +1,12 @@
+public class NativeCodeLinker superclass: Object; definition: {
+    public override method initialize => Void := {
+
+    }.
+
+    public method addNativeCode: (nativeCode: NativeCode) ::=> Void := {
+
+    }.
+
+    public method finish => NativeCode
+        := NativeCode new.
+}.

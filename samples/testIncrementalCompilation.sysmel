@@ -1,4 +1,4 @@
-let asmCode := AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:(AsmStreamBuilder)builder :: Void |
+let addFunctionNativeCode := (AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:(AsmStreamBuilder)builder :: Void |
     let addFunctionSymbol := (builder symbolNamed: #add)
         makeFunction;
         makePublic;
@@ -13,7 +13,18 @@ let asmCode := AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:(A
                 x86::mov: X86::RAX src: X86::RDI;
                 x86::add: X86::RAX with: X86::RSI;
                 x86::ret
-        };
+        }
+}) assemble asNativeCode.
+
+printLine("mainFunctionNativeCode").
+let mainFunctionNativeCode := (AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:(AsmStreamBuilder)builder :: Void |
+    let addFunctionSymbol := (builder symbolNamed: #add)
+        makeFunction;
+        makePublic;
+        yourself.
+
+    builder
+        textSection;
         align: 16sz unreachable: true;
         blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
             builder
@@ -29,8 +40,9 @@ let asmCode := AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:(A
                 x86::pop: X86::RBP;
                 x86::ret
         }.
-}.
+}) assemble asNativeCode.
 
-printLine(asmCode fullPrintString).
-let assembledNativeCode := asmCode assemble asNativeCode fullPrintString.
-printLine(assembledNativeCode).
+printLine(addFunctionNativeCode fullPrintString).
+printLine(mainFunctionNativeCode fullPrintString).
+
+##NativeCodeLinker

@@ -118,6 +118,8 @@ AsmInstructionOperand definition: {
     public virtual method matchesStreamElement: (streamElement: AsmStreamElement) ::=> Boolean
         := false.
 
+    public virtual method recordRelocationSymbolOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {}.
+
     public abstract method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void
         := self subclassResponsibility.
 
@@ -208,6 +210,10 @@ AsmImmediateSymbolWithAddend definition: {
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: symbol.
         addend ~= 0i64 ifTrue: (stream nextPutAll: " + "; print: addend).
+    }.
+
+    public override method recordRelocationSymbolOnCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
+        codeStream recordRelocationSymbol: symbol
     }.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
@@ -2036,10 +2042,12 @@ AsmObjectCodeStream extend: {
 
 AsmObjectCodeSizeStream extend: {
     public override method nextPutImmediate: (operand: AsmInstructionOperand) withSize: (size: Size) ::=> Void := {
+        operand recordRelocationSymbolOnCodeStream: self.
         activeSection increaseSizeBy: size
     }.
 
     public override method nextPutIPRelativeI32: (operand: AsmInstructionOperand) extraOffset: (extraOffset: Int32) ::=> Void := {
+        operand recordRelocationSymbolOnCodeStream: self.
         activeSection increaseSizeBy: 4sz
     }.
 }.

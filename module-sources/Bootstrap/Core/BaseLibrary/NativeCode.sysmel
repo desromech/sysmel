@@ -97,7 +97,7 @@ NativeCodeSymbolTable definition: {
 
     public method atOrNil: (index: UInt32) ::=> NativeCodeSymbol
         := (index > 0u32) && (index asSize <= symbols size)
-            ifTrue: (symbols at: index asSize)
+            ifTrue: (symbols at: index asSize - 1sz)
             ifFalse: nil.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -210,6 +210,7 @@ NativeCodeRelocationTable definition: {
 
     public method fullPrintOn: (stream: Stream) withSymbolTable: (symbolTable: NativeCodeSymbolTable) ::=> Void := {
         self decodedRelocationsDo: {:(UInt8)type :(UInt32)symbolIndex :(UInt32)offset :(Int64)addend :: Void |
+            stream string: "  ".
             offset printHexOn: stream.
             stream space; string: (NativeCodeRelocation::Type::NameTable at: type);
                 space; print: (symbolTable atOrNil: symbolIndex).

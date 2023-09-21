@@ -8,6 +8,7 @@ loadPackageNamed: "CoreTests".
 loadPackageNamed: "ImageBuilder".
 
 loadPackageNamed: "Bytecode".
+loadPackageNamed: "NativeCode".
 loadPackageNamed: "MIR".
 loadPackageNamed: "MIRTests".
 

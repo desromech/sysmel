@@ -660,6 +660,8 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     }.
 
     public method recordSymbol: (symbol: AsmSymbol) ::=> Void := {
+        symbol ifNil: {return: void}.
+
         (symbolSet includes: symbol) ifFalse: {
             symbols add: symbol.
             symbolSet add: symbol.
@@ -968,6 +970,8 @@ AsmObjectCodeStream definition: {
     public abstract method nextReserveBytes: (size: Size) ::=> Void
         := self subclassResponsibility.
 
+    public virtual method recordRelocationSymbol: (symbol: AsmSymbol) ::=> Void := {}.
+
     public abstract method recordSymbol: (symbol: AsmSymbol) ::=> Void
         := self subclassResponsibility.
 
@@ -1064,9 +1068,19 @@ AsmObjectCodeSizeStream definition: {
         symbol size: activeSection size asUInt64 - symbol value.
     }.
 
-    public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {}.
-    public override method recordRelocations: (relocations: Collection) ::=> Void := {}.
+    public override method recordRelocationSymbol: (symbol: AsmSymbol) ::=> Void := {
+        objectCodeBuilder recordSymbol: symbol
+    }.
 
+    public override method recordRelocation: (relocation: AsmObjectCodeRelocation) ::=> Void := {
+        objectCodeBuilder recordSymbol: relocation symbol
+    }.
+
+    public override method recordRelocations: (relocations: Collection) ::=> Void := {
+        relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
+            objectCodeBuilder recordSymbol: eachRelocation symbol
+        }
+    }.
 }.
 
 AsmObjectCodeWriteStream definition: {
