@@ -1,0 +1,36 @@
+let asmCode := AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:(AsmStreamBuilder)builder :: Void |
+    let addFunctionSymbol := (builder symbolNamed: #add)
+        makeFunction;
+        makePublic;
+        yourself.
+
+    builder
+        textSection;
+        align: 16sz unreachable: true;
+        blockNamed: addFunctionSymbol with: {:(AsmStreamBuilder)builder :: Void |
+            builder
+                x86::endbr64;
+                x86::mov: X86::RAX src: X86::RDI;
+                x86::add: X86::RAX with: X86::RSI;
+                x86::ret
+        };
+        align: 16sz unreachable: true;
+        blockNamed: ((builder symbolNamed: #main) makeFunction; makePublic; yourself) with: {:(AsmStreamBuilder)builder :: Void |
+            builder
+                x86::endbr64;
+                x86::push: X86::RBP;
+                x86::mov: X86::RBP src: X86::RSP;
+
+                x86::mov: X86::RDI src: 2i32 asAsmImmediate;
+                x86::mov: X86::RSI src: 3i32 asAsmImmediate;
+                x86::call: addFunctionSymbol dword;
+
+                x86::mov: X86::RSP src: X86::RBP;
+                x86::pop: X86::RBP;
+                x86::ret
+        }.
+}.
+
+printLine(asmCode fullPrintString).
+let assembledNativeCode := asmCode assemble asNativeCode fullPrintString.
+printLine(assembledNativeCode).

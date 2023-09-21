@@ -1,0 +1,217 @@
+AsmObjectCode definition: {
+    public method asNativeCode => NativeCode := {
+        let convertedSections := OrderedCollection new.
+        let convertedSectionDictionary := ObjectPointerDictionary new.
+
+        let convertedSymbols := OrderedCollection new.
+        let convertedSymbolDictionary := Dictionary new.
+
+        ## Convert the sections.
+        sections do: {:(AsmObjectCodeSection)eachSection :: Void |
+            let convertedSection := NativeCodeSection new
+                name: eachSection name;
+                machoSectionName: eachSection machoSectionName;
+                machoSegmentName: eachSection machoSegmentName;
+                size: eachSection size;
+                alignment: eachSection alignment;
+                data: eachSection data;
+                flags: eachSection convertFlagsForNativeCodeSection;
+                yourself.
+
+            convertedSections add: convertedSection.
+            convertedSectionDictionary at: eachSection put: convertedSection.
+
+            let sectionSymbol := NativeCodeSymbol new
+                section: convertedSection;
+                type: NativeCodeSymbol::Type::Section;
+                visibility: NativeCodeSymbol::Visibility::Private;
+                yourself.
+
+            convertedSymbols add: sectionSymbol.
+            convertedSymbolDictionary at: eachSection put: convertedSymbols size asUInt32.
+        }.
+
+        ## Convert the symbols.
+        symbols do: {:(AsmSymbol)each :: Void |
+            each isPrivate && (Untyped::==)(nil, each objectValue) ifTrue: {
+                return: void
+            }.
+
+            (convertedSymbolDictionary includesKey: each) ifTrue: {
+                return: void
+            }.
+
+            let convertedSymbol := each asNativeCodeSymbolWithSectionDictionary: convertedSectionDictionary.
+            convertedSymbols add: convertedSymbol.
+            convertedSymbolDictionary at: each put: convertedSymbols size asUInt32.
+        }.
+
+        ## Create the symbol table.
+        let symbolTable := NativeCodeSymbolTable new
+            symbols: convertedSymbols asArray;
+            yourself.
+
+        ## Convert the relocations.
+        sections doWithIndex: {:(AsmObjectCodeSection)eachSection :(Size)index :: Void |
+            let convertedSection => NativeCodeSection := convertedSections at: index.
+            convertedSection symbolTable: symbolTable.
+
+            let encoder := NativeCodeRelocationEncoder new
+                symbolDictionary: convertedSymbolDictionary;
+                yourself.
+            eachSection relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
+                eachRelocation encodeNativeCodeRelocationWith: encoder
+            }.
+
+            convertedSection relocations: encoder finish
+        }.
+
+        ## Create the native code.
+        NativeCode new
+            symbolTable: symbolTable;
+            sections: convertedSections asArray;
+            yourself
+    }.
+}.
+
+AsmObjectCodeSection definition: {
+    public method convertFlagsForNativeCodeSection => UInt32 := {
+        let result mutable := 0u32.
+        executable ifTrue: (result := result | NativeCodeSection::Flags::Executable).
+        writeable ifTrue: (result := result | NativeCodeSection::Flags::Writeable).
+        readable ifTrue: (result := result | NativeCodeSection::Flags::Readable).
+        loaded ifTrue: (result := result | NativeCodeSection::Flags::Loaded).
+        nobits ifTrue: (result := result | NativeCodeSection::Flags::NoBits).
+        tls ifTrue: (result := result | NativeCodeSection::Flags::Tls).
+        result
+    }
+}.
+
+AsmSymbol definition: {
+    public method asNativeCodeSymbolWithSectionDictionary: (sectionDictionary: ObjectPointerDictionary) ::=> NativeCodeSymbol
+        := NativeCodeSymbol new
+            name: name;
+            section: (sectionDictionary at: section ifAbsent: {:: NativeCodeSection | nil});
+            value: value asIntPointer;
+            objectValue: self objectValue;
+            size: size asSize;
+            type: type;
+            visibility: visibility;
+            yourself.
+}.
+
+AsmObjectCodeRelocation definition: {
+    public abstract method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void
+        := self subclassResponsibility.
+}.
+
+AsmObjectCodeRelocationTPOffset32 definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::tpoffset32For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+AsmObjectCodeRelocationAbsoluteInt32 definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::absolute32For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+AsmObjectCodeRelocationAbsoluteInt64 definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::absolute64For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+AsmObjectCodeRelocationSectionRelativeInt32 definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::sectionRelative32For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+AsmObjectCodeRelocationSectionRelativeInt64 definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::sectionRelative64For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+AsmObjectCodeRelocationRelativeInt32 definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::relative32For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+AsmObjectCodeRelocationRelativeInt32AtPLT definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::relativePlt32For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+AsmObjectCodeRelocationRelativeInt32AtGOT definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::relativeGot32For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+
+AsmObjectCodeRelocationRelativeInt64 definition: {
+    public override method encodeNativeCodeRelocationWith: (encoder: NativeCodeRelocationEncoder) ::=> Void := {
+        encoder asm::relative64For: symbol addend: addend at: offset asUInt32
+    }.
+}.
+
+NativeCodeRelocationEncoder definition: {
+    public method asm::symbolIndexFor: (symbol: AsmSymbol) ::=> UInt32 := {
+        self assert: symbol section isNotNil || symbol isPrivate not.
+        symbol isPrivate
+            ifTrue: (symbolDictionary at: symbol section)
+            ifFalse: (symbolDictionary at: symbol)
+    }.
+
+    public method asm::symbolAddend32For: (symbol: AsmSymbol) ::=> Int32
+        := symbol isPrivate
+            ifTrue: symbol value asInt32
+            ifFalse: 0i32.
+
+    public method asm::symbolAddend64For: (symbol: AsmSymbol) ::=> Int64
+        := symbol isPrivate
+            ifTrue: symbol value asInt64
+            ifFalse: 0i64.
+
+    public method asm::absolute32For: (symbol: AsmSymbol) addend: (addend: Int32) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::Absolute32 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend32: addend + (self asm::symbolAddend32For: symbol)
+    }.
+
+    public method asm::relative32For: (symbol: AsmSymbol) addend: (addend: Int32) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::Relative32 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend32: addend + (self asm::symbolAddend32For: symbol)
+    }.
+
+    public method asm::relativePlt32For: (symbol: AsmSymbol) addend: (addend: Int32) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::RelativePLT32 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend32: addend + (self asm::symbolAddend32For: symbol)
+    }.
+
+    public method asm::relativeGot32For: (symbol: AsmSymbol) addend: (addend: Int32) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::RelativeGOT32 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend32: addend + (self asm::symbolAddend32For: symbol)
+    }.
+
+    public method asm::sectionRelative32For: (symbol: AsmSymbol) addend: (addend: Int32) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::SectionRelative32 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend32: addend + (self asm::symbolAddend32For: symbol)
+    }.
+
+    public method asm::tpoffset32For: (symbol: AsmSymbol) addend: (addend: Int32) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::TPOffset32 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend32: addend + (self asm::symbolAddend32For: symbol)
+    }.
+
+    public method asm::absolute64For: (symbol: AsmSymbol) addend: (addend: Int64) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::Absolute64 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend64: addend + (self asm::symbolAddend64For: symbol)
+    }.
+
+    public method asm::relative64For: (symbol: AsmSymbol) addend: (addend: Int64) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::Relative64 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend64: addend + (self asm::symbolAddend64For: symbol)
+    }.
+
+    public method asm::sectionRelative64For: (symbol: AsmSymbol) addend: (addend: Int64) at: (offset: UInt32) ::=> Void := {
+        self type: NativeCodeRelocation::Type::SectionRelative64 symbolIndex: (self asm::symbolIndexFor: symbol) offset: offset addend64: addend + (self asm::symbolAddend64For: symbol)
+    }.
+
+}.

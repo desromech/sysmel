@@ -1938,10 +1938,19 @@ StringSymbol
     }.
 
 ByteStream
+    withSelector: #nextPutUInt8: addMethod: {:(ByteStream)self :(UInt8)value :: Void |
+        self nextPut: value
+    };
+    withSelector: #nextPutInt8: addMethod: {:(ByteStream)self :(Int8)value :: Void |
+        self nextPutUInt8: value asUInt8
+    };
     withSelector: #nextPutUInt16: addMethod: {:(ByteStream)self :(UInt16)value :: Void |
         self
             nextPut: value asUInt8;
             nextPut: (value >> 8u16) asUInt8
+    };
+    withSelector: #nextPutInt16: addMethod: {:(ByteStream)self :(Int16)value :: Void |
+        self nextPutUInt16: value asUInt16
     };
     withSelector: #nextPutUInt32: addMethod: {:(ByteStream)self :(UInt32)value :: Void |
         self
@@ -1949,6 +1958,9 @@ ByteStream
             nextPut: (value >> 8u32) asUInt8;
             nextPut: (value >> 16u32) asUInt8;
             nextPut: (value >> 24u32) asUInt8
+    };
+    withSelector: #nextPutInt32: addMethod: {:(ByteStream)self :(Int32)value :: Void |
+        self nextPutUInt32: value asUInt32
     };
     withSelector: #nextPutUInt64: addMethod: {:(ByteStream)self :(UInt64)value :: Void |
         self
@@ -1961,6 +1973,9 @@ ByteStream
             nextPut: (value >> 40u64) asUInt8;
             nextPut: (value >> 48u64) asUInt8;
             nextPut: (value >> 56u64) asUInt8
+    };
+    withSelector: #nextPutInt64: addMethod: {:(ByteStream)self :(Int64)value :: Void |
+        self nextPutUInt64: value asUInt64
     }.
 
 ArraySlice

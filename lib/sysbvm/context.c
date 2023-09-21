@@ -409,7 +409,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.nativeCodeSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeSymbolTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeSectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
-    context->roots.nativeCodeRelocationTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
 
     // Create the function type classes.
     context->roots.functionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
@@ -451,12 +450,14 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.weakIdentitySetType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.weakSetType);
 
     context->roots.arrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.byteArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.orderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
     context->roots.weakArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayType);
     context->roots.weakOrderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.orderedCollectionType);
 
     context->roots.gcLayoutBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.gcLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.nativeCodeRelocationTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.byteArrayType);
     context->roots.virtualTableLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.virtualTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
 
@@ -900,14 +901,22 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "objectValue", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.untypedType,
         "value", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.intptrType,
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,
+        "visibility", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,
+        "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint16Type,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSymbolTableType, "NativeCodeSymbolTable", SYSBVM_NULL_TUPLE,
         "symbols", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSectionType, "NativeCodeSection", SYSBVM_NULL_TUPLE,
+        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "machoSectionName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "machoSegmentName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolTableType,
         "relocations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeRelocationTableType,
+        "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "alignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "data", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeRelocationTableType, "NativeCodeRelocationTable", SYSBVM_NULL_TUPLE,
@@ -997,7 +1006,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.associationType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
 
-    context->roots.byteArrayType = sysbvm_context_createIntrinsicClass(context, "ByteArray", context->roots.arrayedCollectionType, NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.byteArrayType, "ByteArray", SYSBVM_NULL_TUPLE,
+        NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.byteArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.gcLayoutType, "GCLayout", SYSBVM_NULL_TUPLE,

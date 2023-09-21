@@ -548,17 +548,17 @@ public final class AsmObjectCodeCStringTable superclass: Object; definition: {
     }.
 }.
 
-public global AsmSymbol::Visibility::Private := 0u8.
-public global AsmSymbol::Visibility::Internal := 1u8.
-public global AsmSymbol::Visibility::Public := 2u8.
-public global AsmSymbol::Visibility::Weak := 3u8.
+public global AsmSymbol::Visibility::Private := NativeCodeSymbol::Visibility::Private.
+public global AsmSymbol::Visibility::Internal := NativeCodeSymbol::Visibility::Internal.
+public global AsmSymbol::Visibility::Public := NativeCodeSymbol::Visibility::Public.
+public global AsmSymbol::Visibility::Weak := NativeCodeSymbol::Visibility::Weak.
 
-public global AsmSymbol::Type::None := 0u8.
-public global AsmSymbol::Type::Function := 1u8.
-public global AsmSymbol::Type::Variable := 2u8.
-public global AsmSymbol::Type::TLS := 3u8.
-public global AsmSymbol::Type::GCPointerTable := 4u8.
-public global AsmSymbol::Type::GCFatPointerTable := 5u8.
+public global AsmSymbol::Type::None := NativeCodeSymbol::Type::None.
+public global AsmSymbol::Type::Function := NativeCodeSymbol::Type::Function.
+public global AsmSymbol::Type::Variable := NativeCodeSymbol::Type::Variable.
+public global AsmSymbol::Type::TLS := NativeCodeSymbol::Type::TLS.
+public global AsmSymbol::Type::GCPointerTable := NativeCodeSymbol::Type::GCPointerTable.
+public global AsmSymbol::Type::GCFatPointerTable := NativeCodeSymbol::Type::GCFatPointerTable.
 
 AsmSymbol definition: {
     public field name => Symbol.
