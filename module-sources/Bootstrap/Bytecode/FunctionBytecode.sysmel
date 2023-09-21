@@ -138,12 +138,12 @@ FunctionBytecode definition: {
         let instructionPC mutable := 0sz.
 
         while: pc < instructionsSize do: {
-            let opcode := instructions at: pc.
+            let opcode := instructions __uncheckedByteSlotAt__: pc.
             pc := pc + 1sz.
 
             opcode = FunctionBytecode::Opcode::CountExtension ifTrue: {
-                let lowByte := (instructions at: pc).
-                let highByte := (instructions at: pc + 1sz).
+                let lowByte := (instructions __uncheckedByteSlotAt__: pc).
+                let highByte := (instructions __uncheckedByteSlotAt__: pc + 1sz).
                 pc := pc + 2sz.
 
                 countExtension := (countExtension << 16sz) | (highByte asSize << 8sz) | lowByte asSize.
@@ -152,8 +152,8 @@ FunctionBytecode definition: {
                 let operands := Array new: operandCount.
                 let i mutable := 0sz.
                 while: (i < operandCount) do: {
-                    let lowByte := (instructions at: pc).
-                    let highByte := (instructions at: pc + 1sz).
+                    let lowByte := (instructions __uncheckedByteSlotAt__: pc).
+                    let highByte := (instructions __uncheckedByteSlotAt__: pc + 1sz).
                     let operandIndex := ((lowByte asUInt16) | (highByte asUInt16 << 8u16)) asInt16.
                     operands at: i put: operandIndex.
                     pc := pc + 2sz
