@@ -1,3 +1,13 @@
+AsmStream definition: {
+    public method asNativeCode => NativeCode
+        := self assemble asNativeCode.
+}.
+
+AsmProgramEntity definition: {
+    public method asNativeCode => NativeCode
+        := self assembleWithoutGeneratingTargetInformation asNativeCode.
+}.
+
 AsmObjectCode definition: {
     public method asNativeCode => NativeCode := {
         let convertedSections := OrderedCollection new.

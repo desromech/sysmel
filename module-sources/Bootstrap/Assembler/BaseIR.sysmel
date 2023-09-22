@@ -1971,6 +1971,23 @@ public final class AsmProgramEntity superclass: Object; definition: {
         }.
     }.
 
+    public method assembleWithoutGeneratingTargetInformation => AsmObjectCode := {
+        let objectCodeBuilder := AsmObjectCodeBuilder new
+            compilationTarget: compilationTarget;
+            addImportedSymbols: importedSymbols;
+            yourself.
+
+        self prepareToAssemble.
+        self assembleFirstPassWith: objectCodeBuilder.
+
+        objectCodeBuilder allocateMemoryForWriting.
+        self assembleSecondPassWith: objectCodeBuilder.
+        
+        objectCodeBuilder 
+            finishDebugAndUnwindInfo;
+            finish
+    }.
+
     public method assemble => AsmObjectCode := {
         let objectCodeBuilder := AsmObjectCodeBuilder new
             compilationTarget: compilationTarget;

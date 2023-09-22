@@ -150,10 +150,10 @@ public final class MIRStackFrameLayout superclass: Object; definition: {
     }.
 
     public method hasGCDataThatShouldBeInitialized => Boolean
-        := self temporaryGCZone isNotEmpty || self temporaryGCFatPointerZone isNotEmpty || self temporaryNonGCZone isNotEmpty.
+        := self gcObjectAllocationZone isNotEmpty || self temporaryGCZone isNotEmpty || self temporaryGCFatPointerZone isNotEmpty.
 
     public method hasGCTraversedData => Boolean
-        := self hasGCDataThatShouldBeInitialized ||  self argumentPassingZone hasGCRoots.
+        := self hasGCDataThatShouldBeInitialized || self argumentPassingZone hasGCRoots.
 
     public method buildLayoutForFunction: (function: MIRFunction) withTarget: (target: MIRCompilationTarget) ::=> Void := {
         compilationTarget := target.

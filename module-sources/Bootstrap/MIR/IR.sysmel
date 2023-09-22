@@ -2840,8 +2840,18 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
         programEntities add: programEntity
     }.
 
+    public method importFunctionNamed: (name: Symbol) ::=> MIRImportedFunction := {
+        let function := (MIRImportedFunction forContext: context)
+            compilationTarget: compilationTarget;
+            callingConvention: compilationTarget defaultCallingConvention;
+            name: name;
+            yourself.
+        self addProgramEntity: function.
+        function
+    }.
+
     public method build: (name: Symbol) function: (aBlock: (MIRFunctionBuilder) => Void) ::=> MIRFunction := {
-        let function := MIRFunction new
+        let function := (MIRFunction forContext: context)
             compilationTarget: compilationTarget;
             callingConvention: compilationTarget defaultCallingConvention;
             name: name;
@@ -2858,6 +2868,12 @@ public final class MIRModule superclass: MIRProgramEntity; definition: {
 
     public method asTargetIR => AnyValue
         := compilationTarget generateTargetIRForMIRModule: self.
+
+    public method asTargetNativeCodeIR => AnyValue
+        := compilationTarget generateTargetNativeCodeIRForMIRModule: self.
+
+    public method asTargetNativeCode => NativeCode
+        := compilationTarget generateTargetNativeCodeForMIRModule: self.
 
     public override method performStandardOptimizations => Void := {
         super performStandardOptimizations.
@@ -2944,6 +2960,12 @@ MIRCompilationTarget definition: {
 
     public abstract method generateTargetIRForMIRModule: (module: MIRModule) ::=> AnyValue
         := self subclassResponsibility.
+
+    public abstract method generateTargetNativeCodeIRForMIRModule: (module: MIRModule) ::=> AnyValue
+        := self subclassResponsibility.
+
+    public virtual method generateTargetNativeCodeForMIRModule: (module: MIRModule) ::=> NativeCode
+        := (self generateTargetNativeCodeIRForMIRModule: module) asNativeCode.
 
     public abstract method defaultCallingConvention => MIRCallingConvention
         := self subclassResponsibility.

@@ -46,6 +46,18 @@ public abstract class MIRAsmCompilationTarget superclass: MIRCompilationTarget; 
             compileModule: module;
             targetModule
     }.
+
+    public override method generateTargetNativeCodeIRForMIRModule: (module: MIRModule) ::=> AnyValue := {
+        let codeGenerator := MIRModuleAsmCodeGenerator new
+            target: self;
+            asmTarget: asmCompilationTarget;
+            usePerObjectSymbolsInsteadOfHeap: true;
+            targetModule: (AsmProgramEntity new
+                compilationTarget: asmCompilationTarget;
+                yourself);
+            compileModule: module;
+            targetModule
+    }.
 }.
 
 public abstract class MIRAsmCodeGenerator superclass: Object; definition: {
@@ -70,6 +82,9 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     protected field asmTarget => AsmCompilationTarget.
     public field programEntitySymbolMap => ObjectPointerDictionary.
     public field compiledProgramEntitySymbolMap => ObjectPointerDictionary.
+    public field usePerObjectSymbolsInsteadOfHeap => Boolean.
+
+    protected field gcRootPointerSymbolTable => ObjectPointerDictionary.
 
     protected field stringTableList => OrderedCollection.
     protected field stringTableDictionary => Dictionary.
@@ -91,6 +106,7 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
         stringTableList := OrderedCollection new.
         stringTableDictionary := Dictionary new.
         picTableDictionary := ObjectPointerDictionary new. 
+        gcRootPointerSymbolTable := ObjectPointerDictionary new.
     }.
 
     public method asmTarget => AsmCompilationTarget := asmTarget.
@@ -137,42 +153,61 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
             baseObjectTracer: module baseObjectTracer;
             setSpecialSymbolsWithMirModuleGenerator: self.
 
-        targetModule contentSymbol ifNil: {
-            let compileUnitSymbol := AsmSymbol new name: #compileUnit; makePrivate; yourself.
-            targetModule newStreamBuilder
-                textSection;
-                label: compileUnitSymbol.
-            targetModule newEndStreamBuilder
-                textSection;
-                endLabel: compileUnitSymbol.
-            targetModule contentSymbol: compileUnitSymbol.
+        usePerObjectSymbolsInsteadOfHeap ifFalse: {
+            targetModule contentSymbol ifNil: {
+                let compileUnitSymbol := AsmSymbol new name: #compileUnit; makePrivate; yourself.
+                targetModule newStreamBuilder
+                    textSection;
+                    label: compileUnitSymbol.
+                targetModule newEndStreamBuilder
+                    textSection;
+                    endLabel: compileUnitSymbol.
+                targetModule contentSymbol: compileUnitSymbol.
+            }.
         }.
 
         module programEntities do: {:(MIRProgramEntity)eachProgramEntity :: Void |
             self compileProgramEntity: eachProgramEntity
         }.
 
-        module functionDefinitionPatches do: {:(MIRFunctionDefinitionPatch)tacPatch :: Void |
-            objectHeap tracer addObject: tacPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
-                functionDefinition: tacPatch functionDefinition;
-                checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch checkedEntryPoint);
-                uncheckedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedEntryPoint);
-                uncheckedCapturelessEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedCapturelessEntryPoint);
-                yourself)
+        usePerObjectSymbolsInsteadOfHeap ifTrue: {
+            ## TODO: Make the asm function definition entry points.
+        } ifFalse: {
+            module functionDefinitionPatches do: {:(MIRFunctionDefinitionPatch)tacPatch :: Void |
+                objectHeap tracer addObject: tacPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
+                    functionDefinition: tacPatch functionDefinition;
+                    checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch checkedEntryPoint);
+                    uncheckedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedEntryPoint);
+                    uncheckedCapturelessEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedCapturelessEntryPoint);
+                    yourself)
+            }.
         }.
 
         self buildPICTable.
         self buildStringLiterals.
-        asmTarget debugInformationGenerator ifNotNil: {:(AsmObjectDebugInformationGenerator class)generatorClass :: Void |
-            let generator := generatorClass new.
-            targetModule debugInformationGenerator: generator.
-            generator generateDebugInformationForModule: targetModule
+        usePerObjectSymbolsInsteadOfHeap ifFalse: {
+            asmTarget debugInformationGenerator ifNotNil: {:(AsmObjectDebugInformationGenerator class)generatorClass :: Void |
+                let generator := generatorClass new.
+                targetModule debugInformationGenerator: generator.
+                generator generateDebugInformationForModule: targetModule
+            }.
         }.
         
-        {|
-            objectHeap buildIn: targetModule.
-        } printTimeToRunInMillisecondsWithTitle: "Assembler object heap"
+        usePerObjectSymbolsInsteadOfHeap ifFalse: {
+            {|
+                objectHeap buildIn: targetModule.
+            } printTimeToRunInMillisecondsWithTitle: "Assembler object heap"
+        }.
     }.
+
+    public method getOrCreateGCRootPointerSymbolFor: (object: Untyped) ::=> AsmSymbol
+        := gcRootPointerSymbolTable untypedAt: object ifAbsentPut: {:: AsmSymbol |
+            AsmSymbol new
+                objectValue: object;
+                makePrivate;
+                makeGCPointerTable;
+                yourself
+        }.
 
     public method offsetOfGCRootObjectTableEntryFor: (object: Untyped) ::=> Size
         := objectHeap offsetOfGCRootObjectTableEntryFor: object.

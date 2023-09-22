@@ -1,3 +1,5 @@
+#*
+{
 let addFunctionNativeCode := (AsmStream for: AsmCompilationTarget x86_64 useElf buildWith: {:(AsmStreamBuilder)builder :: Void |
     let addFunctionSymbol := (builder symbolNamed: #add)
         makeFunction;
@@ -49,3 +51,72 @@ let linkedCode := NativeCodeLinker new
     addNativeCode: addFunctionNativeCode;
     finish.
 printLine(linkedCode fullPrintString).
+}.
+
+{
+let addModule := (MIRModule forContext: MIRContext new)
+    compilationTarget: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget;
+    build: #add function: {:(MIRFunctionBuilder)functionBuilder :: Void |
+        let function := functionBuilder function.
+        let x := function newArgument: #x withType: Int32.
+        let y := function newArgument: #y withType: Int32.
+        function arguments: (x, y).
+
+        functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
+            mir returnInt32: (mir int32Add: x with: y type: Int32)
+        }
+    };
+    yourself.
+
+let addModuleNativeCodeIR := addModule asTargetNativeCodeIR.
+printLine(addModuleNativeCodeIR fullPrintString).
+let addModuleNativeCode := addModuleNativeCodeIR asNativeCode.
+printLine(addModuleNativeCode fullPrintString).
+
+let mainModule := MIRModule forContext: MIRContext new.
+mainModule
+    compilationTarget: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget;
+    build: #main function: {:(MIRFunctionBuilder)functionBuilder :: Void |
+        let function := functionBuilder function.
+        let argc := function newArgument: #argc withType: Int32.
+        let argv := function newArgument: #argv withType: Char8 const pointer.
+        function arguments: (argc, argv).
+
+        functionBuilder basicBlock: #entry build: {:(MIRBlockBuilder)mir :: Void |
+            let addFunction := mainModule importFunctionNamed: #add.
+            mir returnInt32: (mir callInt32: addFunction arguments: (argc, mir int32: 3i32) type: Int32)
+        }
+    };
+    yourself.
+
+let mainModuleNativeCodeIR := mainModule asTargetNativeCodeIR.
+printLine(mainModuleNativeCodeIR fullPrintString).
+let mainModuleNativeCode := mainModuleNativeCodeIR asNativeCode.
+printLine(mainModuleNativeCode fullPrintString).
+
+let linkedCode := NativeCodeLinker new
+    addNativeCode: mainModuleNativeCode;
+    addNativeCode: addModuleNativeCode;
+    finish.
+printLine(linkedCode fullPrintString).
+}.
+*#
+
+{
+public function add(a: Int32, b: Int32) => Int32
+    := a + b.
+
+public externC function main(argc: Int32, argv: Char8 const pointer) ::=> Int32
+    := add(argc, 3i32).
+
+let hirModule := HIRModuleCompilationContext forDefaultTarget
+    exclusiveCompilationMode: true;
+    compileFunctionsWithDefinitions: (add, main);
+    finish.
+
+hirModule performStandardOptimizations.
+printLine(hirModule fullPrintString).
+}.
+
+#*
+*#

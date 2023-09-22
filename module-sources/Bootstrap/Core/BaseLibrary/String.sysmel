@@ -555,7 +555,7 @@ Integer definition: {
             let i mutable := isNegative ifTrue: 1sz ifFalse: 0sz.
 
             while: (i < size) do: {
-                let c := string at: i.
+                let c := string char8At: i.
                 ('0'c8 <= c) && (c <= '9'c8) ifTrue: {
                     let digit := (c - '0'c8) asInteger.
                     result := result * radix + digit.
