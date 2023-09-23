@@ -1,6 +1,7 @@
 #include "sysbvm/bytecodeCompiler.h"
 #include "sysbvm/array.h"
 #include "sysbvm/orderedCollection.h"
+#include "sysbvm/orderedOffsetTable.h"
 #include "sysbvm/ast.h"
 #include "sysbvm/dictionary.h"
 #include "sysbvm/environment.h"
@@ -934,17 +935,9 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
         sysbvm_functionBytecode_t *bytecode;
         sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction;
 
-        sysbvm_tuple_t pcToDebugListTable;
-        sysbvm_tuple_t debugSourceTuple;
         sysbvm_tuple_t debugSourceASTNodes;
         sysbvm_tuple_t debugSourcePositions;
         sysbvm_tuple_t debugSourceEnvironments;
-        sysbvm_tuple_t debugListsDictionary;
-        sysbvm_tuple_t tableEntry;
-
-        sysbvm_tuple_t debugPC;
-        sysbvm_tuple_t lastDebugPC;
-        sysbvm_tuple_t lastTableEntity;
     } gcFrame = {
         .definition = (sysbvm_functionDefinition_t*)definition_,
     };
@@ -1011,11 +1004,9 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
 
     // Tables for the debug information.
     gcFrame.bytecode->sourcePosition = gcFrame.sourceAnalyzedDefinition->sourcePosition;
-    gcFrame.pcToDebugListTable = sysbvm_orderedCollection_create(context);
-    gcFrame.debugSourceASTNodes = sysbvm_orderedCollection_create(context);
-    gcFrame.debugSourcePositions = sysbvm_orderedCollection_create(context);
-    gcFrame.debugSourceEnvironments = sysbvm_orderedCollection_create(context);
-    gcFrame.debugListsDictionary = sysbvm_dictionary_create(context);
+    gcFrame.debugSourceASTNodes = sysbvm_orderedOffsetTableBuilder_create(context);
+    gcFrame.debugSourcePositions = sysbvm_orderedOffsetTableBuilder_create(context);
+    gcFrame.debugSourceEnvironments = sysbvm_orderedOffsetTableBuilder_create(context);
 
     // Assemble the instructions.
     size_t instructionsOffset = 0;
@@ -1026,30 +1017,11 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
         instructionsOffset += sysbvm_functionBytecodeAssemblerInstruction_computeAssembledSize(context, gcFrame.instruction);
         gcFrame.instruction->endPC = sysbvm_tuple_size_encode(context, instructionsOffset);
 
-        // Ensure the debug source tuple is on their respective tables.
-        gcFrame.debugSourceTuple = sysbvm_array_create(context, 3);
-        sysbvm_array_atPut(gcFrame.debugSourceTuple, 0, gcFrame.instruction->sourceASTNode);
-        sysbvm_array_atPut(gcFrame.debugSourceTuple, 1, gcFrame.instruction->sourcePosition);
-        sysbvm_array_atPut(gcFrame.debugSourceTuple, 2, gcFrame.instruction->sourceEnvironment);
-        if(!sysbvm_dictionary_find(context, gcFrame.debugListsDictionary, gcFrame.debugSourceTuple, &gcFrame.tableEntry))
-        {
-            gcFrame.tableEntry = sysbvm_tuple_size_encode(context, sysbvm_orderedCollection_getSize(gcFrame.debugSourceASTNodes));
-            sysbvm_dictionary_atPut(context, gcFrame.debugListsDictionary, gcFrame.debugSourceTuple, gcFrame.tableEntry);
 
-            sysbvm_orderedCollection_add(context, gcFrame.debugSourceASTNodes, gcFrame.instruction->sourceASTNode);
-            sysbvm_orderedCollection_add(context, gcFrame.debugSourcePositions, gcFrame.instruction->sourcePosition);
-            sysbvm_orderedCollection_add(context, gcFrame.debugSourceEnvironments, gcFrame.instruction->sourceEnvironment);
-        }
-
-        gcFrame.debugPC = sysbvm_tuple_size_encode(context, pc);
-        if(gcFrame.debugPC != gcFrame.lastDebugPC || gcFrame.tableEntry != gcFrame.lastTableEntity)
-        {
-            sysbvm_orderedCollection_add(context, gcFrame.pcToDebugListTable, gcFrame.debugPC);
-            sysbvm_orderedCollection_add(context, gcFrame.pcToDebugListTable, gcFrame.tableEntry);
-        }
-
-        gcFrame.lastDebugPC = gcFrame.debugPC;
-        gcFrame.lastTableEntity = gcFrame.tableEntry;
+        // Add the debug annotations.
+        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourceASTNodes, pc, gcFrame.instruction->sourceASTNode);
+        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourcePositions, pc, gcFrame.instruction->sourcePosition);
+        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourceEnvironments, pc, gcFrame.instruction->sourceEnvironment);
     }
 
     gcFrame.bytecode->instructions = sysbvm_byteArray_create(context, instructionsOffset);
@@ -1061,10 +1033,9 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
     // Finish by installing it on the definition.
     gcFrame.definition->bytecode = (sysbvm_tuple_t)gcFrame.bytecode;
 
-    gcFrame.bytecode->pcToDebugListTable = sysbvm_orderedCollection_asArray(context, gcFrame.pcToDebugListTable);
-    gcFrame.bytecode->debugSourceASTNodes = sysbvm_orderedCollection_asArray(context, gcFrame.debugSourceASTNodes);
-    gcFrame.bytecode->debugSourcePositions = sysbvm_orderedCollection_asArray(context, gcFrame.debugSourcePositions);
-    gcFrame.bytecode->debugSourceEnvironments = sysbvm_orderedCollection_asArray(context, gcFrame.debugSourceEnvironments);
+    gcFrame.bytecode->debugSourceASTNodes = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourceASTNodes);
+    gcFrame.bytecode->debugSourcePositions = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourcePositions);
+    gcFrame.bytecode->debugSourceEnvironments = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourceEnvironments);
 }
 
 static sysbvm_tuple_t sysbvm_astNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)

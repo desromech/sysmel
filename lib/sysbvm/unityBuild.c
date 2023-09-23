@@ -11,7 +11,6 @@
 
 #include "internal/dynarray.c"
 #include "array.c"
-#include "orderedCollection.c"
 #include "arraySlice.c"
 #include "assert.c"
 #include "association.c"
@@ -35,6 +34,8 @@
 #include "io.c"
 #include "macro.c"
 #include "message.c"
+#include "orderedCollection.c"
+#include "orderedOffsetTable.c"
 #include "parser.c"
 #include "pragma.c"
 #include "primitiveIntegers.c"

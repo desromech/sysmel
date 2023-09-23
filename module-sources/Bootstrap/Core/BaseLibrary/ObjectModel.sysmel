@@ -896,7 +896,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 } withEagerAnalysis.
 
 (RawTuple::uncheckedByteSlotAt:) adoptDefinitionOf: {:(Untyped)self :(Size)index :: UInt8 |
-    <primitive: #RawTuple::uncheckedSlotAt:>
+    <primitive: #RawTuple::uncheckedByteSlotAt:>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
     let contents := header + 1iptr reinterpretCastTo: UInt8 pointer.
@@ -904,7 +904,7 @@ RawTuple::type adoptDefinitionOf: {:(Untyped)self :: Type |
 } makeFinal makeAlwaysInline makeWithoutSourceDebugging withEagerAnalysis.
 
 (RawTuple::uncheckedByteSlotAt:put:) adoptDefinitionOf: {:(Untyped)self :(Size)index :(UInt8)value :: Void |
-    <primitive: #RawTuple::uncheckedSlotAt:put:>
+    <primitive: #RawTuple::uncheckedByteSlotAt:put:>
     let pointerValue := ObjectModel::getTuplePointerUIntValue(self).
     let header := pointerValue reinterpretCastTo: ObjectModel::TupleHeader pointer.
     let contents := header + 1iptr reinterpretCastTo: UInt8 pointer.

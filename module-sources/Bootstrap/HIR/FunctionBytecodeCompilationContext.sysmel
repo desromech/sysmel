@@ -11,8 +11,6 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
     public field temporaryTypes => Array.
     public field literals => Array.
 
-    public field currentPCToDebugTableIndex => Size.
-
     public override method initialize => Void := {
         super initialize.
 
@@ -40,31 +38,16 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         }.
 
     public method useSourceInformationOfPC: (pc: Size) ::=> Void := {
-        let pcToDebugListTable := bytecode pcToDebugListTable.
-        pcToDebugListTable ifNil: {
-            return: void
-        }.
-
-        while: (currentPCToDebugTableIndex + 1sz < pcToDebugListTable size)
-            && (((pcToDebugListTable at: currentPCToDebugTableIndex + 1sz) downCastTo: Size) <= pc) do: {
-            currentPCToDebugTableIndex := currentPCToDebugTableIndex + 1sz
-        }.
-
-        currentPCToDebugTableIndex < pcToDebugListTable size ifFalse: {
-            return: void
-        }.
-
-        let sourceDebugEntryIndex => Size := pcToDebugListTable at: currentPCToDebugTableIndex.
         bytecode debugSourcePositions ifNotNil: {
-            builder sourcePosition: (bytecode debugSourcePositions at: sourceDebugEntryIndex).
+            builder sourcePosition: (bytecode debugSourcePositions atOffsetOrNil: pc asUInt32).
         }.
 
         bytecode debugSourceASTNodes ifNotNil: {
-            builder sourceASTNode: (bytecode debugSourceASTNodes at: sourceDebugEntryIndex)
+            builder sourceASTNode: (bytecode debugSourceASTNodes atOffsetOrNil: pc asUInt32)
         }.
 
         bytecode debugSourceEnvironments ifNotNil: {
-            builder sourceEnvironment: (bytecode debugSourceEnvironments at: sourceDebugEntryIndex)
+            builder sourceEnvironment: (bytecode debugSourceEnvironments atOffsetOrNil: pc asUInt32)
         }.
     }.
 

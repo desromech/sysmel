@@ -1,0 +1,62 @@
+SequenceableCollection extend: {
+    public virtual method asWordArray => WordArray := {
+        let size := self size.
+        let result := WordArray new: size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            result uint32At: i put: (self at: i).
+        } continueWith: (i := i + 1sz).
+        result
+    }.
+}.
+
+WordArray definition: {
+    __Meta__ definition: {
+        public override method basicNew: (size: Size) ::=> self
+            := super basicNew: size * 4sz.
+
+        public override method new: (size: Size) ::=> self
+            := super basicNew: size * 4sz.
+    }.
+
+    public override method asWordArray => WordArray
+        := self.
+
+    public alwaysInline method uint32At: (index: Size) ::=> UInt32 := {
+        let index4 := index*4sz.
+        index4 >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+
+        ObjectModel::isLogical() ifTrue: {
+            (self __uncheckedByteSlotAt__: index4) asUInt32 |
+            ((self __uncheckedByteSlotAt__: index4 + 1sz) asUInt32 << 8u32) |
+            ((self __uncheckedByteSlotAt__: index4 + 2sz) asUInt32 << 16u32) |
+            ((self __uncheckedByteSlotAt__: index4 + 3sz) asUInt32 << 24u32)
+        } ifFalse: {
+            (self __rawContentsBytePointer__ reinterpretCastTo: UInt32 const pointer) load
+        }.
+    }.
+
+    public alwaysInline method uint32At: (index: Size) put: (value: UInt32) ::=> Void := {
+        let index4 := index*4sz.
+        index4 >= self __byteSize__ ifTrue: (self errorSubscriptBounds: index).
+
+        ObjectModel::isLogical() ifTrue: {
+            self
+                __uncheckedByteSlotAt__: index4 put: value asUInt8;
+                __uncheckedByteSlotAt__: index4 + 1sz put: (value >> 8u32) asUInt8;
+                __uncheckedByteSlotAt__: index4 + 2sz put: (value >> 16u32) asUInt8;
+                __uncheckedByteSlotAt__: index4 + 3sz put: (value >> 24u32) asUInt8
+        } ifFalse: {
+            (self __rawContentsBytePointer__ reinterpretCastTo: UInt32 const pointer) store: value
+        }
+    }.
+
+    public override method at: (index: Size)
+        := self uint32At: index.
+
+    public override method at: (index: Size) put: value ::=> Void
+        := self uint32At: index put: value.
+
+    public override method size ::=> Size
+        := self __byteSize__ / 4sz.
+}.

@@ -8,6 +8,7 @@
 #include "sysbvm/environment.h"
 #include "sysbvm/message.h"
 #include "sysbvm/gc.h"
+#include "sysbvm/orderedOffsetTable.h"
 #include "sysbvm/type.h"
 #include "sysbvm/stackFrame.h"
 #include "internal/context.h"
@@ -464,37 +465,7 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
 
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_getSourcePositionForPC(sysbvm_context_t *context, sysbvm_functionBytecode_t *functionBytecode, size_t pc)
 {
-    (void)context;
-    if(!functionBytecode->pcToDebugListTable)
-        return SYSBVM_NULL_TUPLE;
-
-    size_t pcToDebugTableListSize = sysbvm_tuple_getSizeInSlots(functionBytecode->pcToDebugListTable) / 2;
-    sysbvm_tuple_t *pcToDebugTableEntries = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(functionBytecode->pcToDebugListTable)->pointers;
-
-    // Binary search
-    size_t lower = 0;
-    size_t upper = pcToDebugTableListSize;
-    intptr_t bestFound = -1;
-    while(lower < upper)
-    {
-        size_t middle = lower + (upper - lower) / 2;
-        size_t entryPC = sysbvm_tuple_size_decode(pcToDebugTableEntries[middle*2]);
-        if(entryPC <= pc)
-        {
-            lower = middle + 1;
-            bestFound = sysbvm_tuple_size_decode(pcToDebugTableEntries[middle*2 + 1]);
-        }
-        else
-        {
-            upper = middle;
-        }
-    }
-
-    size_t sourcePositionsTableSize = sysbvm_tuple_getSizeInSlots(functionBytecode->debugSourcePositions);
-    if(bestFound < 0 || (size_t)bestFound >= sourcePositionsTableSize)
-        return SYSBVM_NULL_TUPLE;
-
-    return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(functionBytecode->debugSourcePositions)->pointers[bestFound];
+    return sysbvm_orderedOffsetTable_findValueWithOffset(context, functionBytecode->debugSourcePositions, pc);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_getSourcePositionForActivationRecord(sysbvm_context_t *context, sysbvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)

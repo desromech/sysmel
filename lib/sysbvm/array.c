@@ -43,6 +43,22 @@ SYSBVM_API sysbvm_tuple_t sysbvm_weakArray_create(sysbvm_context_t *context, sys
     return result;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_wordArray_create(sysbvm_context_t *context, sysbvm_tuple_t slotCount)
+{
+    if(slotCount == 0)
+    {
+        sysbvm_type_tuple_t *wordArrayTypeObject = (sysbvm_type_tuple_t*)context->roots.wordArrayType;
+        if(wordArrayTypeObject)
+        {
+            if(!wordArrayTypeObject->emptyTrivialSingleton)
+                wordArrayTypeObject->emptyTrivialSingleton = (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, context->roots.wordArrayType, 0);
+            return wordArrayTypeObject->emptyTrivialSingleton;
+        }
+    }
+
+    return (sysbvm_tuple_t)sysbvm_context_allocateByteTuple(context, context->roots.wordArrayType, slotCount*4);
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_byteArray_create(sysbvm_context_t *context, sysbvm_tuple_t size)
 {
     if(size == 0)

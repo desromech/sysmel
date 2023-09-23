@@ -137,18 +137,13 @@ AsmObjectCodeSection definition: {
     public field newFrameDescriptions => OrderedCollection.
     public field currentFrameDescription => AsmFrameDescriptionInformation.
 
-    public field debugSourcePositions => Array.
-    public field debugSourceNodes => Array.
-    public field debugSourceEnvironments => Array.
-    public field pcToDebugListTable => Array.
+    public field debugSourcePositions => OrderedOffsetTable.
+    public field debugSourceNodes => OrderedOffsetTable.
+    public field debugSourceEnvironments => OrderedOffsetTable.
 
-    public field newDebugTuples => OrderedCollection.
-    public field newDebugListsDictionary => Dictionary.
-    public field newPCToDebugListTable => OrderedCollection.
-
-    public field lastDebugSourcePosition => SourcePosition.
-    public field lastDebugSourceNode => ASTNode.
-    public field lastDebugSourceEnvironment => Environment.
+    public field newDebugSourcePositions => OrderedOffsetTableBuilder.
+    public field newDebugSourceNodes => OrderedOffsetTableBuilder.
+    public field newDebugSourceEnvironments => OrderedOffsetTableBuilder.
 
     public override method initialize => Void := {
         data := #[].
@@ -313,100 +308,40 @@ AsmObjectCodeSection definition: {
         destination replaceBytesFrom: destinationOffset count: data size with: data
     }.
 
-    public method entryIndexForDebugSourcePosition: (sourcePosition: SourcePosition) ::=> UInt32 := {
-        newDebugTuples ifNil: {
-            newDebugTuples := OrderedCollection new.
-            newDebugListsDictionary := Dictionary new.
-            newPCToDebugListTable := OrderedCollection new.
-        }.
-
-        sourcePosition isNil ifTrue: {
-            0u32
-        } ifFalse: {
-            newDebugListsDictionary at: sourcePosition ifAbsentPut: {:: UInt32 |
-                newDebugTuples add: sourcePosition.
-                newDebugTuples size asUInt32
-            }
-        }
-    }.
-
-    public method entryIndexForDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> UInt32 := {
-        newDebugTuples ifNil: {
-            newDebugTuples := OrderedCollection new.
-            newDebugListsDictionary := Dictionary new.
-            newPCToDebugListTable := OrderedCollection new.
-        }.
-
-        sourcePosition isNil && node isNil && environment isNil ifTrue: {
-            0u32
-        } ifFalse: {
-            let tuple := (sourcePosition, node, environment).
-            newDebugListsDictionary at: tuple ifAbsentPut: {:: UInt32 |
-                newDebugTuples add: tuple.
-                newDebugTuples size asUInt32
-            }
-        }
-    }.
-
     public method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
-        let debugListEntryIndex := TrackingFullDebugInfoTuple ifTrue: {
-            (lastDebugSourcePosition = sourcePosition) && (lastDebugSourceNode = node) && (lastDebugSourceEnvironment = environment) ifTrue: {
-                return: void
-            }.
-            lastDebugSourcePosition := sourcePosition.
-            lastDebugSourceNode := node.
-            lastDebugSourceEnvironment := environment.
+        let pc := writeOffset asUInt32.
 
-            self entryIndexForDebugSourcePosition: sourcePosition node: node environment: environment.
-        } ifFalse: {
-            lastDebugSourcePosition = sourcePosition ifTrue: {
-                return: void
-            }.
-            lastDebugSourcePosition := sourcePosition.
+        TrackingFullDebugInfoTuple ifTrue: {
+            newDebugSourceNodes ifNil: (newDebugSourceNodes := OrderedOffsetTableBuilder new).
+            newDebugSourceNodes withOffset: pc addValue: node.
 
-            self entryIndexForDebugSourcePosition: sourcePosition.
+            newDebugSourceEnvironments ifNil: (newDebugSourceEnvironments := OrderedOffsetTableBuilder new).
+            newDebugSourceEnvironments withOffset: pc addValue: environment.
         }.
 
-        let pc := writeOffset asUInt32.
-        (newPCToDebugListTable isNotEmpty && (pc = newPCToDebugListTable nextToLast)) ifTrue: {
-            newPCToDebugListTable at: newPCToDebugListTable size - 1sz put: debugListEntryIndex
-        } ifFalse: {
-            newPCToDebugListTable isEmpty || (debugListEntryIndex ~= newPCToDebugListTable last) ifTrue: {
-                newPCToDebugListTable add: pc; add: debugListEntryIndex
-            }
-        }
+        newDebugSourcePositions ifNil: (newDebugSourcePositions := OrderedOffsetTableBuilder new).
+        newDebugSourcePositions withOffset: pc addValue: sourcePosition.
     }.
 
     public method finishDebugAndUnwindInfo => Void := {
         frameDescriptions := newFrameDescriptions asArray.
         newFrameDescriptions := nil.
 
-        newDebugTuples ifNil: {
-            return: void.
-        }.
-
         TrackingFullDebugInfoTuple ifTrue: {
-            debugSourcePositions := Array new: newDebugTuples size.
-            debugSourceNodes := Array new: newDebugTuples size.
-            debugSourceEnvironments := Array new: newDebugTuples size.
-            newDebugTuples doWithIndex: {:(Array)tuple :(Size)index :: Void |
-                debugSourcePositions at: index put: tuple first.
-                debugSourceNodes at: index put: tuple second.
-                debugSourceEnvironments at: index put: tuple third.
+            newDebugSourceNodes ifNotNil: {
+                debugSourceNodes := newDebugSourceNodes finish.
+                newDebugSourceNodes := nil.
             }.
-        } ifFalse: {
-            debugSourcePositions := newDebugTuples asArray
+            newDebugSourceEnvironments ifNotNil: {
+                debugSourceEnvironments := newDebugSourceEnvironments finish.
+                newDebugSourceEnvironments := nil.
+            }.
         }.
 
-        pcToDebugListTable := newPCToDebugListTable asArray.
-
-        newDebugTuples := nil.
-        newDebugListsDictionary := nil.
-        newPCToDebugListTable := nil.
-
-        lastDebugSourcePosition := nil.
-        lastDebugSourceNode := nil.
-        lastDebugSourceEnvironment := nil.
+        newDebugSourcePositions ifNotNil: {
+            debugSourcePositions := newDebugSourcePositions finish.
+            newDebugSourcePositions := nil.
+        }.
     }.
 
     public method cfiBeginProcedure => Void := {

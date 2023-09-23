@@ -1554,8 +1554,9 @@ public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; defi
 
         sections do: {:(AsmObjectCodeSection)section :: Void |
             section executable ifTrue: {
-                section debugSourcePositions ifNotNil: {:(Array)sourcePositions | 
-                    sourcePositions do: {:(SourcePosition)each :: Void |
+                section debugSourcePositions ifNotNil: {:(OrderedOffsetTable)sourcePositions | 
+                    sourcePositions values do: {:(SourcePosition)each :: Void |
+                        each ifNil: {return: void}.
                         self addSourceCode: each sourceCode.
 
                         let startLine := each startLine asInt32.
@@ -1671,19 +1672,15 @@ public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; defi
 
         sections do: {:(AsmObjectCodeSection)section :: Void |
             section executable ifTrue: {
-                section pcToDebugListTable ifNotNil: {:(Array)pcToDebugListTable :: Void |
+                section debugSourcePositions ifNotNil: {:(OrderedOffsetTable)debugSourcePositions :: Void |
                     let sectionSymbol := AsmSymbol new
                         section: section;
                         makePrivate;
                         yourself.
-                    let debugSourcePositions := section debugSourcePositions.
-                    pcToDebugListTable pairsDo: {:(UInt32)pc :(UInt32)sourcePositionIndex :: Void |
-                        let sourcePosition => SourcePosition := sourcePositionIndex > 0u32
-                            ifTrue: (debugSourcePositions at: (sourcePositionIndex - 1u32) asSize)
-                            ifFalse: nil.
-                        
+                    debugSourcePositions values doWithIndex: {:(SourcePosition)sourcePosition :(Size)index :: Void |
+                        let pc := debugSourcePositions keys uint32At: index.
                         self emitSourcePosition: sourcePosition section: sectionSymbol pc: pc.
-                    }
+                    }.
                 }
             }
         }.

@@ -69,6 +69,24 @@ SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_asArray(sysbvm_context_t *con
     return sysbvm_array_getFirstElements(context, orderedCollectionObject->storage, sysbvm_tuple_size_decode(orderedCollectionObject->size));
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_asWordArray(sysbvm_context_t *context, sysbvm_tuple_t orderedCollection)
+{
+    if(!sysbvm_tuple_isNonNullPointer(orderedCollection))
+        return SYSBVM_NULL_TUPLE;
+
+    sysbvm_orderedCollection_t *orderedCollectionObject = (sysbvm_orderedCollection_t*)orderedCollection;
+    if(!orderedCollectionObject->storage)
+        return sysbvm_wordArray_create(context, 0);
+
+    size_t size = sysbvm_tuple_size_decode(orderedCollectionObject->size);
+    sysbvm_tuple_t wordArray = sysbvm_wordArray_create(context, size);
+    uint32_t *words = (uint32_t*)SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(wordArray)->bytes;
+    for(size_t i = 0; i < size; ++i)
+        words[i] = sysbvm_tuple_uint32_decode(sysbvm_array_at(orderedCollectionObject->storage, i));
+
+    return wordArray;
+}
+
 SYSBVM_API size_t sysbvm_orderedCollection_getSize(sysbvm_tuple_t orderedCollection)
 {
     if(!sysbvm_tuple_isNonNullPointer(orderedCollection)) return 0;

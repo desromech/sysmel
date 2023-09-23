@@ -170,6 +170,8 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t nativeCodeSectionType;
     sysbvm_tuple_t nativeCodeRelocationTableType;
     sysbvm_tuple_t objectType;
+    sysbvm_tuple_t orderedOffsetTableType;
+    sysbvm_tuple_t orderedOffsetTableBuilderType;
     sysbvm_tuple_t pendingMemoizationValueType;
     sysbvm_tuple_t pointerLikeType;
     sysbvm_tuple_t pointerType;

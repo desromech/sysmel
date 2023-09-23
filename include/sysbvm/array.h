@@ -30,6 +30,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_array_create(sysbvm_context_t *context, sysbvm_
 SYSBVM_API sysbvm_tuple_t sysbvm_weakArray_create(sysbvm_context_t *context, sysbvm_tuple_t slotCount);
 
 /**
+ * Creates a word array with the specified size.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_wordArray_create(sysbvm_context_t *context, sysbvm_tuple_t slotCount);
+
+/**
  * Gets an element from an array.
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_array_at(sysbvm_tuple_t array, size_t index)

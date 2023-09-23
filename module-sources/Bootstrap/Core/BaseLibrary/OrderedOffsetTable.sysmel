@@ -1,0 +1,28 @@
+OrderedOffsetTable definition: {
+    public method atOffsetOrNil: (offset: UInt32) := {
+        keys ifNil: {return: nil}.
+
+        let keyCount := keys size.
+        let lower mutable := 0sz.
+        let upper mutable := keyCount.
+        let bestFound mutable := -1iptr.
+
+        while: (lower < upper) do: {
+            let middle := lower + ((upper - lower) / 2sz).
+            let entryOffset := keys uint32At: middle.
+            entryOffset <= offset ifTrue: {
+                lower := middle + 1sz.
+                bestFound := middle asIntPointer
+            } ifFalse: {
+                upper := middle
+            }.
+        }.
+
+        (bestFound >= 0iptr) && (bestFound asSize < keyCount) ifTrue: {
+            values at: bestFound asSize
+        } ifFalse: {
+            nil
+        }
+    }.
+
+}.

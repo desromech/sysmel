@@ -37,6 +37,8 @@ loadSourceNamed: "FileSystem.sysmel".
 loadSourceNamed: "Math.sysmel".
 loadSourceNamed: "Integer.sysmel".
 loadSourceNamed: "OrderedInsertionIdentitySet.sysmel".
+loadSourceNamed: "OrderedOffsetTable.sysmel".
+loadSourceNamed: "OrderedOffsetTableBuilder.sysmel".
 loadSourceNamed: "NativeCode.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
@@ -46,3 +48,4 @@ loadSourceNamed: "StringStream.sysmel".
 loadSourceNamed: "System.sysmel".
 loadSourceNamed: "Time.sysmel".
 loadSourceNamed: "Type.sysmel".
+loadSourceNamed: "WordArray.sysmel".

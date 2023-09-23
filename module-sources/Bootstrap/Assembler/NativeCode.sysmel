@@ -26,6 +26,9 @@ AsmObjectCode definition: {
                 alignment: eachSection alignment;
                 data: eachSection data;
                 flags: eachSection convertFlagsForNativeCodeSection;
+                debugSourcePositions: eachSection debugSourcePositions;
+                debugSourceNodes: eachSection debugSourceNodes;
+                debugSourceEnvironments: eachSection debugSourceEnvironments;
                 yourself.
 
             convertedSections add: convertedSection.
@@ -169,6 +172,9 @@ NativeCode definition: {
                 loaded: eachSection isLoaded;
                 nobits: eachSection isNoBits;
                 tls: eachSection isTLS;
+                debugSourcePositions: eachSection debugSourcePositions;
+                debugSourceNodes: eachSection debugSourceNodes;
+                debugSourceEnvironments: eachSection debugSourceEnvironments;
                 yourself.
             sectionTable at: eachSection put: asmSection.
             asmSection

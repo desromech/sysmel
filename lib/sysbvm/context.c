@@ -404,6 +404,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.functionSourceAnalyzedDefinitionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionBytecodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionNativeCodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.orderedOffsetTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.orderedOffsetTableBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     context->roots.nativeCodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
@@ -875,10 +877,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "temporaryTypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
 
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
-        "pcToDebugListTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
-        "debugSourceASTNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.arrayType,
-        "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
-        "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
+        "debugSourceASTNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.orderedOffsetTableType,
+        "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
+        "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         
         "jittedCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         "jittedCodeSessionToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
@@ -891,6 +892,14 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.orderedOffsetTableType, "OrderedOffsetTable", SYSBVM_NULL_TUPLE,
+        "keys", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.wordArrayType,
+        "values", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.orderedOffsetTableBuilderType, "OrderedOffsetTableBuilder", SYSBVM_NULL_TUPLE,
+        "keys", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
+        "values", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeType, "NativeCode", SYSBVM_NULL_TUPLE,
@@ -920,6 +929,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "alignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "data", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
+
+        "debugSourceNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.orderedOffsetTableType,
+        "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
+        "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeRelocationTableType, "NativeCodeRelocationTable", SYSBVM_NULL_TUPLE,
         NULL);

@@ -1,7 +1,6 @@
 set(sysbvm_sources
     internal/dynarray.c
     array.c
-    orderedCollection.c
     arraySlice.c
     assert.c
     association.c
@@ -25,6 +24,8 @@ set(sysbvm_sources
     io.c
     macro.c
     message.c
+    orderedCollection.c
+    orderedOffsetTable.c
     parser.c
     pragma.c
     programEntity.c

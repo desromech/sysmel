@@ -35,6 +35,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_asArraySlice(sysbvm_context_t
 SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_asArray(sysbvm_context_t *context, sysbvm_tuple_t orderedCollection);
 
 /**
+ * Converts the array list into a word array.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_orderedCollection_asWordArray(sysbvm_context_t *context, sysbvm_tuple_t orderedCollection);
+
+/**
  * Gets the size of an array list.
  */
 SYSBVM_API size_t sysbvm_orderedCollection_getSize(sysbvm_tuple_t orderedCollection);

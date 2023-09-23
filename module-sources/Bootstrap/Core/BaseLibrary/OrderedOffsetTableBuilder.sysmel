@@ -1,0 +1,45 @@
+OrderedOffsetTableBuilder definition: {
+    public override method initialize => Void := {
+        keys := OrderedCollection new.
+        values := OrderedCollection new.
+    }.
+
+    public method withOffset: (offset: UInt32) addValue: value ::=> Void := {
+        values isNotEmpty ifTrue: {
+            let lastValue := values last.
+            lastValue = value ifTrue: {
+                return: void
+            }.
+
+            let lastKey => UInt32 := keys last.
+            self assert: offset >= lastKey.
+
+            lastKey = offset ifTrue: {
+                values at: values size - 1sz put: value.
+                return: void
+            }
+        }.
+
+        keys add: offset.
+        values add: value
+    }.
+
+    public method addOffsetTable: (table: OrderedOffsetTable) withOffset: (extraOffset: UInt32) ::=> Void := {
+        table values doWithIndex: {:value :(Size)index :: Void |
+            let offset := (table keys uint32At: index) + extraOffset.
+            self withOffset: offset addValue: value
+        }.
+    }.
+
+    public method finish => OrderedOffsetTable := {
+        keys isEmpty ifTrue: {
+            nil
+        } ifFalse: {
+            OrderedOffsetTable new
+                keys: keys asWordArray;
+                values: values asArray;
+                yourself
+        }
+    }.
+
+}.
