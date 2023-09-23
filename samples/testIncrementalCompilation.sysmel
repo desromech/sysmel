@@ -120,8 +120,8 @@ hirModule performStandardOptimizations.
 let nativeCodes := hirModule asNativeCodesFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
 printLine(nativeCodes fullPrintString).
 
-##let nativeCode := hirModule asNativeCodeFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
-##printLine(nativeCode fullPrintString).
+let nativeCode := hirModule asNativeCodeFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
+printLine(nativeCode fullPrintString).
 
 }.
 

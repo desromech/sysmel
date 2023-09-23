@@ -17,6 +17,12 @@ public final class ProgramEntityQualifiedNameSymbol superclass: Symbol; definiti
             := self new programEntity: programEntity; yourself.
     }.
 
+    public override method hash => Size
+        := self class identityHash hashConcatenate: programEntity identityHash.
+
+    public override method = other => Boolean
+        := (self class == other class) && (programEntity == (other uncheckedDownCastTo: ProgramEntityQualifiedNameSymbol) programEntity).
+
     public override method printOn: (stream: Stream) ::=> Void := {
         programEntity printQualifiedSymbolNameOn: stream.
     }.
@@ -39,6 +45,12 @@ public final class FunctionCheckedEntryPointSymbol superclass: Symbol; definitio
             := self new function: function; yourself.
     }.
 
+    public override method hash => Size
+        := self class identityHash hashConcatenate: function identityHash.
+
+    public override method = other => Boolean
+        := (self class == other class) && (function == (other uncheckedDownCastTo: FunctionCheckedEntryPointSymbol) function).
+
     public override method printOn: (stream: Stream) ::=> Void := {
         function printQualifiedSymbolNameOn: stream.
         stream nextPutAll: ".checked".
@@ -53,6 +65,12 @@ public final class FunctionCapturelessUncheckedEntryPointSymbol superclass: Symb
             := self new function: function; yourself.
     }.
 
+    public override method hash => Size
+        := self class identityHash hashConcatenate: function identityHash.
+
+    public override method = other => Boolean
+        := (self class == other class) && (function == (other uncheckedDownCastTo: FunctionCapturelessUncheckedEntryPointSymbol) function).
+
     public override method printOn: (stream: Stream) ::=> Void := {
         function printQualifiedSymbolNameOn: stream.
         stream nextPutAll: ".captureless".
@@ -61,6 +79,12 @@ public final class FunctionCapturelessUncheckedEntryPointSymbol superclass: Symb
 
 public final class FunctionUncheckedEntryPointSymbol superclass: Symbol; definition: {
     public field function => FunctionDefinition.
+
+    public override method hash => Size
+        := self class identityHash hashConcatenate: function identityHash.
+
+    public override method = other => Boolean
+        := (self class == other class) && (function == (other uncheckedDownCastTo: FunctionUncheckedEntryPointSymbol) function).
 
     __Meta__ definition:{
         public method for: (function: FunctionDefinition) ::=> self

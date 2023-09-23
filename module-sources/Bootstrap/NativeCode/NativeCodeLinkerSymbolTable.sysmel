@@ -17,7 +17,7 @@ public class NativeCodeLinkerSymbolTableConversionMap superclass: Object; defini
 public class NativeCodeLinkerSymbolTable superclass: Object; definition: {
     private field symbols => OrderedCollection.
     private field symbolDictionary => ObjectPointerDictionary.
-    private field convertedSymbolDictionary => ObjectPointerDictionary.
+    private field convertedSymbolDictionary => Dictionary.
     private field objectSymbolDictionary => ObjectPointerDictionary.
     private field sectionDictionary => ObjectPointerDictionary.
     private field sectionOffsetDictionary => ObjectPointerDictionary.
@@ -27,7 +27,7 @@ public class NativeCodeLinkerSymbolTable superclass: Object; definition: {
     public override method initialize => Void := {
         symbols := OrderedCollection new.
         objectSymbolDictionary := ObjectPointerDictionary new.
-        convertedSymbolDictionary := ObjectPointerDictionary new.
+        convertedSymbolDictionary := Dictionary new.
         symbolDictionary := ObjectPointerDictionary new.
         sectionDictionary := ObjectPointerDictionary new.
         sectionOffsetDictionary := ObjectPointerDictionary new.

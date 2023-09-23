@@ -563,7 +563,7 @@ public global AsmSymbol::Type::GCFatPointerTable := NativeCodeSymbol::Type::GCFa
 AsmSymbol definition: {
     public field name => Symbol.
     public field section => AsmObjectCodeSection.
-    public field objectValue => UInt64.
+    public field objectValue => Untyped.
     public field value => UInt64.
     public field size => UInt64.
     public field visibility => UInt8.
