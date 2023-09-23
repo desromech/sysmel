@@ -879,7 +879,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
         "debugSourceASTNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.orderedOffsetTableType,
         "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
-        "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
+        "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         
         "jittedCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         "jittedCodeSessionToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
@@ -905,6 +905,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeType, "NativeCode", SYSBVM_NULL_TUPLE,
         "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolTableType,
         "sections", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "hirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
+        "mirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
+        "asmTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSymbolType, "NativeCodeSymbol", SYSBVM_NULL_TUPLE,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,

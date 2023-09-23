@@ -4,6 +4,9 @@ public class NativeCodeLinker superclass: Object; definition: {
     private field sections => OrderedCollection.
     private field symbolTable => NativeCodeLinkerSymbolTable.
     private field sourceSymbolTables => OrderedCollection.
+    private field hirTextIR => StringStream.
+    private field mirTextIR => StringStream.
+    private field asmTextIR => StringStream.
 
     public override method initialize => Void := {
         sectionNameTable := Dictionary new.
@@ -20,6 +23,19 @@ public class NativeCodeLinker superclass: Object; definition: {
         nativeCode sections do: {:(NativeCodeSection)sourceSection :: Void |
             (self getOrCreateSectionNamed: sourceSection name)
                 addSourceSection: sourceSection
+        }.
+
+        nativeCode hirTextIR ifNotNil: {
+            hirTextIR ifNil: (hirTextIR := StringStream new).
+            hirTextIR string: nativeCode hirTextIR
+        }.
+        nativeCode mirTextIR ifNotNil: {
+            mirTextIR ifNil: (mirTextIR := StringStream new).
+            mirTextIR string: nativeCode mirTextIR
+        }.
+        nativeCode asmTextIR ifNotNil: {
+            asmTextIR ifNil: (asmTextIR := StringStream new).
+            asmTextIR string: nativeCode asmTextIR
         }
     }.
 
@@ -49,6 +65,10 @@ public class NativeCodeLinker superclass: Object; definition: {
                     yourself
             }) asArray;
             symbolTable: linkedSymbolTable;
+
+            hirTextIR: (hirTextIR ifNotNil: (hirTextIR asString));
+            mirTextIR: (mirTextIR ifNotNil: (mirTextIR asString));
+            asmTextIR: (asmTextIR ifNotNil: (asmTextIR asString));
             yourself
     }.
 }.

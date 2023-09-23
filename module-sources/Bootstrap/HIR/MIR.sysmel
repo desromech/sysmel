@@ -3081,7 +3081,6 @@ HIRModule extend: {
             let hirTextIR => String := keepingIRTextForDebugging
                 ifTrue: (perValueModule fullPrintString)
                 ifFalse: (nil).
-            ##hirTextIR ifNotNil: (printLine(hirTextIR)).
 
             ## MIR
             let perValueMirModule := HIRModuleMIRCodeGenerator new
@@ -3093,16 +3092,18 @@ HIRModule extend: {
             let mirTextIR => String := keepingIRTextForDebugging
                 ifTrue: (perValueMirModule fullPrintString)
                 ifFalse: (nil).
-            ##mirTextIR ifNotNil: (printLine(mirTextIR)).
 
             ## Native code
             let nativeCodeIR := perValueMirModule asTargetNativeCodeIR.
             let nativeCodeTextIR => String := keepingIRTextForDebugging
                 ifTrue: (nativeCodeIR fullPrintString)
                 ifFalse: (nil).
-            ##nativeCodeTextIR ifNotNil: (printLine(nativeCodeTextIR)).
 
             let nativeCode => NativeCode := nativeCodeIR asNativeCode.
+            nativeCode
+                hirTextIR: hirTextIR;
+                mirTextIR: mirTextIR;
+                asmTextIR: nativeCodeTextIR.
 
             result add: nativeCode.
         }.
