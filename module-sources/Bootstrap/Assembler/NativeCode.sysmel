@@ -84,6 +84,135 @@ AsmObjectCode definition: {
     }.
 }.
 
+public global NativeCodeRelocation::AsmRelocationConversionFunction := (AsmSymbol, UInt32, Int64) => AsmObjectCodeRelocation.
+public global NativeCodeRelocation::AsmRelocationConversionMap := #{
+    NativeCodeRelocation::Type::Absolute32 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationAbsoluteInt32 new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend asInt32;
+            yourself
+    }.
+    NativeCodeRelocation::Type::Relative32 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationRelativeInt32 new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend asInt32;
+            yourself
+    }.
+    NativeCodeRelocation::Type::RelativePLT32 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationRelativeInt32AtPLT new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend asInt32;
+            yourself
+    }.
+    NativeCodeRelocation::Type::RelativeGOT32 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationRelativeInt32AtGOT new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend asInt32;
+            yourself
+    }.
+    NativeCodeRelocation::Type::SectionRelative32 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationSectionRelativeInt32 new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend asInt32;
+            yourself
+    }.
+    NativeCodeRelocation::Type::TPOffset32 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationTPOffset32 new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend asInt32;
+            yourself
+    }.
+
+    NativeCodeRelocation::Type::Absolute64 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationAbsoluteInt64 new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend;
+            yourself
+    }.
+    NativeCodeRelocation::Type::Relative64 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationRelativeInt64 new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend;
+            yourself
+    }.
+    NativeCodeRelocation::Type::SectionRelative64 : {:(AsmSymbol)symbol :(UInt32)offset :(Int64)addend :: AsmObjectCodeRelocation |
+        AsmObjectCodeRelocationSectionRelativeInt64 new
+            symbol: symbol;
+            offset: offset asSize;
+            addend: addend;
+            yourself
+    }.
+}.
+
+NativeCode definition: {
+    public method asAsmObjectCodeWithTarget: (compilationTarget: AsmCompilationTarget) ::=> AsmObjectCode := {
+        let sectionTable := ObjectPointerDictionary new.
+        let asmSections := sections collect: {:(NativeCodeSection)eachSection :: AsmObjectCodeSection |
+            let asmSection := AsmObjectCodeSection new
+                name: eachSection name;
+                machoSectionName: eachSection machoSectionName;
+                machoSegmentName: eachSection machoSegmentName;
+                alignment: eachSection alignment;
+                size: eachSection size;
+                data: eachSection data;
+                executable: eachSection isExecutable;
+                writeable: eachSection isWriteable;
+                readable: eachSection isReadable;
+                loaded: eachSection isLoaded;
+                nobits: eachSection isNoBits;
+                tls: eachSection isTLS;
+                yourself.
+            sectionTable at: eachSection put: asmSection.
+            asmSection
+        }.
+
+        let asmSymbols := symbolTable symbols collect: {:(NativeCodeSymbol)eachSymbol :: AsmSymbol |
+            AsmSymbol new
+                name: eachSymbol name;
+                section: (eachSymbol section ifNotNil: {sectionTable at: eachSymbol section});
+                value: eachSymbol value asUInt64;
+                objectValue: eachSymbol objectValue;
+                size: eachSymbol size asSize;
+                type: eachSymbol type;
+                visibility: eachSymbol visibility;
+                yourself
+        }.
+
+        sections doWithIndex: {:(NativeCodeSection)eachSection :(Size)index :: Void |
+            let asmSection := asmSections at: index.
+
+            eachSection relocations ifNotNil: {
+                let asmRelocations := OrderedCollection new.
+                eachSection relocations decodedRelocationsDo: {:(UInt8)type :(UInt32)symbolIndex :(UInt32)offset :(Int64)addend :: Void |
+                    (symbolIndex = 0u32) || (symbolIndex asSize > asmSymbols size) ifTrue: {
+                        return: void
+                    }.
+
+                    let asmSymbol => AsmSymbol := asmSymbols at: symbolIndex asSize.
+                    let conversionFunction => NativeCodeRelocation::AsmRelocationConversionFunction := NativeCodeRelocation::AsmRelocationConversionMap at: type.
+                    asmRelocations add: conversionFunction(asmSymbol, offset, addend)
+                }.
+
+                asmSection relocations: asmRelocations asArray
+            }
+        }.
+
+        AsmObjectCode new
+            compilationTarget: compilationTarget;
+            sections: asmSections;
+            symbols: asmSymbols;
+            yourself
+    }.
+}.
+
 AsmObjectCodeSection definition: {
     public method convertFlagsForNativeCodeSection => UInt32 := {
         let result mutable := 0u32.

@@ -152,6 +152,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t hashtableEmptyType;
     sysbvm_tuple_t identityDictionaryType;
     sysbvm_tuple_t identitySetType;
+    sysbvm_tuple_t integerArrayType;
     sysbvm_tuple_t integerType;
     sysbvm_tuple_t largeIntegerType;
     sysbvm_tuple_t largePositiveIntegerType;
@@ -215,6 +216,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t weakKeyDictionaryType;
     sysbvm_tuple_t weakValueAssociationType;
     sysbvm_tuple_t weakValueDictionaryType;
+    sysbvm_tuple_t wordArrayType;
 
     sysbvm_tuple_t controlFlowEscapeType;
     sysbvm_tuple_t controlFlowBreakType;

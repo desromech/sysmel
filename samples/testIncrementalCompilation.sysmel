@@ -117,11 +117,15 @@ let hirModule := HIRModuleCompilationContext forDefaultTarget
 hirModule performStandardOptimizations.
 ##printLine(hirModule fullPrintString).
 
-let nativeCodes := hirModule asNativeCodesFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
-printLine(nativeCodes fullPrintString).
+##let nativeCodes := hirModule asNativeCodesFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
+##printLine(nativeCodes fullPrintString).
 
 let nativeCode := hirModule asNativeCodeFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
 printLine(nativeCode fullPrintString).
+
+let objectCode := nativeCode asAsmObjectCodeWithTarget: AsmCompilationTarget x86_64 setForLinux.
+##printLine(objectCode fullPrintString).
+objectCode writeObjectToFileNamed: "test.o"
 
 }.
 

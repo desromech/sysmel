@@ -451,6 +451,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.arrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.byteArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.integerArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.wordArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
     context->roots.orderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.sequenceableCollectionType);
     context->roots.weakArrayType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayType);
     context->roots.weakOrderedCollectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.orderedCollectionType);
@@ -1009,6 +1011,13 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.byteArrayType, "ByteArray", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.byteArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
+
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.integerArrayType, "IntegerArray", SYSBVM_NULL_TUPLE,
+        NULL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.integerArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.wordArrayType, "WordArray", SYSBVM_NULL_TUPLE,
+        NULL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.wordArrayType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL | SYSBVM_TYPE_FLAGS_EMPTY_TRIVIAL_SINGLETON, SYSBVM_TYPE_FLAGS_FINAL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.gcLayoutType, "GCLayout", SYSBVM_NULL_TUPLE,
         NULL
