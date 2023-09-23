@@ -162,11 +162,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             self compileFunction: function
         }.
 
-    public method translateFunctionDefinition: (functionDefinition: HIRFunctionDefinition) ::=> MIRValue
-        := globalValueDictionary at: functionDefinition ifAbsentPut: {|
-            self compileFunctionDefinition: functionDefinition
-        }.
-
     public method compileFunction: (function: HIRFunction) ::=> MIRValue := {
         let functionObject := MIRGlobalVariable withName: function name type: Function valueType: Function isValueInstance: true compilationTarget: compilationTarget.
         targetModule addProgramEntity: functionObject.
@@ -175,17 +170,9 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         functionObject
     }.
 
-    public method compileFunctionDefinition: (functionDefinition: HIRFunctionDefinition) ::=> MIRValue := {
-        let functionDefinitionObject := MIRGlobalVariable withName: functionDefinition name type: FunctionDefinition valueType: FunctionDefinition isValueInstance: true compilationTarget: compilationTarget.
-        targetModule addProgramEntity: functionDefinitionObject.
-        globalValueDictionary at: functionDefinition put: functionDefinitionObject.
-
-        functionDefinitionObject
-    }.
-
     public method compileCapturelessUncheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {
         let importedSymbols := functionDefinition importedSymbols.
-        importedSymbols isEmpty ifTrue: {
+        importedSymbols isEmpty && (hirModule includesGlobalValue: functionDefinition) ifTrue: {
             let entryPoint := (MIRFunction forContext: mirContext)
                 compilationTarget: compilationTarget;
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
@@ -206,7 +193,12 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
             entryPoint
         } ifFalse: {
             let importedEntity := (MIRImportedFunction forContext: mirContext)
-                name: importedSymbols first;
+                name: (importedSymbols isEmpty
+                    ifTrue: functionDefinition name asCapturelessUncheckedEntryPointNameSymbol
+                    ifFalse: importedSymbols first);
+                debugSourcePosition: functionDefinition sourcePosition;
+                debugSourceNode: functionDefinition sourceASTNode;
+                debugSourceEnvironment: functionDefinition sourceEnvironment;
                 compilationTarget: compilationTarget;
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 alternativeSymbols: importedSymbols;
@@ -219,57 +211,79 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method compileUncheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {
-        let entryPoint := (MIRFunction forContext: mirContext)
-            compilationTarget: compilationTarget;
-            callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
-            name: functionDefinition name asUncheckedEntryPointNameSymbol;
-            debugSourcePosition: functionDefinition sourcePosition;
-            debugSourceNode: functionDefinition sourceASTNode;
-            debugSourceEnvironment: functionDefinition sourceEnvironment;
-            sourceProgramEntity: functionDefinition sourceObject;
-            isNoGC: functionDefinition isNoGC;
-            yourself.
-        targetModule addProgramEntity: entryPoint.
-        uncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
+        (hirModule includesGlobalValue: functionDefinition) ifTrue: {
+            let entryPoint := (MIRFunction forContext: mirContext)
+                compilationTarget: compilationTarget;
+                callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
+                name: functionDefinition name asUncheckedEntryPointNameSymbol;
+                debugSourcePosition: functionDefinition sourcePosition;
+                debugSourceNode: functionDefinition sourceASTNode;
+                debugSourceEnvironment: functionDefinition sourceEnvironment;
+                sourceProgramEntity: functionDefinition sourceObject;
+                isNoGC: functionDefinition isNoGC;
+                yourself.
+            targetModule addProgramEntity: entryPoint.
+            uncheckedEntryPointDictionary at: functionDefinition put: entryPoint.
 
-        functionDefinition isCaptureless ifTrue: {
-            HIRFunctionDefinitionMIRCodeGenerator new
-                moduleCodeGenerator: self;
-                compileHIRFunctionDefinition: functionDefinition
-                    uncheckedEntryPoint: entryPoint
-                    into: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
+            functionDefinition isCaptureless ifTrue: {
+                HIRFunctionDefinitionMIRCodeGenerator new
+                    moduleCodeGenerator: self;
+                    compileHIRFunctionDefinition: functionDefinition
+                        uncheckedEntryPoint: entryPoint
+                        into: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
+            } ifFalse: {
+                HIRFunctionDefinitionMIRCodeGenerator new
+                    moduleCodeGenerator: self;
+                    compileHIRFunctionDefinition: functionDefinition intoUncheckedEntryPoint: entryPoint.
+            }.
+
+            entryPoint
         } ifFalse: {
-            HIRFunctionDefinitionMIRCodeGenerator new
-                moduleCodeGenerator: self;
-                compileHIRFunctionDefinition: functionDefinition intoUncheckedEntryPoint: entryPoint.
+            (MIRImportedFunction forContext: mirContext)
+                name: functionDefinition name asUncheckedEntryPointNameSymbol;
+                compilationTarget: compilationTarget;
+                callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
+                debugSourcePosition: functionDefinition sourcePosition;
+                debugSourceNode: functionDefinition sourceASTNode;
+                debugSourceEnvironment: functionDefinition sourceEnvironment;
+                yourself.
         }.
-
-        entryPoint
     }.
 
     public method compileCheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {
-        let entryPoint := (MIRFunction forContext: mirContext)
-            compilationTarget: compilationTarget;
-            callingConvention: compilationTarget defaultCallingConvention;
-            name: functionDefinition name asCheckedEntryPointNameSymbol;
-            debugSourcePosition: functionDefinition sourcePosition;
-            debugSourceNode: functionDefinition sourceASTNode;
-            debugSourceEnvironment: functionDefinition sourceEnvironment;
-            sourceProgramEntity: functionDefinition sourceObject;
-            isNoGC: functionDefinition isNoGC;
-            yourself.
-        targetModule addProgramEntity: entryPoint.
-        checkedEntryPointDictionary at: functionDefinition put: entryPoint.
+        (hirModule includesGlobalValue: functionDefinition) ifTrue: {
+            let entryPoint := (MIRFunction forContext: mirContext)
+                compilationTarget: compilationTarget;
+                callingConvention: compilationTarget defaultCallingConvention;
+                name: functionDefinition name asCheckedEntryPointNameSymbol;
+                debugSourcePosition: functionDefinition sourcePosition;
+                debugSourceNode: functionDefinition sourceASTNode;
+                debugSourceEnvironment: functionDefinition sourceEnvironment;
+                sourceProgramEntity: functionDefinition sourceObject;
+                isNoGC: functionDefinition isNoGC;
+                yourself.
+            targetModule addProgramEntity: entryPoint.
+            checkedEntryPointDictionary at: functionDefinition put: entryPoint.
 
-        HIRFunctionDefinitionMIRCodeGenerator new
-            moduleCodeGenerator: self;
-            compileHIRFunctionDefinition: functionDefinition checkedEntryPoint: entryPoint
-            into: (functionDefinition isCaptureless
-                    ifTrue: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
-                    ifFalse: (self translateUncheckedFunctionEntryPointOrNil: functionDefinition)
-                ) isCaptureless: functionDefinition isCaptureless.
+            HIRFunctionDefinitionMIRCodeGenerator new
+                moduleCodeGenerator: self;
+                compileHIRFunctionDefinition: functionDefinition checkedEntryPoint: entryPoint
+                into: (functionDefinition isCaptureless
+                        ifTrue: (self translateCapturelessUncheckedFunctionEntryPoint: functionDefinition)
+                        ifFalse: (self translateUncheckedFunctionEntryPointOrNil: functionDefinition)
+                    ) isCaptureless: functionDefinition isCaptureless.
 
-        entryPoint
+            entryPoint
+        } ifFalse: {
+            (MIRImportedFunction forContext: mirContext)
+                name: functionDefinition name asCheckedEntryPointNameSymbol;
+                compilationTarget: compilationTarget;
+                callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
+                debugSourcePosition: functionDefinition sourcePosition;
+                debugSourceNode: functionDefinition sourceASTNode;
+                debugSourceEnvironment: functionDefinition sourceEnvironment;
+                yourself.
+        }.
     }.
 
     public method getOrCreateUncheckedInterpreterTrampolineWithSignature: (signature: Array) ::=> MIRProgramEntity := {
@@ -3050,5 +3064,57 @@ HIRModule extend: {
         := HIRModuleMIRCodeGenerator new
             initializeWithTarget: target;
             compileHIRModule: self;
-            finish
+            finish.
+
+    public method asNativeCodesFor: (target: MIRCompilationTarget) keepingIRTextForDebugging: (keepingIRTextForDebugging: Boolean) ::=> Array := {
+        let result := OrderedCollection new.
+        globalValues do: {:(HIRGlobalValue)globalValue :: Void |
+            globalValue isFunction ifTrue: {return: void}.
+
+            ## HIR
+            let perValueModule := HIRModule forContext: context.
+            perValueModule
+                virtualTableSetSource: virtualTableSetSource;
+                addGlobalValue: globalValue;
+                yourself.
+
+            let hirTextIR => String := keepingIRTextForDebugging
+                ifTrue: (perValueModule fullPrintString)
+                ifFalse: (nil).
+            hirTextIR ifNotNil: (printLine(hirTextIR)).
+
+            ## MIR
+            let perValueMirModule := HIRModuleMIRCodeGenerator new
+                initializeWithTarget: target;
+                importRuntimeFunction: true;
+                compileHIRModule: perValueModule;
+                finish.
+
+            let mirTextIR => String := keepingIRTextForDebugging
+                ifTrue: (perValueMirModule fullPrintString)
+                ifFalse: (nil).
+            mirTextIR ifNotNil: (printLine(mirTextIR)).
+
+            ## Native code
+            let nativeCodeIR := perValueMirModule asTargetNativeCodeIR.
+            let nativeCodeTextIR => String := keepingIRTextForDebugging
+                ifTrue: (nativeCodeIR fullPrintString)
+                ifFalse: (nil).
+            nativeCodeTextIR ifNotNil: (printLine(nativeCodeTextIR)).
+
+            let nativeCode => NativeCode := nativeCodeIR asNativeCode.
+
+            result add: nativeCode.
+        }.
+
+        result asArray
+    }.
+
+    public method asNativeCodeFor: (target: MIRCompilationTarget) keepingIRTextForDebugging: (keepingIRTextForDebugging: Boolean) ::=> NativeCode := {
+        let nativeCodes := self asNativeCodesFor: target keepingIRTextForDebugging: keepingIRTextForDebugging.
+        NativeCodeLinker new
+            keepingIRTextForDebugging: keepingIRTextForDebugging;
+            addNativeCodes: nativeCodes;
+            finish.
+    }.
 }.

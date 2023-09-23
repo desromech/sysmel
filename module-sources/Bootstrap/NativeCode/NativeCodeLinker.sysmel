@@ -1,4 +1,5 @@
 public class NativeCodeLinker superclass: Object; definition: {
+    public field keepingIRTextForDebugging => Boolean.
     private field sectionNameTable => Dictionary.
     private field sections => OrderedCollection.
     private field symbolTable => NativeCodeLinkerSymbolTable.
@@ -19,6 +20,12 @@ public class NativeCodeLinker superclass: Object; definition: {
         nativeCode sections do: {:(NativeCodeSection)sourceSection :: Void |
             (self getOrCreateSectionNamed: sourceSection name)
                 addSourceSection: sourceSection
+        }
+    }.
+
+    public method addNativeCodes: (nativeCodes: Array) ::=> Void := {
+        nativeCodes do: {:(NativeCode)each :: Void |
+            self addNativeCode: each
         }
     }.
 

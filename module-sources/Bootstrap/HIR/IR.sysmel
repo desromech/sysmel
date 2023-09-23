@@ -2979,6 +2979,7 @@ public final class HIRModule superclass: Object; definition: {
     public field context => HIRContext.
     public field globalValues => OrderedCollection.
     public field virtualTableSetSource => VirtualTableSetSource.
+    private field globalValueSet => ObjectPointerSet.
     private field globalValueDictionary => ObjectPointerDictionary.
 
     __Meta__ definition: {
@@ -2988,15 +2989,24 @@ public final class HIRModule superclass: Object; definition: {
 
     public override method initialize => Void := {
         globalValues := OrderedCollection new.
+        globalValueSet := ObjectPointerSet new.
         globalValueDictionary := ObjectPointerDictionary new.
     }.
 
     public method addGlobalValue: (globalValue: HIRGlobalValue) ::=> Void := {
+        (globalValueSet includes: globalValue) ifTrue: {
+            return: void.
+        }.
+
         globalValues add: globalValue.
+        globalValueSet add: globalValue.
         globalValue sourceObject ifNotNil: {
             globalValueDictionary at: globalValue sourceObject put: globalValue
         }
     }.
+
+    public method includesGlobalValue: (globalValue: HIRGlobalValue) ::=> Boolean
+        := globalValueSet includes: globalValue.
 
     public method getGlobalValueFor: value ::=> HIRValue
         := globalValueDictionary at: value.
