@@ -708,6 +708,16 @@ public final class AsmObjectElf64FileWriter superclass: AsmObjectFileWriter; def
         }.
         } printTimeToRunInMillisecondsWithTitle: "Elf relocations".
 
+        ## No exec stack note.
+        {
+            sectionHeaders add: (Elf64::SectionHeader new
+                name: (sectionNameStringTable addString: ".note.GNU-stack") asUInt32;
+                type: Elf::SectionHeaderType::Progbits;
+                addrAlign: 1u64;
+                yourself).
+            sectionDataElements add: nil.
+        }.
+
         ## Symbol table.
         {
             let tableLabel := ByteStreamEncodingLabel new.
