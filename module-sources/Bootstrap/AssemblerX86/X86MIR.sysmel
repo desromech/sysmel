@@ -1741,7 +1741,13 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
             return: void
         }.
 
-        codegen textSection x86::xor: X86::RAX with: X86::RAX.
+        let clearRegister mutable => AsmInstructionOperand := nil.
+        let validClearRegister := {:: AsmInstructionOperand |
+            clearRegister ifNil: {
+                codegen textSection x86::xor: X86::RAX with: X86::RAX.
+                clearRegister := X86::RAX
+            }
+        }.
 
         let clearSegment := {:(MIRStackFrameSegment)segment :: Void |
             let pointerCount := segment alignedSize asUInt32 / 8u32.
@@ -1750,7 +1756,7 @@ public final class MIRX86_64CompilationTarget superclass: MIRAsmCompilationTarge
             let i mutable := 0u32,
             while: (i < pointerCount) do: {
                 let pointerOffset := (pointerCount - i - 1u32) asInt32 * 8i32.
-                codegen textSection x86::mov: X86::RBP x86::qword + (framePointerBaseOffset + pointerOffset) asAsmImmediate src: X86::RAX.
+                codegen textSection x86::mov: X86::RBP x86::qword + (framePointerBaseOffset + pointerOffset) asAsmImmediate src: validClearRegister().
             } continueWith: (i := i + 1u32).
         }.
 
