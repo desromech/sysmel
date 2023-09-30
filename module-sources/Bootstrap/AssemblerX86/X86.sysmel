@@ -347,7 +347,7 @@ AsmX86RegisterAddress definition: {
         := displacement isNil || displacement isImmediateValue0.
 
     public method hasAbsoluteDisplacement => Boolean
-        := displacement isNotNil && displacement isAbsoluteOffset.
+        := displacement isNotNil && displacement isAbsoluteOffset || segment isNotNil.
 
     public override method x86::encodeModRMWithRegOpcode: (opcode: UInt8) immediateSize: (immediateSize: Size)
         longMode: (longMode: Boolean) into: (codeStream: AsmObjectCodeStream) ::=> Void := {

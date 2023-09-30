@@ -359,7 +359,6 @@ AsmSymbol extend: {
 
 public class AsmImmediateConstant superclass: AsmImmediate; definition: {
     public method isImmediateConstant => Boolean := true.
-    public override method isAbsoluteOffset => Boolean := true.
 }.
 
 AsmConstantExpression definition: {
@@ -725,6 +724,9 @@ public final class AsmImmediateConstantUInt32 superclass: AsmImmediateConstant; 
     public override method isImmediateValue0 => Boolean := value = 0u32.
     public override method isImmediateValue1 => Boolean := value = 1u32.
     public override method size => Size := 4sz.
+
+    public override method isImmediateSigned8 => Boolean := value asInt8 asInt32 asUInt32 = value.
+    public override method asImmediateSigned8Value => Int8 := value asInt8.
 
     public override method nextPutImmediateWithSize: (requiredSize: Size) onCodeStream: (codeStream: AsmObjectCodeStream) ::=> Void := {
         codeStream nextPutUInt32: value withSize: requiredSize
