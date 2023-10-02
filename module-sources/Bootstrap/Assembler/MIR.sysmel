@@ -335,6 +335,8 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     public field function => MIRFunction.
     public field asmFunction => AsmProgramEntity.
     public field stackMap => AsmStackMap.
+    private field activeLocationLiveIntervals => MIRLiveIntervalSortedList.
+    private field stackMapLocationDictionary => ObjectPointerDictionary.
     private field basicBlockSymbolDictionary => ObjectPointerDictionary.
 
     public field registerAllocator => MIRRegisterAllocator.
@@ -386,6 +388,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         asmFunction := moduleGenerator targetModule newProgramEntity.
         stackMap := AsmStackMap new.
         constantSymbolDictionary := Dictionary new.
+        stackMapLocationDictionary := ObjectPointerDictionary new.
         asmFunction
             debugSourcePosition: functionToGenerate debugSourcePosition;
             debugSourceNode: functionToGenerate debugSourceNode;
@@ -420,15 +423,18 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         self textSection cfiBeginProcedure.
 
+        activeLocationLiveIntervals := MIRLiveIntervalSortedList new.
+
         self
+            generateStackMap;
             emitPrologue;
-            emitStackFrameConstruction;
-            generateStackMap.
+            emitStackFrameConstruction.
 
         function basicBlocksDo: {:(MIRBasicBlock)basicBlock :: Void |
             self generateBasicBlock: basicBlock
         }.
 
+        self endAllActiveLiveIntervals.
         self textSection
             cfiEndProcedure;
             endLabel: symbol.
@@ -596,10 +602,15 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     
     public override method captureVectorPointerStackMapLocation => AsmStackMapLocation := captureVectorPointerStackMapLocation.
 
+    public method validStackMapLocationForValue: (value: MIRValue) ::=> AsmStackMapLocation
+        := stackMapLocationDictionary at: value ifAbsentPut: {:: AsmStackMapLocation | 
+            value asm::makeStackMapLocationWith: self
+        }.
+
     public method generateStackMap => Void := {
         function arguments do: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
-                let location := eachLocal asm::makeStackMapLocationWith: self.
+                let location := self validStackMapLocationForValue: eachLocal.
                 location ifNotNil: {
                     stackMap addArgumentBindingMap: (stackMap setBinding: binding location: location)
                 }.
@@ -608,12 +619,12 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
 
         ## Make the capture vector pointer stack map location.
         function captureVectorPointerValue ifNotNil: {
-            captureVectorPointerStackMapLocation := function captureVectorPointerValue asm::makeStackMapLocationWith: self.
+            captureVectorPointerStackMapLocation := self validStackMapLocationForValue: function captureVectorPointerValue.
         }.
 
         function captures do: {:(MIRLocalValue)eachLocal :: Void |
             eachLocal sourceBinding ifNotNil: {:(SymbolBinding)binding :: Void |
-                let location := eachLocal asm::makeStackMapLocationWith: self.
+                let location := self validStackMapLocationForValue: eachLocal.
                 location ifNotNil: {
                     stackMap addCaptureBindingMap: (stackMap setBinding: binding location: location)
                 }.
@@ -624,20 +635,22 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
     public method emitSpillRegisterArgumentsInStackFrame => Void := {
         function arguments do: {:(MIRArgumentValue)eachArgument :: Void |
             let passingRegister := eachArgument passingRegister.
-            passingRegister isNotNil && eachArgument needsStackAllocation ifTrue: {
-                eachArgument stackValueIsPointer ifTrue: {
-                    self emitMoveRegister: passingRegister intoValueStackPointer: eachArgument
-                } ifFalse: {
-                    self emitMoveRegister: passingRegister intoValue: eachArgument
+            passingRegister ifNotNil: {
+                eachArgument needsStackAllocation ifTrue: {
+                    eachArgument stackValueIsPointer ifTrue: {
+                        self emitMoveRegister: passingRegister intoValueStackPointer: eachArgument
+                    } ifFalse: {
+                        self emitMoveRegister: passingRegister intoValue: eachArgument
+                    }.
                 }.
+
+                self beginEntryPointLocationIntervalForLocalValue: eachArgument.
             }.
         }.
     }.
 
     public method emitUnspillEntryValuesFromStackFrame => Void := {
         let unspillValue := {:(MIRLocalValue)eachLocal :: Void |
-            eachLocal coalescedAssignedRegister ifNil: {return: void}.
-
             eachLocal isArgumentVariable ifTrue: {
                 let argument := eachLocal downCastTo: MIRArgumentValue.
                 argument passingRegister ifNotNil: {
@@ -646,7 +659,13 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
                 }.
             }.
 
+            eachLocal coalescedAssignedRegister ifNil: {
+                self beginEntryPointLocationIntervalForLocalValue: eachLocal.
+                return: void
+            }.
+
             self emitUnspillValue: eachLocal intoLocation: eachLocal coalescedAssignedRegister.
+            self beginEntryPointLocationIntervalForLocalValue: eachLocal.
         }.
 
         function arguments do: unspillValue.
@@ -657,6 +676,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
             moduleGenerator target emitLoadCaptureVectorPointerFromClosure: captureVectorPointer closureRegister intoRegister: captureVectorPointer loadRegister with: self.
             self emitMoveRegister: captureVectorPointer loadRegister intoValue: captureVectorPointer.
             captureVectorPointerRegister := captureVectorPointer loadRegister.
+            self beginEntryPointLocationIntervalForLocalValue: function captureVectorPointerValue.
         }.
 
         function captures do: unspillValue.
@@ -754,6 +774,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         captureVectorPointerRegister := nil.
         gotPointerRegister := nil.
         threadLocalSegmentPointerRegister := nil.
+        self endActiveLiveIntervalsAt: instruction index
     }.
 
     public method generatePhiMoves => Void := {
@@ -791,10 +812,54 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         let value := debugInstruction firstOperand.
         let binding := debugInstruction sourceBinding.
 
-        let location := value asm::makeStackMapLocationWith: self.
+        let location := self validStackMapLocationForValue: value.
         location ifNotNil: {
-            stackMap setLocalBinding: binding isMutable: debugInstruction operation ~= MIR::Operation::DebugSetBindingValue location: location
+            stackMap setLocalBinding: binding isMutable: debugInstruction operation ~= MIR::Operation::DebugSetBindingValue location: location.
+            value isLocalValue ifTrue: {
+                self beginStackMapLocation: location intervalForLocalValue: (value downCastTo: MIRLocalValue)
+            }
         }.
+    }.
+
+    public method beginEntryPointLocationIntervalForLocalValue: (localValue: MIRLocalValue) ::=> Void := {
+        (stackMapLocationDictionary includesKey: localValue) ifTrue: {
+            self beginStackMapLocation: (stackMapLocationDictionary at: localValue) intervalForLocalValue: localValue
+        }
+    }.
+
+    public method beginStackMapLocation: (location: AsmStackMapLocation) intervalForLocalValue: (localValue: MIRLocalValue) ::=> Void := {
+        location ifNil: {return: void}.
+
+        let liveInterval := localValue liveInterval.
+        liveInterval ifNil: {return: void}.
+
+        (activeLocationLiveIntervals includes: liveInterval) ifTrue: {return: void}.
+        activeLocationLiveIntervals add: liveInterval.
+
+        self textSection stackMapLocationLiveIntervalStart: location.
+    }.
+
+    public method endActiveLiveIntervalsAt: (localValueIndex: UInt32) ::=> Void := {
+        activeLocationLiveIntervals expireAt: localValueIndex doing: {:(MIRLiveInterval)interval :: Void |
+            self endStackMapLocationForLocalValue: interval value
+        }.
+    }.
+
+    public method endAllActiveLiveIntervals => Void := {
+        activeLocationLiveIntervals elements do: {:(MIRLiveInterval)interval :: Void |
+            self endStackMapLocationForLocalValue: interval value
+        }.
+    }.
+
+    public method endStackMapLocationForLocalValue: (localValue: MIRLocalValue) ::=> Void := {
+        localValue ifNil: {
+            return: void
+        }.
+
+        (stackMapLocationDictionary includesKey: localValue) ifTrue: {
+            let location => AsmStackMapLocation := (stackMapLocationDictionary at: localValue).
+            self textSection stackMapLocationLiveIntervalEnd: location.
+        }
     }.
 
     public method emitMoveValues: (values: Array) intoRegisters: (registers: Array) ::=> Void := {

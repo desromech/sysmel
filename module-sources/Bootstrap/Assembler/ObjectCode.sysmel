@@ -461,6 +461,12 @@ public final class FunctionDefinitionAsmObjectCode superclass: Object; definitio
     public field uncheckedCapturelessEntryPoint => AsmSymbol.
 }.
 
+public abstract class AsmStackMapLocation superclass: Object; definition: {
+    public field liveIntervalSection => AsmObjectCodeSection.
+    public field liveIntervalSectionStart => Size.
+    public field liveIntervalSectionEnd => Size.
+}.
+
 public final class AsmObjectCode superclass: Object; definition: {
     public field compilationTarget => AsmCompilationTarget.
 
@@ -1044,6 +1050,12 @@ AsmObjectCodeStream definition: {
     public abstract method recordRelocations: (relocations: Collection) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method recordStackMapLocationLiveIntervalStart: (location: AsmStackMapLocation) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method recordStackMapLocationLiveIntervalEnd: (location: AsmStackMapLocation) ::=> Void
+        := self subclassResponsibility.
+
     public abstract method nextPutBytes: (bytes: ByteArray) withRelocations: (relocations: Collection) offset: (relocationsOffset: Size) ::=> Void
         := self subclassResponsibility.
 
@@ -1145,6 +1157,9 @@ AsmObjectCodeSizeStream definition: {
         }
     }.
 
+    public override method recordStackMapLocationLiveIntervalStart: (location: AsmStackMapLocation) ::=> Void := {}.
+    public override method recordStackMapLocationLiveIntervalEnd: (location: AsmStackMapLocation) ::=> Void := {}.
+
     public override method nextPutBytes: (bytes: ByteArray) withRelocations: (relocations: Collection) offset: (relocationsOffset: Size) ::=> Void := {
         relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
             objectCodeBuilder recordSymbol: eachRelocation symbol
@@ -1242,6 +1257,19 @@ AsmObjectCodeWriteStream definition: {
         relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
             self recordRelocation: eachRelocation copy
         }
+    }.
+
+    public override method recordStackMapLocationLiveIntervalStart: (location: AsmStackMapLocation) ::=> Void := {
+        self assert: activeSection isNotNil.
+        location
+            liveIntervalSection: activeSection;
+            liveIntervalSectionStart: activeSection writeOffset
+    }.
+
+    public override method recordStackMapLocationLiveIntervalEnd: (location: AsmStackMapLocation) ::=> Void := {
+        self assert: activeSection isNotNil.
+        self assert: location liveIntervalSection == activeSection.
+        location liveIntervalSectionEnd: activeSection writeOffset.
     }.
 
     public override method nextPutBytes: (bytes: ByteArray) withRelocations: (relocations: Collection) offset: (relocationsOffset: Size) ::=> Void := {

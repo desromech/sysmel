@@ -1553,6 +1553,32 @@ public final class AsmCFIStackSizeAdvanceDirective superclass: AsmStreamElement;
     }.
 }.
 
+public final class AsmStackMapLocationLiveIntervalStart superclass: AsmStreamElement; definition: {
+    public field location => AsmStackMapLocation.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".stackMapLocationLiveIntervalStart ".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream recordStackMapLocationLiveIntervalStart: location
+    }.
+}.
+
+public final class AsmStackMapLocationLiveIntervalEnd superclass: AsmStreamElement; definition: {
+    public field location => AsmStackMapLocation.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".stackMapLocationLiveIntervalEnd ".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream recordStackMapLocationLiveIntervalEnd: location
+    }.
+}.
+
 public final class AsmStreamBuilder superclass: Object; definition: {
     public field stream => AsmStream.
 
@@ -1848,6 +1874,16 @@ public final class AsmStreamBuilder superclass: Object; definition: {
     public method cfiStackSizeAdvance: (increment: Int64) ::=> AsmCFIStackSizeAdvanceDirective
         := self addElement: (AsmCFIStackSizeAdvanceDirective new
             increment: increment;
+            yourself).
+
+    public method stackMapLocationLiveIntervalStart: (location: AsmStackMapLocation) ::=> AsmStackMapLocationLiveIntervalStart
+        := self addElement: (AsmStackMapLocationLiveIntervalStart new
+            location: location;
+            yourself).
+
+    public method stackMapLocationLiveIntervalEnd: (location: AsmStackMapLocation) ::=> AsmStackMapLocationLiveIntervalEnd
+        := self addElement: (AsmStackMapLocationLiveIntervalEnd new
+            location: location;
             yourself).
 }.
 
@@ -2183,10 +2219,6 @@ AsmObjectDebugInformationGenerator extend: {
 
     public abstract method generateDebugInformationForModule: (module: AsmProgramEntity) sourceObjectCode: (sourceObjectCode: AsmObjectCode) ::=> Void
         := self subclassResponsibility.
-}.
-
-public abstract class AsmStackMapLocation superclass: Object; definition: {
-
 }.
 
 public final class AsmStackMapLocationRegister superclass: AsmStackMapLocation; definition: {

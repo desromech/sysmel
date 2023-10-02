@@ -408,6 +408,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.orderedOffsetTableBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     context->roots.nativeCodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeBindingLocationType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeProgramEntityType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeSectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
@@ -463,6 +464,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.gcLayoutBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.gcLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.nativeCodeLocationListType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.byteArrayType);
     context->roots.nativeCodeRelocationTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.byteArrayType);
     context->roots.virtualTableLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.virtualTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
@@ -953,11 +955,25 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeBindingLocationType, "NativeCodeBindingLocation", SYSBVM_NULL_TUPLE,
+        "binding", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolBindingType,
+        "isMutable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "location", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeLocationListType,
+        NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeStackMapType, "NativeCodeStackMap", SYSBVM_NULL_TUPLE,
+        "frameBase", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeLocationListType,
+        "captureBase", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeLocationListType,
+
+        "arguments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "captures", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "locals", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeRelocationTableType, "NativeCodeRelocationTable", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_typeAndMetatype_setFlags(context, context->roots.nativeCodeRelocationTableType, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeLocationListType, "NativeCodeLocationList", SYSBVM_NULL_TUPLE,
+        NULL);
+    context->roots.nativeCodeLocationListType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.byteArrayType);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionTypeType, "FunctionType", SYSBVM_NULL_TUPLE,
         "functionFlags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
