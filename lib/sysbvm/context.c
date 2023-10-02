@@ -408,9 +408,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.orderedOffsetTableBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     context->roots.nativeCodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeProgramEntityType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeSectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeSymbolType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.nativeCodeSymbolTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
-    context->roots.nativeCodeSectionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.nativeCodeStackMapType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
     // Create the function type classes.
     context->roots.functionTypeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.typeType);
@@ -905,9 +907,20 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeType, "NativeCode", SYSBVM_NULL_TUPLE,
         "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolTableType,
         "sections", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "programEntities", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "hirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "mirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "asmTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeProgramEntityType, "NativeCodeProgramEntity", SYSBVM_NULL_TUPLE,
+        "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "sourceProgramEntity", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.programEntityType,
+        "contentSymbol", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolType,
+        "trampolineTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolType,
+        "stackMap", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeStackMapType,
+        "debugSourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
+        "debugSourceNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "debugSourceEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSymbolType, "NativeCodeSymbol", SYSBVM_NULL_TUPLE,
         "name", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
@@ -936,6 +949,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "debugSourceNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.orderedOffsetTableType,
         "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
+        NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeStackMapType, "NativeCodeStackMap", SYSBVM_NULL_TUPLE,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeRelocationTableType, "NativeCodeRelocationTable", SYSBVM_NULL_TUPLE,
         NULL);

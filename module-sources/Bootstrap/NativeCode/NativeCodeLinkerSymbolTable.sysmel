@@ -18,6 +18,7 @@ public class NativeCodeLinkerSymbolTable superclass: Object; definition: {
     private field symbols => OrderedCollection.
     private field symbolDictionary => ObjectPointerDictionary.
     private field convertedSymbolDictionary => Dictionary.
+    private field convertedSymbolObjectDictionary => Dictionary.
     private field objectSymbolDictionary => ObjectPointerDictionary.
     private field sectionDictionary => ObjectPointerDictionary.
     private field sectionOffsetDictionary => ObjectPointerDictionary.
@@ -28,6 +29,7 @@ public class NativeCodeLinkerSymbolTable superclass: Object; definition: {
         symbols := OrderedCollection new.
         objectSymbolDictionary := ObjectPointerDictionary new.
         convertedSymbolDictionary := Dictionary new.
+        convertedSymbolObjectDictionary := Dictionary new.
         symbolDictionary := ObjectPointerDictionary new.
         sectionDictionary := ObjectPointerDictionary new.
         sectionOffsetDictionary := ObjectPointerDictionary new.
@@ -69,6 +71,38 @@ public class NativeCodeLinkerSymbolTable superclass: Object; definition: {
         symbolTables do: {:(NativeCodeSymbolTable)eachSymbolTable :: Void |
             self convertSymbolTable: eachSymbolTable
         }
+    }.
+
+    public method convertSymbolObject: (symbol: NativeCodeSymbol) ::=> NativeCodeSymbol := {
+        symbol ifNil: {return: nil}.
+
+        symbol isGCObject ifTrue: {
+            self assert: symbol name isNil.
+            self assert: symbol isPrivate.
+            symbols at: (self convertSymbolIndex: symbol) asSize - 1sz
+        } ifFalse: {
+            symbol isPrivate ifTrue: {
+                let convertedSymbol := convertedSymbolObjectDictionary at: symbol ifAbsentPut: { :: NativeCodeSymbol |
+                    let newSymbol := NativeCodeSymbol new
+                        name: symbol name;
+                        type: symbol type;
+                        visibility: symbol visibility;
+                        yourself.
+                }.
+
+                symbol section ifNotNil: {
+                    let sectionOffset => Size := sectionOffsetDictionary at: symbol section.
+                    convertedSymbol
+                        section: (sectionDictionary at: symbol section);
+                        value: (symbol value + sectionOffset asIntPointer);
+                        yourself.
+                }.
+
+                convertedSymbol
+            } ifFalse: {
+                symbols at: (self convertSymbolIndex: symbol) asSize - 1sz
+            }
+        }.
     }.
 
     public method convertSymbolIndex: (symbol: NativeCodeSymbol) ::=> UInt32 := {

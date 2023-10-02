@@ -15,6 +15,7 @@ AsmObjectCode definition: {
 
         let convertedSymbols := OrderedCollection new.
         let convertedSymbolDictionary := Dictionary new.
+        let convertedSymbolObjectDictionary := Dictionary new.
 
         ## Convert the sections.
         sections do: {:(AsmObjectCodeSection)eachSection :: Void |
@@ -56,7 +57,29 @@ AsmObjectCode definition: {
 
             let convertedSymbol := each asNativeCodeSymbolWithSectionDictionary: convertedSectionDictionary.
             convertedSymbols add: convertedSymbol.
+            convertedSymbolObjectDictionary at: each put: convertedSymbol.
             convertedSymbolDictionary at: each put: convertedSymbols size asUInt32.
+        }.
+
+        let convertSymbolBlock := {:(AsmSymbol)symbol :: NativeCodeSymbol |
+            symbol ifNotNil: {
+                convertedSymbolObjectDictionary at: symbol
+            }
+        }.
+
+        ## Convert the program entities.
+        let convertedProgramEntities := programEntities collect: {:(AsmObjectCodeProgramEntity)each :: NativeCodeProgramEntity |
+            NativeCodeProgramEntity new
+                name: each name;
+                sourceProgramEntity: each sourceProgramEntity;
+                contentSymbol: convertSymbolBlock(each contentSymbol);
+                trampolineTarget: convertSymbolBlock(each trampolineTarget);
+                ##stackMap: each stackMap;
+
+                debugSourcePosition: each debugSourcePosition;
+                debugSourceNode: each debugSourceNode;
+                debugSourceEnvironment: each debugSourceEnvironment;
+                yourself
         }.
 
         ## Create the symbol table.
@@ -83,6 +106,7 @@ AsmObjectCode definition: {
         NativeCode new
             symbolTable: symbolTable;
             sections: convertedSections asArray;
+            programEntities: convertedProgramEntities;
             yourself
     }.
 }.
@@ -180,8 +204,9 @@ NativeCode definition: {
             asmSection
         }.
 
+        let symbolDictionary := ObjectPointerDictionary new.
         let asmSymbols := symbolTable symbols collect: {:(NativeCodeSymbol)eachSymbol :: AsmSymbol |
-            AsmSymbol new
+            let convertedSymbol := AsmSymbol new
                 name: eachSymbol name;
                 section: (eachSymbol section ifNotNil: {sectionTable at: eachSymbol section});
                 value: eachSymbol value asUInt64;
@@ -189,7 +214,10 @@ NativeCode definition: {
                 size: eachSymbol size asSize;
                 type: eachSymbol type;
                 visibility: eachSymbol visibility;
-                yourself
+                yourself.
+
+            symbolDictionary at: eachSymbol put: convertedSymbol.
+            convertedSymbol
         }.
 
         sections doWithIndex: {:(NativeCodeSection)eachSection :(Size)index :: Void |
@@ -211,10 +239,29 @@ NativeCode definition: {
             }
         }.
 
+        let convertSymbolBlock := {:(NativeCodeSymbol)symbol :: AsmSymbol |
+            symbol ifNotNil: {
+                symbolDictionary at: symbol
+            }
+        }.
+
         AsmObjectCode new
             compilationTarget: compilationTarget;
             sections: asmSections;
             symbols: asmSymbols;
+            programEntities: (programEntities collect: {:(NativeCodeProgramEntity)each :: AsmObjectCodeProgramEntity |
+                AsmObjectCodeProgramEntity new
+                    name: each name;
+                    sourceProgramEntity: each sourceProgramEntity;
+                    contentSymbol: convertSymbolBlock(each contentSymbol);
+                    trampolineTarget: convertSymbolBlock(each trampolineTarget);
+                    ##stackMap: each stackMap;
+
+                    debugSourcePosition: each debugSourcePosition;
+                    debugSourceNode: each debugSourceNode;
+                    debugSourceEnvironment: each debugSourceEnvironment;
+                    yourself
+            });
             yourself
     }.
 }.

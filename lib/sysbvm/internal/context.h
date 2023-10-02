@@ -165,9 +165,11 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t methodDictionaryType;
     sysbvm_tuple_t namespaceType;
     sysbvm_tuple_t nativeCodeType;
+    sysbvm_tuple_t nativeCodeProgramEntityType;
+    sysbvm_tuple_t nativeCodeSectionType;
     sysbvm_tuple_t nativeCodeSymbolTableType;
     sysbvm_tuple_t nativeCodeSymbolType;
-    sysbvm_tuple_t nativeCodeSectionType;
+    sysbvm_tuple_t nativeCodeStackMapType;
     sysbvm_tuple_t nativeCodeRelocationTableType;
     sysbvm_tuple_t objectType;
     sysbvm_tuple_t orderedOffsetTableType;
