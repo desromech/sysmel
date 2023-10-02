@@ -828,7 +828,7 @@ public final class MIRGenericObjectPointerConstant superclass: MIRConstant; defi
         := MIRPhysicalIntegerRegister.
 
     public override method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: "genericObjectPointerConstant("; print: RawTuple::type(object); nextPut: ')'c8
+        stream nextPutAll: "genericObjectPointerConstant("; print: RawTuple::type(self object); nextPut: ')'c8
     }.
 }.
 
