@@ -147,7 +147,6 @@ AsmObjectCodeSection definition: {
     public field newDebugSourceEnvironments => OrderedOffsetTableBuilder.
 
     public override method initialize => Void := {
-        data := #[].
         size := 0sz.
         alignment := 1sz.
         writeOffset := 0sz.
@@ -533,6 +532,9 @@ AsmSymbol definition: {
     public field size => UInt64.
     public field visibility => UInt8.
     public field type => UInt8.
+
+    public method isGCObject => Boolean
+        := (type = AsmSymbol::Type::GCPointerTable) || (type = AsmSymbol::Type::GCFatPointerTable).
 
     public method makePrivate => Void := {
         visibility := AsmSymbol::Visibility::Private.

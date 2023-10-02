@@ -29,5 +29,8 @@ public class ImageBuilderHIRTarget superclass: ImageBuilderTarget; definition: {
 
 HIRCompilationTarget definition: {
     public virtual method asImageBuilderTarget => ImageBuilderHIRTarget
+        := ImageBuilderHIRTarget for: self.
+
+    public virtual method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
         := ImageBuilderHIRTarget for: self
 }.

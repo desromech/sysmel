@@ -354,8 +354,8 @@ AsmObjectCodeRelocationRelativeInt64 definition: {
 
 NativeCodeRelocationEncoder definition: {
     public method asm::symbolIndexFor: (symbol: AsmSymbol) ::=> UInt32 := {
-        self assert: symbol section isNotNil || symbol isPrivate not.
-        symbol isPrivate
+        self assert: symbol section isNotNil || symbol isPrivate not || symbol isGCObject.
+        symbol isPrivate && symbol isGCObject not
             ifTrue: (symbolDictionary at: symbol section)
             ifFalse: (symbolDictionary at: symbol)
     }.

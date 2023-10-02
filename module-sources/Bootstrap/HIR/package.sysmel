@@ -17,3 +17,5 @@ loadSourceNamed: "ImageBuilderHIRImage.sysmel".
 loadSourceNamed: "ImageBuilderHIRTarget.sysmel".
 loadSourceNamed: "ImageBuilderHIR_MIRTarget.sysmel".
 loadSourceNamed: "ImageBuilderHIR_MIRImage.sysmel".
+loadSourceNamed: "ImageBuilderHIR_NativeCodeTarget.sysmel".
+loadSourceNamed: "ImageBuilderHIR_NativeCodeImage.sysmel".

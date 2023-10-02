@@ -1,0 +1,87 @@
+public class ImageBuilderHIR_NativeCodeImage superclass: ImageBuilderHIRImage.
+
+public class ImageBuilderHIR_NativeCodeTarget superclass: ImageBuilderHIRTarget; definition: {
+    private method buildHIRModuleFor: (builder: ImageBuilder) on: (image: ImageBuilderHIR_NativeCodeImage) ::=> Void := {
+        let ssaMirCompilation := compilationTarget downCastTo: HIRMIRCompilationTarget.
+        {|
+            image hirModule: ((HIRModuleCompilationContext forTarget: compilationTarget)
+                    exclusiveCompilationMode: true;
+                    virtualTableSetSource: builder tracer vtableSet;
+                    compileFunctions: builder tracer tracedFunctions definitions: builder tracer tracedFunctionDefinitions;
+                    exportMainEntryPointFunction: builder entryPointFunction;
+                    finish).
+        } printTimeToRunInMillisecondsWithTitle: "HIR Module".
+    }.
+    
+    public override method buildTargetImageWith: (builder: ImageBuilder) ::=> ImageBuilderTargetImage := {
+        #*{|
+            let traceHistogram := builder tracer objectTrace buildHistogram.
+            IO::writeWholeFileNamedWithString("ObjectTraceHistogram.csv", traceHistogram fullPrintString)
+        } printTimeToRunInMillisecondsWithTitle: "Trace histogram".
+        *#
+
+        let image := ImageBuilderHIR_NativeCodeImage new.
+        self buildHIRModuleFor: builder on: image.
+        
+        {|
+            image hirModule performStandardOptimizations
+        } printTimeToRunInMillisecondsWithTitle: "HIR optimization".
+
+        let mirCompilationTarget := (compilationTarget downCastTo: HIRMIRCompilationTarget) mirCompilationTarget.
+        {|
+            image nativeCode: (image hirModule asNativeCodeFor: mirCompilationTarget keepingIRTextForDebugging: true)
+        } printTimeToRunInMillisecondsWithTitle: "Native code generation".
+
+        let asmCompilationTarget := (mirCompilationTarget downCastTo: MIRAsmCompilationTarget) asmCompilationTarget.
+        let nativeObjectCode := {|
+            image nativeCode asAsmObjectCodeWithTarget: asmCompilationTarget
+        } printTimeToRunInMillisecondsWithTitle: "Native code linking".
+
+        {|
+            image linkedObjectCode: (AsmProgramEntity new
+                compilationTarget: asmCompilationTarget;
+                ##buildTargetUnwindingInfoForObjectCode: nativeObjectCode;
+                buildDebugInfoForObjectCode: nativeObjectCode;
+                assembleAppendingNewSectionsToObjectObject: nativeObjectCode)
+        } printTimeToRunInMillisecondsWithTitle: "Debug and unwinding info generation".
+
+        image
+    }
+}.
+
+HIRMIRCompilationTarget definition: {
+    public override method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
+        := ImageBuilderHIR_NativeCodeTarget for: self
+}.
+
+MIRCompilationTarget definition: {
+    public method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
+        := self asHIRCompilationTarget asImageBuilderNativeCodeTarget.
+}.
+
+AsmCompilationTarget definition: {
+    public abstract method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
+        := self subclassResponsibility.
+}.
+
+AsmX86CompilationTarget definition: {
+    public override method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
+        := self asMirCompilationTarget asHIRCompilationTarget asImageBuilderNativeCodeTarget.
+}.
+
+AsmX86_64CompilationTarget definition: {
+    public override method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
+        := self asMirCompilationTarget asHIRCompilationTarget asImageBuilderNativeCodeTarget.
+}.
+
+PlatformDescription definition: {
+    public method asAsmCompilationTarget => AsmCompilationTarget := {
+        let target => AsmCompilationTarget := AsmCompilationTarget perform: architectureName.
+        target
+            setupForPlatform: self;
+            yourself
+    }.
+
+    public method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
+        := self asAsmCompilationTarget asImageBuilderNativeCodeTarget.
+}.
