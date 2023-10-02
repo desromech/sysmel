@@ -1403,6 +1403,7 @@ AsmProgramEntity extend: {
         let debugInfoProgramEntity := self newProgramEntity.
         debugInfoProgramEntity isDebuggingInformation: true.
         Dwarf::AsmWriter new
+            generateCFI: true;
             writeCompilationUnit: compileUnit toProgramEntity: debugInfoProgramEntity pointerSize: compilationTarget pointerSize.
 
         debugInfoProgramEntity
