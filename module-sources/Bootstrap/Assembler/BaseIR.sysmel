@@ -1,6 +1,5 @@
 public final class AsmStream superclass: Object.
 public class AsmStreamElement superclass: AsmInstructionOperand.
-public final class AsmStackMap superclass: Object.
 public abstract class AsmConstantExpression superclass: Object.
 
 let PrintingDebugInfo := false.
@@ -1852,22 +1851,13 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             yourself).
 }.
 
-public final class AsmProgramEntity superclass: Object; definition: {
+public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; definition: {
     public field compilationTarget => AsmCompilationTarget.
 
-    public field name => Symbol.
     public field streams => OrderedCollection.
     public field endStreams => OrderedCollection.
     public field children => OrderedCollection.
     public field importedSymbols => OrderedCollection.
-
-    public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
-    public field debugSourceEnvironment => Environment.
-    public field sourceProgramEntity => ProgramEntity.
-    public field trampolineTarget => AsmSymbol.
-    public field contentSymbol => AsmSymbol.
-    public field stackMap => AsmStackMap.
     public field isDebuggingInformation => Boolean.
 
     public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
@@ -1982,6 +1972,19 @@ public final class AsmProgramEntity superclass: Object; definition: {
     }.
 
     public method assembleSecondPassWith: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void := {
+        isDebuggingInformation not && sourceProgramEntity isNotNil ifTrue: {
+            objectCodeBuilder recordProgramEntity: (AsmObjectCodeProgramEntity new
+                name: name;
+                sourceProgramEntity: sourceProgramEntity;
+                contentSymbol: contentSymbol;
+                trampolineTarget: trampolineTarget;
+                stackMap: stackMap;
+                debugSourcePosition: debugSourcePosition;
+                debugSourceNode: debugSourceNode;
+                debugSourceEnvironment: debugSourceEnvironment;
+                yourself)
+        }.
+
         streams do: {:(AsmStream)eachStream :: Void |
             eachStream assembleSecondPassWith: objectCodeBuilder
         }.

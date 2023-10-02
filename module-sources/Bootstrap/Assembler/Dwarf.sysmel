@@ -1202,11 +1202,9 @@ Dwarf::AsmWriter definition: {
             label: debugLineStart;
             yourself.
 
-        generateCFI ifTrue: {
-            debugFrameStream := debugInfoProgramEntity newStreamBuilder
-                dwarf::debugFrameSection;
-                yourself.
-        }.
+        debugFrameStream := debugInfoProgramEntity newStreamBuilder
+            dwarf::debugFrameSection;
+            yourself.
 
         compilationUnit stmtList: (debugLineStart immediateSectionRelative: pointerSize) asConstantExpression.
 
@@ -1403,7 +1401,6 @@ AsmProgramEntity extend: {
         let debugInfoProgramEntity := self newProgramEntity.
         debugInfoProgramEntity isDebuggingInformation: true.
         Dwarf::AsmWriter new
-            generateCFI: true;
             writeCompilationUnit: compileUnit toProgramEntity: debugInfoProgramEntity pointerSize: compilationTarget pointerSize.
 
         debugInfoProgramEntity
@@ -2285,7 +2282,7 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
         }
     }.
 
-    public method generateDebugInfoForProgramEntity: (sourceProgramEntity: ProgramEntity) generatedEntity: (generatedProgramEntity: AsmProgramEntity) ::=> Void := {
+    public method generateDebugInfoForProgramEntity: (sourceProgramEntity: ProgramEntity) generatedEntity: (generatedProgramEntity: AsmObjectCodeProgramEntity) ::=> Void := {
         sourceProgramEntity ifNil: {return: void}.
         generatedProgramEntity contentSymbol ifNil: {return: void}.
 
@@ -2346,6 +2343,10 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
         debugInfoProgramEntity := module newProgramEntity.
         debugInfoProgramEntity isDebuggingInformation: true.
 
+        sourceObjectCode programEntities do: {:(AsmObjectCodeProgramEntity)eachProgramEntity :: Void |
+            self generateDebugInfoForProgramEntity: eachProgramEntity sourceProgramEntity generatedEntity: eachProgramEntity
+        }.
+
         debugInfoWriter := Dwarf::AsmWriter new.
         debugInfoWriter
             sourceObjectCode: sourceObjectCode;
@@ -2359,9 +2360,9 @@ ProgramEntity extend: {
     public virtual method dwarf::createDieWith: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Dwarf::DebugInfoEntry
         := nil.
 
-    public virtual method dwarf::generateDIEForAsmProgramEntity: (generatedProgramEntity: AsmProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+    public virtual method dwarf::generateDIEForAsmProgramEntity: (generatedProgramEntity: AsmObjectCodeProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
         ## By default do nothing
-    }
+    }.
 }.
 
 Type extend: {
@@ -2655,7 +2656,7 @@ FunctionDefinition extend: {
         subprogram
     }.
 
-    public override method dwarf::generateDIEForAsmProgramEntity: (generatedFunction: AsmProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+    public override method dwarf::generateDIEForAsmProgramEntity: (generatedFunction: AsmObjectCodeProgramEntity) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
         generatedFunction trampolineTarget ifNotNil: {
             let trampolineSubprogram := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_subprogram.
             (debugGenerator getOrCreateDieForProgramEntityOwner: self owner) addChild: trampolineSubprogram.

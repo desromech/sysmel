@@ -10,6 +10,7 @@ public abstract class AsmObjectDebugInformationGenerator superclass: Object.
 public final class AsmSymbol superclass: Object.
 public class AsmInstructionOperand superclass: Object.
 public class AsmRegister superclass: AsmInstructionOperand.
+public final class AsmStackMap superclass: Object.
 
 public abstract class AsmCompilationTarget superclass: Object; definition: {
     public field platformDescription => PlatformDescription.
@@ -412,17 +413,33 @@ AsmObjectCodeSection definition: {
     }.
 }.
 
+public class AsmObjectCodeProgramEntity superclass: Object; definition: {
+    public field name => Symbol.
+    public field sourceProgramEntity => ProgramEntity.
+    public field contentSymbol => AsmSymbol.
+    public field trampolineTarget => AsmSymbol.
+    public field stackMap => AsmStackMap.
+
+    public field debugSourcePosition => SourcePosition.
+    public field debugSourceNode => ASTNode.
+    public field debugSourceEnvironment => Environment.
+}.
+
 public final class AsmObjectCode superclass: Object; definition: {
     public field compilationTarget => AsmCompilationTarget.
 
     public field sections => Array.
     public field symbols => Array.
+    public field programEntities => Array.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
             stream fullPrint: each; nl
         }.
         symbols do: {:(AsmSymbol)each :: Void |
+            stream fullPrint: each; nl
+        }.
+        programEntities do: {:(AsmProgramEntity)each :: Void |
             stream fullPrint: each; nl
         }.
     }.
@@ -595,6 +612,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field symbolSet => ObjectPointerSet.
     public field linkedObjectCodes => OrderedCollection.
     public field linkedObjectCodeSections => OrderedCollection.
+    public field programEntities => OrderedCollection.
 
     public override method initialize => Void := {
         sections := OrderedCollection new.
@@ -603,6 +621,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         symbolSet := ObjectPointerSet new.
         linkedObjectCodes := OrderedCollection new.
         linkedObjectCodeSections := OrderedCollection new.
+        programEntities := OrderedCollection new.
     }.
 
     public method addImportedSymbols: (importedSymbols: Collection) ::=> Void := {
@@ -642,6 +661,10 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             newSection
         }.
 
+    public method recordProgramEntity: (programEntity: AsmObjectCodeProgramEntity) ::=> Void := {
+        programEntities add: programEntity
+    }.
+
     public method finishDebugAndUnwindInfo => Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
             each finishDebugAndUnwindInfo
@@ -657,6 +680,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             compilationTarget: compilationTarget;
             sections: linkedObjectCodeSections asArray -- sections asArray;
             symbols: symbols asArray;
+            programEntities: programEntities asArray;
             yourself
     }.
 
@@ -800,6 +824,9 @@ AsmObjectCodeStream definition: {
     public virtual method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
         ## By default do nothing.
     }.
+
+    public abstract method recordProgramEntity: (programEntity: AsmObjectCodeProgramEntity) ::=> Void
+        := self subclassResponsibility.
 
     public abstract method nextPut: (value: UInt8) ::=> Void
         := self subclassResponsibility.
@@ -1057,6 +1084,10 @@ AsmObjectCodeSizeStream definition: {
 AsmObjectCodeWriteStream definition: {
     public override method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
         activeSection recordDebugSourcePosition: sourcePosition node: node environment: environment
+    }.
+
+    public override method recordProgramEntity: (programEntity: AsmObjectCodeProgramEntity) ::=> Void := {
+        objectCodeBuilder recordProgramEntity: programEntity
     }.
 
     public override method alignTo: (requiredAlignment: Size) unreachable: (unreachable: Boolean) ::=> Void := {
