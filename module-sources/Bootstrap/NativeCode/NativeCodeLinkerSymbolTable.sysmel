@@ -106,6 +106,8 @@ public class NativeCodeLinkerSymbolTable superclass: Object; definition: {
     }.
 
     public method convertSymbolIndex: (symbol: NativeCodeSymbol) ::=> UInt32 := {
+        symbol ifNil: {return: 0u32}.
+        
         symbol isGCObject ifTrue: {
             self assert: symbol name isNil.
             self assert: symbol isPrivate.

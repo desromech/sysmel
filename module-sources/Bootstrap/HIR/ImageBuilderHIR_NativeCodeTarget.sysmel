@@ -1,6 +1,13 @@
 public class ImageBuilderHIR_NativeCodeImage superclass: ImageBuilderHIRImage.
 
 public class ImageBuilderHIR_NativeCodeTarget superclass: ImageBuilderHIRTarget; definition: {
+    public field keepingTextIR => Boolean.
+
+    public override method initialize => Void := {
+        super initialize.
+        keepingTextIR := true.
+    }.
+
     private method buildHIRModuleFor: (builder: ImageBuilder) on: (image: ImageBuilderHIR_NativeCodeImage) ::=> Void := {
         let ssaMirCompilation := compilationTarget downCastTo: HIRMIRCompilationTarget.
         {|
@@ -13,6 +20,20 @@ public class ImageBuilderHIR_NativeCodeTarget superclass: ImageBuilderHIRTarget;
         } printTimeToRunInMillisecondsWithTitle: "HIR Module".
     }.
     
+    private method nativeCodeGenerationAndLinkingFor: (builder: ImageBuilder) on: (image: ImageBuilderHIR_NativeCodeImage) ::=> Void := {
+        let mirCompilationTarget := (compilationTarget downCastTo: HIRMIRCompilationTarget) mirCompilationTarget.
+        let nativeCodes => Array := {|
+            (image hirModule asNativeCodesFor: mirCompilationTarget patchingFunctions: builder tracer requiredTracedReflectiveFunctions definitions: builder tracer requiredTracedReflectiveFunctionDefinitions keepingIRTextForDebugging: keepingTextIR)
+        } printTimeToRunInMillisecondsWithTitle: "Native code generation".
+
+        {|
+            image nativeCode: (NativeCodeLinker new
+                keepingIRTextForDebugging: keepingTextIR;
+                addNativeCodes: nativeCodes;
+                finish)
+        } printTimeToRunInMillisecondsWithTitle: "Native code linking".
+    }.
+
     public override method buildTargetImageWith: (builder: ImageBuilder) ::=> ImageBuilderTargetImage := {
         #*{|
             let traceHistogram := builder tracer objectTrace buildHistogram.
@@ -27,11 +48,9 @@ public class ImageBuilderHIR_NativeCodeTarget superclass: ImageBuilderHIRTarget;
             image hirModule performStandardOptimizations
         } printTimeToRunInMillisecondsWithTitle: "HIR optimization".
 
-        let mirCompilationTarget := (compilationTarget downCastTo: HIRMIRCompilationTarget) mirCompilationTarget.
-        {|
-            image nativeCode: (image hirModule asNativeCodeFor: mirCompilationTarget keepingIRTextForDebugging: true)
-        } printTimeToRunInMillisecondsWithTitle: "Native code generation".
+        self nativeCodeGenerationAndLinkingFor: builder on: image.
 
+        let mirCompilationTarget := (compilationTarget downCastTo: HIRMIRCompilationTarget) mirCompilationTarget.
         let asmCompilationTarget := (mirCompilationTarget downCastTo: MIRAsmCompilationTarget) asmCompilationTarget.
         let nativeObjectCode := {|
             image nativeCode asAsmObjectCodeWithTarget: asmCompilationTarget

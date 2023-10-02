@@ -890,6 +890,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "jittedCodeTrampolineSessionToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionNativeCodeType, "FunctionNativeCodeDefinition", SYSBVM_NULL_TUPLE,
+        "definition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionDefinitionType,
         "nativeCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeType,
         "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
@@ -909,6 +910,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "sections", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "programEntities", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "programEntityImportedSymbols", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "functionDefinitionsEntryPoints", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "hirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "mirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "asmTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,

@@ -454,6 +454,13 @@ public class AsmObjectCodeProgramEntity superclass: Object; definition: {
     public field debugSourceEnvironment => Environment.
 }.
 
+public final class FunctionDefinitionAsmObjectCode superclass: Object; definition: {
+    public field functionDefinition => FunctionDefinition.
+    public field checkedEntryPoint => AsmSymbol.
+    public field uncheckedEntryPoint => AsmSymbol.
+    public field uncheckedCapturelessEntryPoint => AsmSymbol.
+}.
+
 public final class AsmObjectCode superclass: Object; definition: {
     public field compilationTarget => AsmCompilationTarget.
 
@@ -461,6 +468,7 @@ public final class AsmObjectCode superclass: Object; definition: {
     public field symbols => Array.
     public field programEntities => Array.
     public field programEntityImportedSymbols => Array.
+    public field functionDefinitionsEntryPoints => Array.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
@@ -665,6 +673,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field linkedObjectCodeSections => OrderedCollection.
     public field programEntities => OrderedCollection.
     public field programEntityImportedSymbols => OrderedCollection.
+    public field functionDefinitionsEntryPoints => OrderedCollection.
 
     public override method initialize => Void := {
         sections := OrderedCollection new.
@@ -675,6 +684,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         linkedObjectCodeSections := OrderedCollection new.
         programEntities := OrderedCollection new.
         programEntityImportedSymbols := OrderedCollection new.
+        functionDefinitionsEntryPoints := OrderedCollection new.
     }.
 
     public method addImportedSymbols: (importedSymbols: Collection) ::=> Void := {
@@ -685,6 +695,10 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
 
     public method addProgramEntityImportedSymbols: (importedProgramEntities: Collection) ::=> Void := {
         programEntityImportedSymbols addAll: importedProgramEntities
+    }.
+
+    public method addFunctionDefinitionsEntryPoints: (newFunctionDefinitions: Collection) ::=> Void := {
+        functionDefinitionsEntryPoints addAll: newFunctionDefinitions
     }.
 
     public method addLinkedObjectCode: (linkedObjectCode: AsmObjectCode) ::=> Void := {
@@ -739,6 +753,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             symbols: symbols asArray;
             programEntities: programEntities asArray;
             programEntityImportedSymbols: programEntityImportedSymbols asArray;
+            functionDefinitionsEntryPoints: functionDefinitionsEntryPoints asArray;
             yourself
     }.
 

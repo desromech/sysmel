@@ -1,3 +1,5 @@
+let UseIncrementalCompilation := false.
+
 CLISysmelInterpreter definition: {
     __Meta__ definition: {
         public method buildNativeInterpreterImageFor: (target: ImageBuilderTarget) ::=> ImageBuilderTargetImage
@@ -11,7 +13,9 @@ CLISysmelInterpreter definition: {
                 build.
 
         public method buildNativeInterpreterImage ::=> ImageBuilderTargetImage
-            := self buildNativeInterpreterImageFor: PlatformDescription currentHostPlatformDescription asImageBuilderTarget.
+            := self buildNativeInterpreterImageFor: (UseIncrementalCompilation
+                ifTrue: PlatformDescription currentHostPlatformDescription asImageBuilderNativeCodeTarget
+                ifFalse: PlatformDescription currentHostPlatformDescription asImageBuilderTarget).
 
         public method buildFullNativeInterpreterImageFor: (target: ImageBuilderTarget) ::=> ImageBuilderTargetImage
             := ImageBuilder new

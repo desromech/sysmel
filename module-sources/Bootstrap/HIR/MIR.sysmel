@@ -3069,16 +3069,40 @@ HIRModule extend: {
             compileHIRModule: self;
             finish.
 
-    public method asNativeCodesFor: (target: MIRCompilationTarget) keepingIRTextForDebugging: (keepingIRTextForDebugging: Boolean) ::=> Array := {
+    public method asNativeCodesFor: (target: MIRCompilationTarget) patchingFunctions: (patchedFunctionCollection: Collection) definitions: (patchedFunctionDefinitionCollection: Collection) keepingIRTextForDebugging: (keepingIRTextForDebugging: Boolean) ::=> Array := {
+        let patchedFunctionDefinitionSet := ObjectPointerSet new.
+        patchedFunctionDefinitionSet addAll: patchedFunctionDefinitionCollection.
+
         let result := OrderedCollection new.
+        let functionsForDefinitions := ObjectPointerDictionary new.
+
+        globalValues do: {:(HIRGlobalValue)globalValue :: Void |
+            globalValue isFunction ifFalse: {return: void}.
+
+            let function := globalValue downCastTo: HIRFunction.
+            function definition ifNil: {return: void}.
+
+            (functionsForDefinitions at: function definition ifAbsentPut: {:: OrderedCollection | OrderedCollection new})
+                add: function
+        }.
+        
         globalValues do: {:(HIRGlobalValue)globalValue :: Void |
             globalValue isFunction ifTrue: {return: void}.
+
+            let patchedFunctionDefinitionList mutable := #().
+            globalValue isFunctionDefinition ifTrue: {
+                let sourceDefinition := (globalValue downCastTo: HIRFunctionDefinition) sourceObject.
+                (patchedFunctionDefinitionSet includes: sourceDefinition) ifTrue: {
+                    patchedFunctionDefinitionList := Array with: sourceDefinition.
+                }
+            }.
 
             ## HIR
             let perValueModule := HIRModule forContext: context.
             perValueModule
                 virtualTableSetSource: virtualTableSetSource;
                 addGlobalValue: globalValue;
+                addGlobalValues: (functionsForDefinitions at: globalValue ifAbsent: {| #()});
                 yourself.
 
             let hirTextIR => String := keepingIRTextForDebugging
@@ -3089,7 +3113,7 @@ HIRModule extend: {
             let perValueMirModule := HIRModuleMIRCodeGenerator new
                 initializeWithTarget: target;
                 importRuntimeFunction: true;
-                compileHIRModule: perValueModule;
+                compileHIRModule: perValueModule patchingFunctions: #() definitions: patchedFunctionDefinitionList;
                 finish.
             perValueMirModule performStandardOptimizations.
 
@@ -3116,7 +3140,7 @@ HIRModule extend: {
     }.
 
     public method asNativeCodeFor: (target: MIRCompilationTarget) keepingIRTextForDebugging: (keepingIRTextForDebugging: Boolean) ::=> NativeCode := {
-        let nativeCodes := self asNativeCodesFor: target keepingIRTextForDebugging: keepingIRTextForDebugging.
+        let nativeCodes := self asNativeCodesFor: target patchingFunctions: #() definitions: #() keepingIRTextForDebugging: keepingIRTextForDebugging.
         NativeCodeLinker new
             keepingIRTextForDebugging: keepingIRTextForDebugging;
             addNativeCodes: nativeCodes;

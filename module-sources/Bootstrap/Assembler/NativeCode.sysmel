@@ -86,6 +86,15 @@ AsmObjectCode definition: {
             each key -> convertSymbolBlock(each value)
         }.
 
+        let convertedFunctionDefinitionsEntryPoints := functionDefinitionsEntryPoints collect: {:(FunctionDefinitionAsmObjectCode)each :: FunctionNativeCodeDefinition |
+            FunctionNativeCodeDefinition new
+                definition: each functionDefinition;
+                checkedEntryPoint: (convertedSymbolDictionary at: each checkedEntryPoint ifAbsent: {:: UInt32 | 0u32});
+                uncheckedEntryPoint: (convertedSymbolDictionary at: each uncheckedEntryPoint ifAbsent: {:: UInt32 | 0u32});
+                capturelessUncheckedEntryPoint: (convertedSymbolDictionary at: each uncheckedCapturelessEntryPoint ifAbsent: {:: UInt32 | 0u32});
+                yourself
+        }.
+
         ## Create the symbol table.
         let symbolTable := NativeCodeSymbolTable new
             symbols: convertedSymbols asArray;
@@ -112,6 +121,7 @@ AsmObjectCode definition: {
             sections: convertedSections asArray;
             programEntities: convertedProgramEntities;
             programEntityImportedSymbols: convertedProgramEntityImportedSymbols;
+            functionDefinitionsEntryPoints: convertedFunctionDefinitionsEntryPoints;
             yourself
     }.
 }.
@@ -235,7 +245,7 @@ NativeCode definition: {
                         return: void
                     }.
 
-                    let asmSymbol => AsmSymbol := asmSymbols at: symbolIndex asSize.
+                    let asmSymbol => AsmSymbol := asmSymbols at: symbolIndex asSize - 1sz.
                     let conversionFunction => NativeCodeRelocation::AsmRelocationConversionFunction := NativeCodeRelocation::AsmRelocationConversionMap at: type.
                     asmRelocations add: conversionFunction(asmSymbol, offset, addend)
                 }.
@@ -248,6 +258,12 @@ NativeCode definition: {
             symbol ifNotNil: {
                 symbolDictionary at: symbol
             }
+        }.
+
+        let convertSymbolIndexBlock := {:(UInt32)symbolIndex :: AsmSymbol |
+            (symbolIndex = 0u32) || (symbolIndex asSize > asmSymbols size)
+                ifTrue: nil
+                ifFalse: (asmSymbols at: symbolIndex asSize - 1sz)
         }.
 
         AsmObjectCode new
@@ -269,6 +285,14 @@ NativeCode definition: {
             });
             programEntityImportedSymbols: (programEntityImportedSymbols collect: {:(Association)each :: Association |
                 each key -> convertSymbolBlock(each value)
+            });
+            functionDefinitionsEntryPoints: (functionDefinitionsEntryPoints collect: {:(FunctionNativeCodeDefinition)each :: FunctionDefinitionAsmObjectCode |
+                FunctionDefinitionAsmObjectCode new
+                    functionDefinition: each definition;
+                    checkedEntryPoint: convertSymbolIndexBlock(each checkedEntryPoint);
+                    uncheckedEntryPoint: convertSymbolIndexBlock(each uncheckedEntryPoint);
+                    uncheckedCapturelessEntryPoint: convertSymbolIndexBlock(each capturelessUncheckedEntryPoint);
+                    yourself
             });
             yourself
     }.

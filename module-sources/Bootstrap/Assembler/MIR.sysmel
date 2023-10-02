@@ -171,14 +171,22 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
         }.
 
         usePerObjectSymbolsInsteadOfHeap ifTrue: {
-            ## TODO: Make the asm function definition entry points.
+            module functionDefinitionPatches do: {:(MIRFunctionDefinitionPatch)mirPatch :: Void |
+                targetModule addFunctionDefinitionEntryPoints: (FunctionDefinitionAsmObjectCode new
+                    functionDefinition: mirPatch functionDefinition;
+                    checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: mirPatch checkedEntryPoint);
+                    uncheckedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: mirPatch uncheckedEntryPoint);
+                    uncheckedCapturelessEntryPoint: (compiledProgramEntitySymbolMap atOrNil: mirPatch uncheckedCapturelessEntryPoint);
+                    yourself
+                )
+            }
         } ifFalse: {
-            module functionDefinitionPatches do: {:(MIRFunctionDefinitionPatch)tacPatch :: Void |
-                objectHeap tracer addObject: tacPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
-                    functionDefinition: tacPatch functionDefinition;
-                    checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch checkedEntryPoint);
-                    uncheckedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedEntryPoint);
-                    uncheckedCapturelessEntryPoint: (compiledProgramEntitySymbolMap atOrNil: tacPatch uncheckedCapturelessEntryPoint);
+            module functionDefinitionPatches do: {:(MIRFunctionDefinitionPatch)mirPatch :: Void |
+                objectHeap tracer addObject: mirPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
+                    functionDefinition: mirPatch functionDefinition;
+                    checkedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: mirPatch checkedEntryPoint);
+                    uncheckedEntryPoint: (compiledProgramEntitySymbolMap atOrNil: mirPatch uncheckedEntryPoint);
+                    uncheckedCapturelessEntryPoint: (compiledProgramEntitySymbolMap atOrNil: mirPatch uncheckedCapturelessEntryPoint);
                     yourself)
             }.
         }.
@@ -252,7 +260,9 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
             self compileProgramEntity: mirProgramEntity.
         } ifNil: {
             let result := AsmSymbol new
-                name: name;
+                name: (sourceProgramEntity
+                    ifNotNil: sourceProgramEntity programEntityQualifiedNameSymbol
+                    ifNil: name);
                 makePublic;
                 makeTLS;
                 yourself.

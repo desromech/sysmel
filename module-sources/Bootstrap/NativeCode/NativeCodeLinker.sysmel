@@ -1,3 +1,11 @@
+public class FunctionNativeCodeLinkerDefinition superclass: Object; definition: {
+    public field definition => FunctionDefinition.
+
+    public field checkedEntryPoint => NativeCodeSymbol.
+    public field uncheckedEntryPoint => NativeCodeSymbol.
+    public field capturelessUncheckedEntryPoint => NativeCodeSymbol.
+}.
+
 public class NativeCodeLinker superclass: Object; definition: {
     public field keepingIRTextForDebugging => Boolean.
     private field sectionNameTable => Dictionary.
@@ -6,6 +14,7 @@ public class NativeCodeLinker superclass: Object; definition: {
     private field sourceSymbolTables => OrderedCollection.
     private field programEntities => OrderedCollection.
     private field programEntityImportedSymbols => OrderedCollection.
+    private field functionDefinitionsEntryPoints => OrderedCollection.
     private field hirTextIR => StringStream.
     private field mirTextIR => StringStream.
     private field asmTextIR => StringStream.
@@ -17,6 +26,7 @@ public class NativeCodeLinker superclass: Object; definition: {
         sourceSymbolTables := OrderedCollection new.
         programEntities := OrderedCollection new.
         programEntityImportedSymbols := OrderedCollection new.
+        functionDefinitionsEntryPoints := OrderedCollection new.
     }.
 
     public method addNativeCode: (nativeCode: NativeCode) ::=> Void := {
@@ -31,6 +41,21 @@ public class NativeCodeLinker superclass: Object; definition: {
 
         programEntities addAll: nativeCode programEntities.
         programEntityImportedSymbols addAll: nativeCode programEntityImportedSymbols.
+
+        let symbolLoadWithIndex := {:(UInt32)symbolIndex :: NativeCodeSymbol |
+            (symbolIndex = 0u32) || (symbolIndex asSize > nativeCode symbolTable symbols size)
+                ifTrue: nil
+                ifFalse: (nativeCode symbolTable symbols at: symbolIndex asSize - 1sz)
+        }.
+
+        nativeCode functionDefinitionsEntryPoints do: {:(FunctionNativeCodeDefinition)each :: Void |
+            functionDefinitionsEntryPoints add: (FunctionNativeCodeLinkerDefinition new
+                definition: each definition;
+                checkedEntryPoint: symbolLoadWithIndex(each checkedEntryPoint);
+                uncheckedEntryPoint: symbolLoadWithIndex(each uncheckedEntryPoint);
+                capturelessUncheckedEntryPoint: symbolLoadWithIndex(each capturelessUncheckedEntryPoint);
+                yourself)
+        }.
 
         nativeCode hirTextIR ifNotNil: {
             hirTextIR ifNil: (hirTextIR := StringStream new).
@@ -78,6 +103,15 @@ public class NativeCodeLinker superclass: Object; definition: {
                     trampolineTarget: (symbolTable convertSymbolObject: eachProgramEntity trampolineTarget);
                     yourself
             }) asArray;
+            functionDefinitionsEntryPoints: (functionDefinitionsEntryPoints collect: {:(FunctionNativeCodeLinkerDefinition)each :: FunctionNativeCodeDefinition |
+                FunctionNativeCodeDefinition new
+                    definition: each definition;
+                    checkedEntryPoint: (symbolTable convertSymbolIndex: each checkedEntryPoint);
+                    uncheckedEntryPoint: (symbolTable convertSymbolIndex: each uncheckedEntryPoint);
+                    capturelessUncheckedEntryPoint: (symbolTable convertSymbolIndex: each capturelessUncheckedEntryPoint);
+                    yourself
+            }) asArray;
+            
             hirTextIR: (hirTextIR ifNotNil: (hirTextIR asString));
             mirTextIR: (mirTextIR ifNotNil: (mirTextIR asString));
             asmTextIR: (asmTextIR ifNotNil: (asmTextIR asString));

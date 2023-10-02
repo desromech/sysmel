@@ -581,7 +581,15 @@ AsmObjectCode definition: {
             };
             yourself.
 
-        ## TODO: Add the patches.
+        ## Add the patches.
+        functionDefinitionsEntryPoints do: {:(FunctionDefinitionAsmObjectCode)entryPoints :: Void |
+            asmObjectHeap tracer addObject: entryPoints functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
+                functionDefinition: entryPoints functionDefinition;
+                checkedEntryPoint: entryPoints checkedEntryPoint;
+                uncheckedEntryPoint: entryPoints uncheckedEntryPoint;
+                uncheckedCapturelessEntryPoint: entryPoints uncheckedCapturelessEntryPoint;
+                yourself)
+        }.
 
         ## Add the gc root pointers.
         gcRootPointerSymbols do: {:(AsmSymbol)gcRoot :: Void |
@@ -606,7 +614,6 @@ AsmObjectCode definition: {
                     section: objectPointerTableStartSymbol section;
                     value: objectPointerTableStartSymbol value + gcRoot value
             }.
-
         }.
 
         self

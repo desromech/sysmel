@@ -3005,6 +3005,12 @@ public final class HIRModule superclass: Object; definition: {
         }
     }.
 
+    public method addGlobalValues: (newGlobalValues: Collection) ::=> Void := {
+        newGlobalValues do: {:(HIRGlobalValue)each :: Void |
+            self addGlobalValue: each
+        }
+    }.
+
     public method includesGlobalValue: (globalValue: HIRGlobalValue) ::=> Boolean
         := globalValueSet includes: globalValue.
 
