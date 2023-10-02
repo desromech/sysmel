@@ -120,12 +120,19 @@ hirModule performStandardOptimizations.
 ##let nativeCodes := hirModule asNativeCodesFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
 ##printLine(nativeCodes fullPrintString).
 
-let nativeCode := hirModule asNativeCodeFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget keepingIRTextForDebugging: true.
+let asmCompilationTarget := AsmCompilationTarget x86_64 setForLinux.
+let nativeCode := hirModule asNativeCodeFor: asmCompilationTarget asMirCompilationTarget keepingIRTextForDebugging: true.
 printLine(nativeCode fullPrintString).
 
-let objectCode := nativeCode asAsmObjectCodeWithTarget: AsmCompilationTarget x86_64 setForLinux.
-##printLine(objectCode fullPrintString).
-objectCode writeObjectToFileNamed: "test.o"
+let nativeObjectCode := nativeCode asAsmObjectCodeWithTarget: asmCompilationTarget.
+let nativeLinkedObjectCode := AsmProgramEntity new
+    compilationTarget: asmCompilationTarget;
+    ##buildTargetUnwindingInfoForObjectCode: nativeObjectCode;
+    buildDebugInfoForObjectCode: nativeObjectCode;
+    assembleAppendingNewSectionsToObjectObject: nativeObjectCode.
+
+##printLine(nativeObjectCode fullPrintString).
+nativeLinkedObjectCode writeObjectToFileNamed: "test.o".
 
 }.
 

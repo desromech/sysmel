@@ -1097,6 +1097,21 @@ public final class AsmSectionDirective superclass: AsmStreamElement; definition:
     }.
 }.
 
+public final class AsmBytesWithRelocations superclass: AsmStreamElement; definition: {
+    public field bytes => ByteArray.
+    public field relocations => Collection.
+    public field relocationsOffset => Size.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: ".bytesWithRelocations ".
+        self printDebugInfoOn: stream.
+    }.
+
+    public override method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
+        stream nextPutBytes: bytes withRelocations: relocations offset: relocationsOffset
+    }.
+}.
+
 public final class AsmByteDirective superclass: AsmStreamElement; definition: {
     public field value => UInt8.
 
@@ -1669,6 +1684,13 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             tls: true;
             yourself).
 
+    public method bytes: (bytes: ByteArray) relocations: (relocations: Collection) offset: (relocationsOffset: Size) ::=> AsmBytesWithRelocations
+        := self addElement: (AsmBytesWithRelocations new
+            bytes: bytes;
+            relocations: relocations;
+            relocationsOffset: relocationsOffset;
+            yourself).
+
     public method byte: (value: UInt8) ::=> AsmByteDirective
         := self addElement: (AsmByteDirective new
             value: value;
@@ -1990,6 +2012,23 @@ public final class AsmProgramEntity superclass: Object; definition: {
             finish
     }.
 
+    public method assembleAppendingNewSectionsToObjectObject: (initialObjectCode: AsmObjectCode) := {
+        let objectCodeBuilder := AsmObjectCodeBuilder new
+            compilationTarget: compilationTarget;
+            addImportedSymbols: importedSymbols;
+            addLinkedObjectCode: initialObjectCode;
+            yourself.
+
+        self prepareToAssemble.
+        self assembleFirstPassWith: objectCodeBuilder.
+
+        objectCodeBuilder allocateMemoryForWriting.
+        self assembleSecondPassWith: objectCodeBuilder.
+        
+        objectCodeBuilder 
+            finish
+    }.
+
     public method assemble => AsmObjectCode := {
         let objectCodeBuilder := AsmObjectCodeBuilder new
             compilationTarget: compilationTarget;
@@ -2021,6 +2060,18 @@ public final class AsmProgramEntity superclass: Object; definition: {
         }.
 
         objectCodeBuilder finish
+    }.
+
+    public method buildDebugInfoForObjectCode: (sourceObjectCode: AsmObjectCode) ::=> Void := {
+        let debugInformationGeneratorClass := compilationTarget debugInformationGenerator.
+        debugInformationGeneratorClass ifNil: {return: void}.
+
+        let targetDebugInformationGenerator := debugInformationGeneratorClass new.
+        targetDebugInformationGenerator ifNotNil: {
+            {|
+                targetDebugInformationGenerator generateDebugInformationForModule: self sourceObjectCode: sourceObjectCode
+            } printTimeToRunInMillisecondsWithTitle: "Debug information".
+        }.
     }.
 
     public method writeObjectToFileNamed: (objectFileName: String) ::=> Boolean := {
@@ -2107,6 +2158,9 @@ AsmObjectDebugInformationGenerator extend: {
         := self subclassResponsibility.
 
     public abstract method generateCallFrameInformationForModule: (module: AsmProgramEntity) objectCodeBuilder: (objectCodeBuilder: AsmObjectCodeBuilder) ::=> Void
+        := self subclassResponsibility.
+
+    public abstract method generateDebugInformationForModule: (module: AsmProgramEntity) sourceObjectCode: (sourceObjectCode: AsmObjectCode) ::=> Void
         := self subclassResponsibility.
 }.
 

@@ -1,5 +1,7 @@
 public final class Dwarf::AsmWriter superclass: Object.
 public final class Dwarf::DebugInfoEntry superclass: Object.
+public final class Dwarf::SectionWriter superclass: Object.
+public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter.
 
 public final class Dwarf::Constant superclass: AsmConstantExpressionInteger; definition: {
     public field name => Symbol.
@@ -1134,6 +1136,10 @@ Dwarf::AsmWriter definition: {
     public field debugInfoProgramEntity => AsmProgramEntity.
     public field pointerSize => Size.
 
+    public field sourceObjectCode => AsmObjectCode.
+    public field lineWriter => Dwarf::DebugLineWriter.
+    public field generateCFI => Boolean.
+
     public field abbreviationsStart => AsmSymbol.
     public field debugInfoStart => AsmSymbol.
     public field debugInfoEnd => AsmSymbol.
@@ -1196,11 +1202,28 @@ Dwarf::AsmWriter definition: {
             label: debugLineStart;
             yourself.
 
-        debugFrameStream := debugInfoProgramEntity newStreamBuilder
-            dwarf::debugFrameSection;
-            yourself.
+        generateCFI ifTrue: {
+            debugFrameStream := debugInfoProgramEntity newStreamBuilder
+                dwarf::debugFrameSection;
+                yourself.
+        }.
 
         compilationUnit stmtList: (debugLineStart immediateSectionRelative: pointerSize) asConstantExpression.
+
+        sourceObjectCode ifNotNil: {
+            ## Generate the line information.
+            lineWriter ifNotNil: {
+                lineWriter writeSourceLocationForSections: sourceObjectCode sections ontoStreamBuilder: debugLineStream pointerSize: pointerSize.
+                debugLineStream endLabel: debugLineStart
+            }.
+
+            ## Generate the CFI.
+            generateCFI ifTrue: {
+                Dwarf::CallFrameInformationWriter new
+                    compilationTarget: debugInfoProgramEntity compilationTarget;
+                    writeCallFrameInformationForSections: sourceObjectCode sections ontoStreamBuilder: debugFrameStream pointerSize: pointerSize
+            }
+        }.
 
         self 
             prepareForWriting;
@@ -1386,7 +1409,7 @@ AsmProgramEntity extend: {
     }.
 }.
 
-public final class Dwarf::SectionWriter superclass: Object; definition: {
+Dwarf::SectionWriter definition: {
     public field pointerSize => Size.
     private field programRelocations => OrderedCollection.
     public field out => ByteStream.
@@ -1480,7 +1503,7 @@ public final class Dwarf::SectionWriter superclass: Object; definition: {
     }.
 }.
 
-public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; definition: {
+Dwarf::DebugLineWriter definition: {
     public field defaultIsStatement => Boolean.
     public field maxNumberOfOperationsPerInstruction => UInt32.
     public field minimumInstructionLength => UInt32.
@@ -1547,7 +1570,7 @@ public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; defi
         }
     }.
 
-    public method computeLineRangeForSections: (sections: OrderedCollection) ::=> Void := {
+    public method computeLineRangeForSections: (sections: SequenceableCollection) ::=> Void := {
         minLine := Int32 maxVal.
         maxLine := Int32 minVal.
         previousLine := 1i32.
@@ -1574,7 +1597,7 @@ public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; defi
         lineRange := maxLine - minLine min: 255i32.
     }.
 
-    public method writeSourceLocationForSections: (sections: OrderedCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
+    public method writeSourceLocationForSections: (sections: SequenceableCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
         self pointerSize: pointerSize.
         self computeLineRangeForSections: sections.
 
@@ -1606,6 +1629,36 @@ public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; defi
             eachRelocation offset: relocationAddressBase + eachRelocation offset.
             targetSection newRelocations add: eachRelocation
         }
+    }.
+
+    public method writeSourceLocationForSections: (sections: SequenceableCollection) ontoStreamBuilder: (debugLineStreamBuilder: AsmStreamBuilder) pointerSize: (pointerSize: Size) ::=> Void := {
+        self pointerSize: pointerSize.
+        self computeLineRangeForSections: sections.
+
+        let programHeader := self generateProgramHeader.
+        let program := self generateProgramForSections: sections.
+
+        out := ByteStream new.
+        pointerSize = 4sz ifTrue: {
+            self dword: (programHeader size + program size + pointerSize + 2sz) asUInt32.
+        } ifFalse: {
+            self
+                dword: 16rFFFFFFFF u32;
+                qword: (programHeader size + program size + pointerSize + 2sz) asUInt64.
+        }.
+
+        self word: 4u16.
+        pointerSize = 4sz ifTrue: {
+            self dword: programHeader size asUInt32.
+        } ifFalse: {
+            self qword: programHeader size asUInt64.
+        }.
+
+        out nextPutAll: programHeader.
+        let relocationAddressBase := out size.
+        out nextPutAll: program.
+
+        debugLineStreamBuilder bytes: out asByteArray relocations: programRelocations offset: relocationAddressBase
     }.
 
     public method generateProgramHeader => ByteArray := {
@@ -1653,7 +1706,7 @@ public final class Dwarf::DebugLineWriter superclass: Dwarf::SectionWriter; defi
         out asByteArray
     }.
 
-    public method generateProgramForSections: (sections: OrderedCollection) ::=> ByteArray := {
+    public method generateProgramForSections: (sections: SequenceableCollection) ::=> ByteArray := {
         out := ByteStream new.
 
 		regAddress := 0u32.
@@ -1811,7 +1864,7 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
         cfiRelocations := OrderedCollection new.
     }.
 
-    public method writeCallFrameInformationForSections: (sections: OrderedCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
+    public method writeCallFrameInformationForSections: (sections: SequenceableCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {
         self
             pointerSize: pointerSize;
             dataAlignmentFactor: pointerSize asInt64.
@@ -1839,6 +1892,37 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
 
         targetSection writeUnallocatedBytes: out asByteArray.
         targetSection newRelocations addAll: cfiRelocations.
+    }.
+
+    public method writeCallFrameInformationForSections: (sections: SequenceableCollection) ontoStreamBuilder: (streamBuilder: AsmStreamBuilder) pointerSize: (pointerSize: Size) ::=> Void := {
+        self
+            pointerSize: pointerSize;
+            dataAlignmentFactor: pointerSize asInt64.
+
+        returnAddressRegister := compilationTarget dwarf::returnAddressRegister asUInt8.
+
+        targetSectionSymbol := AsmSymbol new
+            makePrivate;
+            yourself.
+
+        out := ByteStream new.
+        sections do: {:(AsmObjectCodeSection)section :: Void |
+            let sectionSymbol := AsmSymbol new
+                section: section;
+                makePrivate;
+                yourself.
+
+            section executable ifTrue: {
+                section frameDescriptions do: {:(AsmFrameDescriptionInformation)frameDescriptions :: Void |
+                    self writeFrameDescription: frameDescriptions section: sectionSymbol.
+                }.
+            }.
+        }.
+
+        streamBuilder
+            label: targetSectionSymbol;
+            bytes: out asByteArray relocations: cfiRelocations offset: 0sz;
+            endLabel: targetSectionSymbol
     }.
 
     public method ensureCommonInformationEntryIsEmitted => Void := {
@@ -2236,6 +2320,37 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
         Dwarf::CallFrameInformationWriter new
             compilationTarget: module compilationTarget;
             writeCallFrameInformationForSections: objectCodeBuilder sections onto: (objectCodeBuilder getSectionNamed: #".debug_frame") pointerSize: module compilationTarget pointerSize
+    }.
+
+    public override method generateDebugInformationForModule: (module: AsmProgramEntity) sourceObjectCode: (sourceObjectCode: AsmObjectCode) ::=> Void := {
+        pointerSize := module compilationTarget pointerSize. 
+        compilationTarget := module compilationTarget.
+
+        compileUnit := Dwarf::Builder new compileUnit.
+        compileUnit
+            ##language: Dwarf::DW_LANG_C;
+            producer: "Sysmel Compiler".
+
+        let textSection := sourceObjectCode getSectionNamedOrNil: #".text".
+        textSection ifNotNil: {
+            let textSectionSymbol := AsmSymbol new
+                name: #compileUnit;
+                section: textSection;
+                size: textSection size;
+                makePrivate;
+                yourself.
+            compileUnit pcRangeSymbol: textSectionSymbol pointerSize: pointerSize.
+        }.
+
+        debugInfoProgramEntity := module newProgramEntity.
+        debugInfoProgramEntity isDebuggingInformation: true.
+
+        debugInfoWriter := Dwarf::AsmWriter new.
+        debugInfoWriter
+            sourceObjectCode: sourceObjectCode;
+            lineWriter: lineWriter;
+            generateCFI: true;
+            writeCompilationUnit: compileUnit toProgramEntity: debugInfoProgramEntity pointerSize: module compilationTarget pointerSize.
     }.
 }.
 

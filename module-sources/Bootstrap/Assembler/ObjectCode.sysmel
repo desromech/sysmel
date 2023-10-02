@@ -420,11 +420,24 @@ public final class AsmObjectCode superclass: Object; definition: {
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
-            stream fullPrint: each
+            stream fullPrint: each; nl
         }.
         symbols do: {:(AsmSymbol)each :: Void |
-            stream fullPrint: each
+            stream fullPrint: each; nl
         }.
+    }.
+
+    public method getSectionNamedOrNil: (sectionName: Symbol) ::=> AsmObjectCodeSection := {
+        let sectionCount := sections size.
+        let i mutable := 0sz.
+        while: (i < sectionCount) do: {
+            let section => AsmObjectCodeSection := sections at: i.
+            section name = sectionName ifTrue: {
+                return: section
+            }
+        } continueWith: (i := i + 1sz).
+
+        nil
     }.
 
     public method encodeAsObjectFile ::=> ByteArray
@@ -580,16 +593,28 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field sectionNameTable => Dictionary.
     public field symbols => OrderedCollection.
     public field symbolSet => ObjectPointerSet.
+    public field linkedObjectCodes => OrderedCollection.
+    public field linkedObjectCodeSections => OrderedCollection.
 
     public override method initialize => Void := {
         sections := OrderedCollection new.
         sectionNameTable := Dictionary new.
         symbols := OrderedCollection new.
         symbolSet := ObjectPointerSet new.
+        linkedObjectCodes := OrderedCollection new.
+        linkedObjectCodeSections := OrderedCollection new.
     }.
 
     public method addImportedSymbols: (importedSymbols: Collection) ::=> Void := {
         importedSymbols do: {:(AsmSymbol)each :: Void |
+            self recordSymbol: each
+        }.
+    }.
+
+    public method addLinkedObjectCode: (linkedObjectCode: AsmObjectCode) ::=> Void := {
+        linkedObjectCodes add: linkedObjectCode.
+        linkedObjectCodeSections addAll: linkedObjectCode sections.
+        linkedObjectCode symbols do: {:(AsmSymbol)each :: Void |
             self recordSymbol: each
         }.
     }.
@@ -630,7 +655,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
 
         AsmObjectCode new
             compilationTarget: compilationTarget;
-            sections: sections asArray;
+            sections: linkedObjectCodeSections asArray -- sections asArray;
             symbols: symbols asArray;
             yourself
     }.
@@ -919,6 +944,9 @@ AsmObjectCodeStream definition: {
     public abstract method recordRelocations: (relocations: Collection) ::=> Void
         := self subclassResponsibility.
 
+    public abstract method nextPutBytes: (bytes: ByteArray) withRelocations: (relocations: Collection) offset: (relocationsOffset: Size) ::=> Void
+        := self subclassResponsibility.
+
     public virtual method cfiBeginProcedure => Void := {}.
     public virtual method cfiEndProcedure => Void := {}.
     public virtual method cfiEndPrologue => Void := {}.
@@ -1016,6 +1044,14 @@ AsmObjectCodeSizeStream definition: {
             objectCodeBuilder recordSymbol: eachRelocation symbol
         }
     }.
+
+    public override method nextPutBytes: (bytes: ByteArray) withRelocations: (relocations: Collection) offset: (relocationsOffset: Size) ::=> Void := {
+        relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
+            objectCodeBuilder recordSymbol: eachRelocation symbol
+        }.
+        activeSection increaseSizeBy: bytes size.
+    }.
+
 }.
 
 AsmObjectCodeWriteStream definition: {
@@ -1102,6 +1138,16 @@ AsmObjectCodeWriteStream definition: {
         relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
             self recordRelocation: eachRelocation copy
         }
+    }.
+
+    public override method nextPutBytes: (bytes: ByteArray) withRelocations: (relocations: Collection) offset: (relocationsOffset: Size) ::=> Void := {
+        relocations do: {:(AsmObjectCodeRelocation)eachRelocation :: Void |
+            activeSection newRelocations add: (eachRelocation copy
+                offset: eachRelocation offset + activeSection writeOffset + relocationsOffset;
+                yourself)
+        }.
+
+        activeSection nextPutAll: bytes
     }.
 
     public override method cfiBeginProcedure => Void := {
