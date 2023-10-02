@@ -35,14 +35,18 @@ public class ImageBuilderHIR_NativeCodeTarget superclass: ImageBuilderHIRTarget;
         let asmCompilationTarget := (mirCompilationTarget downCastTo: MIRAsmCompilationTarget) asmCompilationTarget.
         let nativeObjectCode := {|
             image nativeCode asAsmObjectCodeWithTarget: asmCompilationTarget
-        } printTimeToRunInMillisecondsWithTitle: "Native code linking".
+        } printTimeToRunInMillisecondsWithTitle: "Object code conversion".
+
+        let linkedNativeObjectCode := {|
+            nativeObjectCode asObjectCodeLinkedWithBaseImageTracer: builder tracer
+        } printTimeToRunInMillisecondsWithTitle: "Object heap image generation and linking".
 
         {|
             image linkedObjectCode: (AsmProgramEntity new
                 compilationTarget: asmCompilationTarget;
                 ##buildTargetUnwindingInfoForObjectCode: nativeObjectCode;
-                buildDebugInfoForObjectCode: nativeObjectCode;
-                assembleAppendingNewSectionsToObjectObject: nativeObjectCode)
+                buildDebugInfoForObjectCode: linkedNativeObjectCode;
+                assembleAppendingNewSectionsToObjectObject: linkedNativeObjectCode)
         } printTimeToRunInMillisecondsWithTitle: "Debug and unwinding info generation".
 
         image

@@ -5,6 +5,7 @@ public class NativeCodeLinker superclass: Object; definition: {
     private field symbolTable => NativeCodeLinkerSymbolTable.
     private field sourceSymbolTables => OrderedCollection.
     private field programEntities => OrderedCollection.
+    private field programEntityImportedSymbols => OrderedCollection.
     private field hirTextIR => StringStream.
     private field mirTextIR => StringStream.
     private field asmTextIR => StringStream.
@@ -15,6 +16,7 @@ public class NativeCodeLinker superclass: Object; definition: {
         symbolTable := NativeCodeLinkerSymbolTable new.
         sourceSymbolTables := OrderedCollection new.
         programEntities := OrderedCollection new.
+        programEntityImportedSymbols := OrderedCollection new.
     }.
 
     public method addNativeCode: (nativeCode: NativeCode) ::=> Void := {
@@ -28,6 +30,7 @@ public class NativeCodeLinker superclass: Object; definition: {
         }.
 
         programEntities addAll: nativeCode programEntities.
+        programEntityImportedSymbols addAll: nativeCode programEntityImportedSymbols.
 
         nativeCode hirTextIR ifNotNil: {
             hirTextIR ifNil: (hirTextIR := StringStream new).
@@ -62,7 +65,7 @@ public class NativeCodeLinker superclass: Object; definition: {
             addSymbolTables: sourceSymbolTables;
             link.
 
-        NativeCode new
+        let nativeCode := NativeCode new
             sections: (sections collect: {:(NativeCodeLinkerSection)eachSection :: NativeCodeSection |
                 (eachSection linkWithSymbolTable: symbolTable)
                     symbolTable: linkedSymbolTable;
@@ -75,10 +78,22 @@ public class NativeCodeLinker superclass: Object; definition: {
                     trampolineTarget: (symbolTable convertSymbolObject: eachProgramEntity trampolineTarget);
                     yourself
             }) asArray;
-
             hirTextIR: (hirTextIR ifNotNil: (hirTextIR asString));
             mirTextIR: (mirTextIR ifNotNil: (mirTextIR asString));
             asmTextIR: (asmTextIR ifNotNil: (asmTextIR asString));
-            yourself
+            yourself.
+
+        let remainingImportedSymbols := OrderedCollection new. 
+        programEntityImportedSymbols do: {:(Association)each :: Void |
+            let programEntity => ProgramEntity := each key.
+            let importedSymbol => NativeCodeSymbol := (symbolTable convertSymbolObject: each value).
+            importedSymbol isNotNil && importedSymbol section isNil ifTrue: {
+                remainingImportedSymbols add: programEntity -> importedSymbol
+            }.
+        }.
+        
+        nativeCode programEntityImportedSymbols: remainingImportedSymbols asArray.
+
+        nativeCode
     }.
 }.

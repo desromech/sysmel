@@ -65,6 +65,8 @@ AsmObjectHeap definition: {
     public field serializedRootTable => ByteArray.
     public field serializedRootTableRelocations => OrderedCollection.
 
+    public field newSymbols => OrderedCollection.
+
     protected field objectPointerTableStartSymbol => AsmSymbol.
     protected field objectPointerTableEndSymbol => AsmSymbol.
 
@@ -79,6 +81,7 @@ AsmObjectHeap definition: {
         rootObjectList := OrderedCollection new.
         rootTableEntries := OrderedCollection new.
         rootOffsetTable := ObjectPointerDictionary new.
+        newSymbols := OrderedCollection new.
         self baseObjectTracer: nil.
     }.
 
@@ -106,6 +109,27 @@ AsmObjectHeap definition: {
             buildGCObjectDataSectionIn: targetModule;
             buildGCPointerTableIn: targetModule;
             buildGCFatPointerTableIn: targetModule.
+    }.
+
+    public method buildInObjectCodeSection: (objectCodeSection: AsmObjectCodeSection) ::=> Void := {
+        rootTableEntries isEmpty ifTrue: {return: void}.
+
+        ## (Pontentially second) object trace that includes the code literal objects.
+        objectTrace ifNil: {
+            objectTrace := tracer
+                addUntypedRootObjects: rootObjectList;
+                traceObjectSet;
+                emitTraceReport;
+                objectTrace.
+        }.
+
+        self
+            serializeObjects;
+            serializeRootTable;
+
+            appendGCObjectDataSectionIn: objectCodeSection;
+            appendGCPointerTableIn: objectCodeSection;
+            appendGCFatPointerTableIn: objectCodeSection.
     }.
 
     public method serializeObjects => Void := {
@@ -161,46 +185,37 @@ AsmObjectHeap definition: {
         }.
     }.
 
-    public method objectPointerTableStartSymbol ::=> AsmSymbol := {
-        objectPointerTableStartSymbol ifNil: (objectPointerTableStartSymbol := AsmSymbol new
-            name: #__sysmel_objectPointerTableStart;
+    public method makeNewSymbolNamed: (name: Symbol) ::=> AsmSymbol := {
+        let symbol := AsmSymbol new
+            name: name;
             makePublic;
-            yourself)
+            yourself.
+        newSymbols add: symbol.
+        symbol
+    }.
+
+    public method objectPointerTableStartSymbol ::=> AsmSymbol := {
+        objectPointerTableStartSymbol ifNil: (objectPointerTableStartSymbol := self makeNewSymbolNamed: #__sysmel_objectPointerTableStart)
     }.
 
     public method objectPointerTableEndSymbol ::=> AsmSymbol := {
-        objectPointerTableEndSymbol ifNil: (objectPointerTableEndSymbol := AsmSymbol new
-            name: #__sysmel_objectPointerTableEnd;
-            makePublic;
-            yourself)
+        objectPointerTableEndSymbol ifNil: (objectPointerTableEndSymbol := self makeNewSymbolNamed: #__sysmel_objectPointerTableEnd)
     }.
 
     public method objectFatPointerTableStartSymbol ::=> AsmSymbol := {
-        objectFatPointerTableStartSymbol ifNil: (objectPointerTableStartSymbol := AsmSymbol new
-            name: #__sysmel_objectFatPointerTableStart;
-            makePublic;
-            yourself)
+        objectFatPointerTableStartSymbol ifNil: (objectPointerTableStartSymbol := self makeNewSymbolNamed: #__sysmel_objectFatPointerTableStart)
     }.
 
     public method objectFatPointerTableEndSymbol ::=> AsmSymbol := {
-        objectFatPointerTableEndSymbol ifNil: (objectFatPointerTableEndSymbol := AsmSymbol new
-            name: #__sysmel_objectPointerTableEnd;
-            makePublic;
-            yourself)
+        objectFatPointerTableEndSymbol ifNil: (objectFatPointerTableEndSymbol := self makeNewSymbolNamed: #__sysmel_objectPointerTableEnd)
     }.
 
     public method objectSectionStartSymbol ::=> AsmSymbol := {
-        objectSectionStartSymbol ifNil: (objectSectionStartSymbol := AsmSymbol new
-            name: #__sysmel_objectSectionStart;
-            makePublic;
-            yourself)
+        objectSectionStartSymbol ifNil: (objectSectionStartSymbol := self makeNewSymbolNamed: #__sysmel_objectSectionStart)
     }.
 
     public method objectSectionEndSymbol ::=> AsmSymbol := {
-        objectSectionEndSymbol ifNil: (objectSectionEndSymbol := AsmSymbol new
-            name: #__sysmel_objectSectionEnd;
-            makePublic;
-            yourself)
+        objectSectionEndSymbol ifNil: (objectSectionEndSymbol := self makeNewSymbolNamed: #__sysmel_objectSectionEnd)
     }.
 
     public method buildGCObjectDataSectionIn: (targetModule: AsmProgramEntity) ::=> Void := {
@@ -226,11 +241,11 @@ AsmObjectHeap definition: {
         let pointerTableSection := pointerTableProgramEntity newStreamBuilder
             dataSection;
             align: compilationTarget pointerAlignment;
-            label: objectPointerTableStartSymbol;
+            label: self objectPointerTableStartSymbol;
             addElement: (AsmRootObjectPointerTableDirective new
                 heap: self;
                 yourself);
-            endLabel: objectPointerTableStartSymbol;
+            endLabel: self objectPointerTableStartSymbol;
             label: self objectPointerTableEndSymbol
     }.
 
@@ -242,9 +257,38 @@ AsmObjectHeap definition: {
         let fatPointerTableSection := fatPointerTableProgramEntity newStreamBuilder
             dataSection;
             align: compilationTarget pointerAlignment;
-            label: objectFatPointerTableStartSymbol;
+            label: self objectFatPointerTableStartSymbol;
             endLabel: objectFatPointerTableStartSymbol;
             label: self objectFatPointerTableEndSymbol
+    }.
+
+    public method appendGCObjectDataSectionIn: (objectCodeSection: AsmObjectCodeSection) ::=> Void := {
+        objectTrace objectList isEmpty && objectSectionStartSymbol isNil ifTrue: (return: void).
+
+        objectCodeSection
+            appendAlign: 16sz;
+            appendLabel: self objectSectionStartSymbol;
+            appendData: serializedObjectData withRelocations: serializedObjectDataRelocations;
+            appendLabel: self objectSectionEndSymbol.
+    }.
+
+    public method appendGCPointerTableIn: (objectCodeSection: AsmObjectCodeSection) ::=> Void := {
+        objectPointerTableStartSymbol isNil && rootOffsetTable isEmpty ifTrue: (return: void).
+
+        objectCodeSection
+            appendAlign: compilationTarget pointerAlignment;
+            appendLabel: self objectPointerTableStartSymbol;
+            appendData: serializedRootTable withRelocations: serializedRootTableRelocations;
+            appendLabel: self objectPointerTableEndSymbol.
+    }.
+
+    public method appendGCFatPointerTableIn: (objectCodeSection: AsmObjectCodeSection) ::=> Void := {
+        objectFatPointerTableStartSymbol ifNil: (return: void).
+
+        objectCodeSection
+            appendAlign: compilationTarget pointerAlignment;
+            appendLabel: self objectFatPointerTableStartSymbol;
+            appendLabel: self objectFatPointerTableEndSymbol.
     }.
 
     public method writeReference32: (value: Untyped) at: (offset: Size) ::=> Void := {
@@ -485,5 +529,86 @@ public final class AsmRootObjectPointerTableDirective superclass: AsmStreamEleme
         stream
             recordRelocations: heap serializedRootTableRelocations;
             nextPutAll: heap serializedRootTable.
+    }.
+}.
+
+AsmObjectHeap extend: {
+    public method setSpecialSymbolsWithLookupFunction: (lookupFunction: (ProgramEntity) => AsmSymbol) ::=> Void := {
+        objectPointerTableStartSymbol := lookupFunction(__Global__ lookLocalSymbol: #GarbageCollector::StaticRootPointerTableStart).
+        objectPointerTableEndSymbol := lookupFunction(__Global__ lookLocalSymbol: #GarbageCollector::StaticRootPointerTableEnd).
+
+        objectFatPointerTableStartSymbol := lookupFunction(__Global__ lookLocalSymbol: #GarbageCollector::StaticRootFatPointerTableStart).
+        objectFatPointerTableEndSymbol := lookupFunction(__Global__ lookLocalSymbol: #GarbageCollector::StaticRootFatPointerTableEnd).
+
+        objectSectionStartSymbol := lookupFunction(__Global__ lookLocalSymbol: #GarbageCollector::StaticObjectSegmentStart).
+        objectSectionEndSymbol := lookupFunction(__Global__ lookLocalSymbol: #GarbageCollector::StaticObjectSegmentEnd).
+    }.
+}.
+
+AsmObjectCode definition: {
+    public method asObjectCodeLinkedWithBaseImageTracer: (baseTracer: ImageTracer) ::=> AsmObjectCode := {
+        let gcRootPointerSymbols := OrderedCollection new.
+        let gcRootFatPointerSymbols := OrderedCollection new.
+
+        symbols do: {:(AsmSymbol)eachSymbol :: Void |
+            eachSymbol type = AsmSymbol::Type::GCPointerTable ifTrue: {
+                gcRootPointerSymbols add: eachSymbol
+            }.
+
+            eachSymbol type = AsmSymbol::Type::GCFatPointerTable ifTrue: {
+                gcRootPointerSymbols add: gcRootFatPointerSymbols
+            }.
+        }.
+
+        ## We need this for linking some table symbols.
+        let programEntitySymbolDictionary := ObjectPointerDictionary new.
+        programEntities do: {:(AsmObjectCodeProgramEntity)each :: Void |
+            each sourceProgramEntity isNotNil && each contentSymbol isNotNil ifTrue: {
+                programEntitySymbolDictionary at: each sourceProgramEntity put: each
+            }
+        }.
+
+        programEntityImportedSymbols do: {:(Association)each :: Void |
+            programEntitySymbolDictionary at: each key ifAbsentPut: {:: AsmSymbol | each value }
+        }.
+
+        ## Construct the AsmObjectHeap.
+        let asmObjectHeap := AsmObjectHeap new
+            compilationTarget: compilationTarget;
+            baseObjectTracer: baseTracer;
+            setSpecialSymbolsWithLookupFunction: {:(ProgramEntity)sourceProgramEntity :: AsmSymbol |
+                programEntitySymbolDictionary at: sourceProgramEntity ifAbsent: {:: AsmSymbol | nil}
+            };
+            yourself.
+
+        ## TODO: Add the patches.
+
+        ## Add the gc root pointers.
+        gcRootPointerSymbols do: {:(AsmSymbol)gcRoot :: Void |
+            let gcRootTableOffset := asmObjectHeap offsetOfGCRootObjectTableEntryFor: gcRoot objectValue.
+            gcRoot
+                objectValue: nil;
+                value: gcRootTableOffset asUInt64;
+                type: AsmSymbol::Type::Variable
+        }.
+
+        asmObjectHeap buildInObjectCodeSection: self getValidDataSection.
+
+        ## Add the newly added symbols.
+        symbols := symbols -- asmObjectHeap newSymbols asArray.
+
+        ## Fixup the gc root pointer symbols.
+        gcRootPointerSymbols isEmpty ifFalse: {
+            let objectPointerTableStartSymbol := asmObjectHeap objectPointerTableStartSymbol.
+            self assert: objectPointerTableStartSymbol section isNotNil.
+            gcRootPointerSymbols do: {:(AsmSymbol)gcRoot :: Void |
+                gcRoot
+                    section: objectPointerTableStartSymbol section;
+                    value: objectPointerTableStartSymbol value + gcRoot value
+            }.
+
+        }.
+
+        self
     }.
 }.

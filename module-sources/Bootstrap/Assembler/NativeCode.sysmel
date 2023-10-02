@@ -82,6 +82,10 @@ AsmObjectCode definition: {
                 yourself
         }.
 
+        let convertedProgramEntityImportedSymbols := programEntityImportedSymbols collect: {:(Association)each :: Association |
+            each key -> convertSymbolBlock(each value)
+        }.
+
         ## Create the symbol table.
         let symbolTable := NativeCodeSymbolTable new
             symbols: convertedSymbols asArray;
@@ -107,6 +111,7 @@ AsmObjectCode definition: {
             symbolTable: symbolTable;
             sections: convertedSections asArray;
             programEntities: convertedProgramEntities;
+            programEntityImportedSymbols: convertedProgramEntityImportedSymbols;
             yourself
     }.
 }.
@@ -261,6 +266,9 @@ NativeCode definition: {
                     debugSourceNode: each debugSourceNode;
                     debugSourceEnvironment: each debugSourceEnvironment;
                     yourself
+            });
+            programEntityImportedSymbols: (programEntityImportedSymbols collect: {:(Association)each :: Association |
+                each key -> convertSymbolBlock(each value)
             });
             yourself
     }.

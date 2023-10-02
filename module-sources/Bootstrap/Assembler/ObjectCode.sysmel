@@ -301,6 +301,36 @@ AsmObjectCodeSection definition: {
         newRelocations := nil.
     }.
 
+    public method appendAlign: (extraAlignment: Size) ::=> Void := {
+        let newAlignedSize := size alignedTo: extraAlignment.
+        let padding := newAlignedSize - size.
+        padding > 0sz ifTrue: {
+            data := data -- (ByteArray new: padding).
+            size := newAlignedSize
+        }.
+
+        alignment := alignment max: extraAlignment
+    }.
+
+    public method appendLabel: (labelSymbol: AsmSymbol) ::=> Void := {
+        labelSymbol section: self; value: size asUInt64
+    }.
+
+    public method appendData: (extraData: ByteArray) withRelocations: (extraRelocations: SequenceableCollection) ::=> Void := {
+        let baseOffset := data size.
+        let convertedRelocations := Array new: extraRelocations size.
+
+        extraRelocations doWithIndex: {:(AsmObjectCodeRelocation)reloc :(Size)i :: Void |
+            convertedRelocations at: i put: (reloc copy
+                offset: reloc offset + baseOffset;
+                yourself)
+        }.
+
+        data := data -- extraData.
+        relocations := relocations -- convertedRelocations.
+        size := size + extraData size.
+    }.
+
     public override method sizeOfByteEncoding => Size := data size.
     public override method canEncodeInBytes => Boolean := true.
 
@@ -430,6 +460,7 @@ public final class AsmObjectCode superclass: Object; definition: {
     public field sections => Array.
     public field symbols => Array.
     public field programEntities => Array.
+    public field programEntityImportedSymbols => Array.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
@@ -454,6 +485,24 @@ public final class AsmObjectCode superclass: Object; definition: {
         } continueWith: (i := i + 1sz).
 
         nil
+    }.
+
+    public method getValidDataSection ::=> AsmObjectCodeSection := {
+        (self getSectionNamedOrNil: #".data") ifNil: {
+            let newDataSection := AsmObjectCodeSection new
+                name: #".data";
+                machoSectionName: #__data;
+                machoSegmentName: #__DATA;
+                data: #[];
+                loaded: true;
+                readable: true;
+                writeable: true;
+                yourself.
+
+            sections := sections -- (newDataSection,).
+
+            newDataSection
+        }
     }.
 
     public method encodeAsObjectFile ::=> ByteArray
@@ -615,6 +664,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field linkedObjectCodes => OrderedCollection.
     public field linkedObjectCodeSections => OrderedCollection.
     public field programEntities => OrderedCollection.
+    public field programEntityImportedSymbols => OrderedCollection.
 
     public override method initialize => Void := {
         sections := OrderedCollection new.
@@ -624,12 +674,17 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         linkedObjectCodes := OrderedCollection new.
         linkedObjectCodeSections := OrderedCollection new.
         programEntities := OrderedCollection new.
+        programEntityImportedSymbols := OrderedCollection new.
     }.
 
     public method addImportedSymbols: (importedSymbols: Collection) ::=> Void := {
         importedSymbols do: {:(AsmSymbol)each :: Void |
             self recordSymbol: each
         }.
+    }.
+
+    public method addProgramEntityImportedSymbols: (importedProgramEntities: Collection) ::=> Void := {
+        programEntityImportedSymbols addAll: importedProgramEntities
     }.
 
     public method addLinkedObjectCode: (linkedObjectCode: AsmObjectCode) ::=> Void := {
@@ -683,6 +738,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             sections: linkedObjectCodeSections asArray -- sections asArray;
             symbols: symbols asArray;
             programEntities: programEntities asArray;
+            programEntityImportedSymbols: programEntityImportedSymbols asArray;
             yourself
     }.
 

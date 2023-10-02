@@ -908,6 +908,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolTableType,
         "sections", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "programEntities", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "programEntityImportedSymbols", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "hirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "mirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "asmTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,

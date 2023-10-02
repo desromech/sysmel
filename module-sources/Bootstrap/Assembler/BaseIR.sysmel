@@ -1858,6 +1858,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
     public field endStreams => OrderedCollection.
     public field children => OrderedCollection.
     public field importedSymbols => OrderedCollection.
+    public field importedProgramEntitySymbols => OrderedCollection.
     public field isDebuggingInformation => Boolean.
 
     public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
@@ -1867,6 +1868,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
         endStreams := OrderedCollection new.
         children := OrderedCollection new.
         importedSymbols := OrderedCollection new.
+        importedProgramEntitySymbols := OrderedCollection new.
     }.
 
     public method newStreamBuilder => AsmStreamBuilder := {
@@ -1910,6 +1912,10 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
 
     public method addImportedSymbol: (symbol: AsmSymbol) ::=> Void := {
         importedSymbols add: symbol
+    }.
+
+    public method addSourceProgramEntity: (sourceProgramEntity: ProgramEntity) importedSymbol: (symbol: AsmSymbol) ::=> Void := {
+        importedProgramEntitySymbols add: sourceProgramEntity -> symbol
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -2002,6 +2008,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
         let objectCodeBuilder := AsmObjectCodeBuilder new
             compilationTarget: compilationTarget;
             addImportedSymbols: importedSymbols;
+            addProgramEntityImportedSymbols: importedProgramEntitySymbols;
             yourself.
 
         self prepareToAssemble.
@@ -2019,6 +2026,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
         let objectCodeBuilder := AsmObjectCodeBuilder new
             compilationTarget: compilationTarget;
             addImportedSymbols: importedSymbols;
+            addProgramEntityImportedSymbols: importedProgramEntitySymbols;
             addLinkedObjectCode: initialObjectCode;
             yourself.
 
@@ -2036,6 +2044,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
         let objectCodeBuilder := AsmObjectCodeBuilder new
             compilationTarget: compilationTarget;
             addImportedSymbols: importedSymbols;
+            addProgramEntityImportedSymbols: importedProgramEntitySymbols;
             yourself.
 
         {|

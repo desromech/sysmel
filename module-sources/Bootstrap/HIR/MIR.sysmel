@@ -246,6 +246,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 debugSourcePosition: functionDefinition sourcePosition;
                 debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
+                sourceProgramEntity: functionDefinition sourceObject;
                 yourself.
         }.
     }.
@@ -282,6 +283,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 debugSourcePosition: functionDefinition sourcePosition;
                 debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
+                sourceProgramEntity: functionDefinition sourceObject;
                 yourself.
         }.
     }.
@@ -414,6 +416,7 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                         name: function definition capturelessUncheckedEntryPointNameSymbol;
                         compilationTarget: compilationTarget;
                         callingConvention: (compilationTarget callingConventionNamed: function definition callingConventionName);
+                        sourceProgramEntity: function definition;
                         yourself.
                     targetModule addProgramEntity: importedRuntimeFunction.
                     importedRuntimeFunction

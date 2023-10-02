@@ -67,12 +67,10 @@ public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) 
 *#
 
 public function NoRttiImageMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
-#*
     "Hello World\n" writeOntoStdout.
 
     argc negated asString writeOntoStdout.
     "\n" writeOntoStdout.
-*#
 
     #*
     let testArray := (1, "Hello", argc asString).

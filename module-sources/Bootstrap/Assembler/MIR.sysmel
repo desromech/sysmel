@@ -1000,6 +1000,9 @@ public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator
 
     public method generateGlobalVariable: (globalToGenerate: MIRGlobalVariable) withSymbol: (symbol: AsmSymbol) ::=> Void := {
         globalToGenerate isExternal ifTrue: {
+            globalToGenerate sourceProgramEntity ifNotNil: {
+                moduleGenerator targetModule addSourceProgramEntity: globalToGenerate sourceProgramEntity importedSymbol: symbol
+            }.
             moduleGenerator targetModule addImportedSymbol: symbol.
             return: void
         }.
@@ -1124,6 +1127,10 @@ MIRProgramEntity definition: {
 
 MIRImportedProgramEntity definition: {
     public override method generateAssemblyWith: (moduleGenerator: MIRModuleAsmCodeGenerator) symbol: (symbol: AsmSymbol) ::=> Void := {
+        sourceProgramEntity ifNotNil: {
+            moduleGenerator targetModule addSourceProgramEntity: sourceProgramEntity importedSymbol: symbol
+        }.
+
         moduleGenerator targetModule addImportedSymbol: symbol
     }.
 

@@ -63,7 +63,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_byteArray_create(sysbvm_context_t *context, sys
 {
     if(size == 0)
     {
-        sysbvm_type_tuple_t *byteArrayTypeObject = (sysbvm_type_tuple_t*)context->roots.arrayType;
+        sysbvm_type_tuple_t *byteArrayTypeObject = (sysbvm_type_tuple_t*)context->roots.byteArrayType;
         if(byteArrayTypeObject)
         {
             if(!byteArrayTypeObject->emptyTrivialSingleton)
