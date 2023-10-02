@@ -465,6 +465,9 @@ public abstract class AsmStackMapLocation superclass: Object; definition: {
     public field liveIntervalSection => AsmObjectCodeSection.
     public field liveIntervalSectionStart => Size.
     public field liveIntervalSectionEnd => Size.
+
+    public method hasValidLiveInterval => Boolean
+        := liveIntervalSection isNotNil && (liveIntervalSectionStart <= liveIntervalSectionEnd).
 }.
 
 public final class AsmObjectCode superclass: Object; definition: {

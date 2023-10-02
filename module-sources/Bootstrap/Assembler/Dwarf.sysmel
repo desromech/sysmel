@@ -2700,38 +2700,52 @@ AsmStackMap extend: {
         }.
     }.
 
+    public method dwarf::emitDIE: (die: Dwarf::DebugInfoEntry) locationList: (locations: SequenceableCollection) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
+        locations isEmpty ifTrue: {
+            return: void
+        }.
+
+        let nonIntervalLocation mutable => AsmStackMapLocation := nil.
+        locations do: {:(AsmStackMapLocation)each :: Void |
+            nonIntervalLocation ifNil: {
+                each hasValidLiveInterval ifFalse: {
+                    nonIntervalLocation := each
+                }
+            }.
+        }.
+
+        ## FIXME: Emit a proper location list if we have proper live intervals.
+        die location: (nonIntervalLocation dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+    }.
+
     public method dwarf::emitLocationForLocalDIE: (localDIE: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
         let binding := localDIE sourceBinding.
         let bindingMap := self getMapOrNilForBinding: binding.
 
-        bindingMap isNotNil && bindingMap locations isNotEmpty ifTrue: {
-            ## FIXME: Emit a proper location list.
-            localDIE location: (bindingMap locations first dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+        bindingMap ifNotNil: {
+            self dwarf::emitDIE: localDIE locationList: bindingMap locations with: debugGenerator
         }.
     }.
 
     public method dwarf::generateProgramEntityForBindingLocationMap: (bindingLocationMap: AsmSymbolBindingLocationMap) subprogram: (subprogram: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {
-        ## FIXME: Emit a proper location list.
-        bindingLocationMap locations do: {:(AsmStackMapLocation)eachLocation :: Void |
-            let binding := bindingLocationMap binding.
-            let variable := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_variable.
-            variable sourceBinding: binding.
-            subprogram addChild: variable.
+        let binding := bindingLocationMap binding.
+        let variable := Dwarf::DebugInfoEntry tag: Dwarf::DW_TAG_variable.
+        variable sourceBinding: binding.
+        subprogram addChild: variable.
 
-            binding name ifNotNil: (variable name: binding name asString).
-            binding type ifNotNil: {
-                let bindingType := binding type.
-                bindingLocationMap isMutable && bindingType isReferenceType ifTrue: {
-                    let valueType := (bindingType downCastTo: ReferenceType) baseType.
-                    variable type: (debugGenerator getOrCreateDieForType: valueType).
-                } ifFalse: {
-                    variable type: (debugGenerator getOrCreateDieForType: bindingType).
-                }.
+        binding name ifNotNil: (variable name: binding name asString).
+        binding type ifNotNil: {
+            let bindingType := binding type.
+            bindingLocationMap isMutable && bindingType isReferenceType ifTrue: {
+                let valueType := (bindingType downCastTo: ReferenceType) baseType.
+                variable type: (debugGenerator getOrCreateDieForType: valueType).
+            } ifFalse: {
+                variable type: (debugGenerator getOrCreateDieForType: bindingType).
             }.
+        }.
 
-            debugGenerator setDie: variable declarationPosition: binding sourcePosition.
-            variable location: (eachLocation dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
-        }
+        debugGenerator setDie: variable declarationPosition: binding sourcePosition.
+        self dwarf::emitDIE: variable locationList: bindingLocationMap locations with: debugGenerator.
     }.
 }.
 
