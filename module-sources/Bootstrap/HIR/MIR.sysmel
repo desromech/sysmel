@@ -3091,6 +3091,7 @@ HIRModule extend: {
                 importRuntimeFunction: true;
                 compileHIRModule: perValueModule;
                 finish.
+            perValueMirModule performStandardOptimizations.
 
             let mirTextIR => String := keepingIRTextForDebugging
                 ifTrue: (perValueMirModule fullPrintString)
