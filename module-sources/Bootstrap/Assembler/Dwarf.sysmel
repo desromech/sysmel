@@ -2714,8 +2714,13 @@ AsmStackMap extend: {
             }.
         }.
 
-        ## FIXME: Emit a proper location list if we have proper live intervals.
-        die location: (nonIntervalLocation dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+        nonIntervalLocation ifNil: {
+            ## FIXME: Emit a proper location list if we have proper live intervals.
+            ##printLine("TODO: Emit location list").
+            die location: (locations first dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+        } ifNotNil: {
+            die location: (nonIntervalLocation dwarf::buildExpressionForStackMap: self target: debugGenerator compilationTarget)
+        }
     }.
 
     public method dwarf::emitLocationForLocalDIE: (localDIE: Dwarf::DebugInfoEntry) with: (debugGenerator: Dwarf::ObjectDebugInformationGenerator) ::=> Void := {

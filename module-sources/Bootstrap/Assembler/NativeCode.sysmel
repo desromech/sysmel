@@ -8,6 +8,74 @@ AsmProgramEntity definition: {
         := self assembleWithoutGeneratingTargetInformation asNativeCode.
 }.
 
+AsmStackMapLocation definition: {
+    public method encodeLiveIntervalForNativeCodeWith: (encoder: NativeCodeLocationListEncoder) ::=> Void := {
+        self hasValidLiveInterval ifTrue: {
+            encoder beginWithIntervalStart: liveIntervalSectionStart asUInt32 end: liveIntervalSectionEnd asUInt32            
+        } ifFalse: {
+            encoder beginWithoutInterval
+        }.
+    }.
+
+    public abstract method encodeForNativeCodeWith: (encoder: NativeCodeLocationListEncoder) ::=> Void
+        := self subclassResponsibility.
+
+    public method asNativeCodeLocationList => NativeCodeLocationList := {
+        let encoder := NativeCodeLocationListEncoder new.
+        self encodeForNativeCodeWith: encoder.
+        encoder finish
+    }.
+}.
+
+AsmStackMapLocationRegister definition: {
+    public override method encodeForNativeCodeWith: (encoder: NativeCodeLocationListEncoder) ::=> Void := {
+        self encodeLiveIntervalForNativeCodeWith: encoder.
+        encoder register: register nativeCodeDebugRegisterValue
+    }.
+}.
+
+AsmStackMapLocationFrameOffset definition: {
+    public override method encodeForNativeCodeWith: (encoder: NativeCodeLocationListEncoder) ::=> Void := {
+        self encodeLiveIntervalForNativeCodeWith: encoder.
+        encoder frameOffset: offset asInt32
+    }.
+}.
+
+AsmStackMapLocationCaptureOffset definition: {
+    public override method encodeForNativeCodeWith: (encoder: NativeCodeLocationListEncoder) ::=> Void := {
+        self encodeLiveIntervalForNativeCodeWith: encoder.
+        encoder captureVectorOffset: offset asInt32
+    }.
+}.
+
+AsmSymbolBindingLocationMap definition: {
+    public method asNativeCodeBindingLocation => NativeCodeBindingLocation := {
+        let encoder := NativeCodeLocationListEncoder new.
+        locations do: {:(AsmStackMapLocation)each :: Void |
+            each encodeForNativeCodeWith: encoder
+        }.
+
+        NativeCodeBindingLocation new
+            binding: binding;
+            isMutable: isMutable;
+            location: encoder finish;
+            yourself
+    }.
+}.
+
+AsmStackMap definition: {
+    public method asNativeCodeStackMap => NativeCodeStackMap
+        := NativeCodeStackMap new
+            frameBase: (frameBase ifNotNil: frameBase asNativeCodeLocationList);
+            captureBase: (captureBase ifNotNil: captureBase asNativeCodeLocationList);
+
+            arguments: (arguments collect: {:(AsmSymbolBindingLocationMap)each :: NativeCodeBindingLocation | each asNativeCodeBindingLocation }) asArray;
+            captures: (captures collect: {:(AsmSymbolBindingLocationMap)each :: NativeCodeBindingLocation | each asNativeCodeBindingLocation }) asArray;
+            locals: (locals collect: {:(AsmSymbolBindingLocationMap)each :: NativeCodeBindingLocation | each asNativeCodeBindingLocation }) asArray;
+
+            yourself.
+}.
+
 AsmObjectCode definition: {
     public method asNativeCode => NativeCode := {
         let convertedSections := OrderedCollection new.
@@ -74,7 +142,7 @@ AsmObjectCode definition: {
                 sourceProgramEntity: each sourceProgramEntity;
                 contentSymbol: convertSymbolBlock(each contentSymbol);
                 trampolineTarget: convertSymbolBlock(each trampolineTarget);
-                ##stackMap: each stackMap;
+                stackMap: each stackMap asNativeCodeStackMap;
 
                 debugSourcePosition: each debugSourcePosition;
                 debugSourceNode: each debugSourceNode;
@@ -194,9 +262,92 @@ public global NativeCodeRelocation::AsmRelocationConversionMap := #{
     }.
 }.
 
+let NativeCodeLocationOperationConversionFunction := (Int32, AsmStackMap, AsmCompilationTarget) => AsmStackMapLocation.
+let NativeCodeLocationOperationConversionBlock := #{
+    NativeCodeLocationList::Opcode::Register : {:(Int32)operand :(AsmStackMap)stackMap :(AsmCompilationTarget)compilationTarget :: AsmStackMapLocation |
+        AsmStackMapLocationRegister new
+            register: (compilationTarget registerFromNativeCodeDebugValue: operand);
+            yourself
+    }.
+    NativeCodeLocationList::Opcode::FrameOffset : {:(Int32)operand :(AsmStackMap)stackMap :(AsmCompilationTarget)compilationTarget :: AsmStackMapLocation |
+        AsmStackMapLocationFrameOffset new
+            offset: operand asInt64;
+            yourself
+    }.
+    NativeCodeLocationList::Opcode::CaptureVectorOffset : {:(Int32)operand :(AsmStackMap)stackMap :(AsmCompilationTarget)compilationTarget :: AsmStackMapLocation |
+        AsmStackMapLocationCaptureOffset new
+            captureVectorPointer: stackMap captureBase;
+            offset: operand asInt64;
+            yourself
+    }.
+}.
+
+NativeCodeLocationList definition: {
+    public method asAsmStackMapLocationListFor: (stackMap: AsmStackMap) textSection: (textSection: AsmObjectCodeSection) target: (target: AsmCompilationTarget) ::=> OrderedCollection := {
+        let list := OrderedCollection new.
+        self decodedInstructionsDo: {:(Boolean)hasInterval :(UInt32)intervalStartPC :(UInt32)intervalEndPC :(UInt8)operation :(Int32)operand :: Void |
+            let conversionFunction => NativeCodeLocationOperationConversionFunction := NativeCodeLocationOperationConversionBlock at: operation.
+            let convertedLocation := conversionFunction(operand, stackMap, target).
+            convertedLocation ifNotNil: {
+                hasInterval ifTrue: {
+                    convertedLocation
+                        liveIntervalSection: textSection;
+                        liveIntervalSectionStart: intervalStartPC asSize;
+                        liveIntervalSectionEnd: intervalEndPC asSize.
+                }.
+
+                list add: convertedLocation
+            }
+        }.
+
+        list
+    }.
+
+    public method asAsmStackMapLocationFor: (stackMap: AsmStackMap) textSection: (textSection: AsmObjectCodeSection) target: (target: AsmCompilationTarget) :: => AsmStackMapLocation := {
+        let list := self asAsmStackMapLocationListFor: stackMap textSection: textSection target: target.
+        list isEmpty 
+            ifTrue: nil
+            ifFalse: list first
+    }.
+}.
+
+NativeCodeBindingLocation definition: {
+    public method asAsmSymbolBindingLocationMapFor: (stackMap: AsmStackMap) textSection: (textSection: AsmObjectCodeSection) target: (target: AsmCompilationTarget) ::=> AsmSymbolBindingLocationMap
+        := AsmSymbolBindingLocationMap new
+            binding: binding;
+            isMutable: isMutable;
+            locations: (location
+                ifNil: OrderedCollection new
+                ifNotNil: (location asAsmStackMapLocationListFor: stackMap textSection: textSection target: target));
+            yourself.
+}.
+
+NativeCodeStackMap definition: {
+    public method asAsmStackMapWithTextSection: (textSection: AsmObjectCodeSection) target: (target: AsmCompilationTarget) ::=> AsmStackMap := {
+        let stackMap := AsmStackMap new.
+        stackMap
+            frameBase: (frameBase ifNotNil: (frameBase asAsmStackMapLocationFor: stackMap textSection: textSection target: target));
+            captureBase: (captureBase ifNotNil: (captureBase asAsmStackMapLocationFor: stackMap textSection: textSection target: target)).
+
+        arguments do: {:(NativeCodeBindingLocation)eachBindingLocation :: Void |
+            stackMap addNewArgumentBindingMap: (eachBindingLocation asAsmSymbolBindingLocationMapFor: stackMap textSection: textSection target: target)
+        }.
+        captures do: {:(NativeCodeBindingLocation)eachBindingLocation :: Void |
+            stackMap addNewCaptureBindingMap: (eachBindingLocation asAsmSymbolBindingLocationMapFor: stackMap textSection: textSection target: target)
+        }.
+        locals do: {:(NativeCodeBindingLocation)eachBindingLocation :: Void |
+            stackMap addNewLocalBindingMap: (eachBindingLocation asAsmSymbolBindingLocationMapFor: stackMap textSection: textSection target: target)
+        }.
+
+        stackMap
+    }.
+}.
+
+
 NativeCode definition: {
     public method asAsmObjectCodeWithTarget: (compilationTarget: AsmCompilationTarget) ::=> AsmObjectCode := {
         let sectionTable := ObjectPointerDictionary new.
+        let textSection mutable => AsmObjectCodeSection := nil.
         let asmSections := sections collect: {:(NativeCodeSection)eachSection :: AsmObjectCodeSection |
             let asmSection := AsmObjectCodeSection new
                 name: eachSection name;
@@ -216,6 +367,9 @@ NativeCode definition: {
                 debugSourceEnvironments: eachSection debugSourceEnvironments;
                 yourself.
             sectionTable at: eachSection put: asmSection.
+            asmSection name = #".text" ifTrue: {
+                textSection := asmSection
+            }.
             asmSection
         }.
 
@@ -276,7 +430,7 @@ NativeCode definition: {
                     sourceProgramEntity: each sourceProgramEntity;
                     contentSymbol: convertSymbolBlock(each contentSymbol);
                     trampolineTarget: convertSymbolBlock(each trampolineTarget);
-                    ##stackMap: each stackMap;
+                    stackMap: (each stackMap asAsmStackMapWithTextSection: textSection target: compilationTarget);
 
                     debugSourcePosition: each debugSourcePosition;
                     debugSourceNode: each debugSourceNode;

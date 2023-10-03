@@ -137,6 +137,9 @@ AsmInstructionOperand definition: {
 AsmRegister definition: {
     public override method isRegister => Boolean := true.
     public override method isRegisterOrRegisterAddress => Boolean := true.
+
+    public abstract method nativeCodeDebugRegisterValue => Int32
+        := self subclassResponsibility.
 }.
 
 public class AsmRegisterAddress superclass: AsmInstructionOperand; definition: {
@@ -2304,6 +2307,28 @@ AsmStackMap definition: {
         locals add: bindingMap
     }.
 
+    public method addNewBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
+        bindingMap binding ifNotNil: {
+            bindingDictionary at: bindingMap binding put: bindingMap.
+            bindings add: bindingMap.
+        }.
+    }.
+
+    public method addNewArgumentBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
+        self addNewBindingMap: bindingMap.
+        arguments add: bindingMap
+    }.
+
+    public method addNewCaptureBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
+        self addNewBindingMap: bindingMap.
+        captures add: bindingMap
+    }.
+
+    public method addNewLocalBindingMap: (bindingMap: AsmSymbolBindingLocationMap) ::=> Void := {
+        self addNewBindingMap: bindingMap.
+        locals add: bindingMap
+    }.
+
     public method setLocalBinding: (binding: SymbolBinding) isMutable: (isMutable: Boolean) location: (location: AsmStackMapLocation) ::=> Void := {
         let isExistingMap := bindingDictionary includesKey: binding.
         let map := self setBinding: binding isMutable: isMutable location: location.
@@ -2322,4 +2347,7 @@ AsmCompilationTarget definition: {
         public method default => AsmCompilationTarget
             := nil.
     }.
+
+    public abstract method registerFromNativeCodeDebugValue: (debugValue: Int32) ::=> AsmRegister
+        := self subclassResponsibility
 }.

@@ -502,6 +502,9 @@ public class AsmX86IntRegister superclass: AsmX86Register; definition: {
     public override method x86::isRegisterAX => Boolean := (self size ~= 1sz) && (value = 0u8).
     public override method x86::isRegisterCL => Boolean := (self size = 1sz) && (value = 1u8).
 
+    public override method nativeCodeDebugRegisterValue => Int32
+        := value asInt32.
+
     public method x86::byte => AsmX86RegisterAddress
         := AsmX86RegisterAddress base: self size: 1u8.
 
@@ -543,6 +546,9 @@ public class AsmX86Int64Register superclass: AsmX86IntRegister; definition: {
 }.
 
 public class AsmX86VectorRegister superclass: AsmX86Register; definition: {
+    public override method nativeCodeDebugRegisterValue => Int32
+        := value asInt32 + 32i32.
+
     public override method size => Size := 16sz.
 
     public override method isVectorRegister => Boolean := true.
@@ -649,6 +655,36 @@ public global X86::XMM12 := AsmX86VectorRegister name: #XMM12 value: 12u8 dwarf6
 public global X86::XMM13 := AsmX86VectorRegister name: #XMM13 value: 13u8 dwarf64: 30u32.
 public global X86::XMM14 := AsmX86VectorRegister name: #XMM14 value: 14u8 dwarf64: 31u32.
 public global X86::XMM15 := AsmX86VectorRegister name: #XMM15 value: 15u8 dwarf64: 32u32.
+
+public global X86::NativeCodeDebugValueMap := Dictionary new.
+public global X86_64::NativeCodeDebugValueMap := Dictionary new.
+
+(
+    X86::EAX, X86::ECX, X86::EDX, X86::EBX, X86::ESP, X86::EBP, X86::ESI, X86::EDI,
+    X86::XMM0, X86::XMM1, X86::XMM2, X86::XMM3, X86::XMM4, X86::XMM5, X86::XMM6, X86::XMM7
+) do: {:(AsmRegister)register :: Void |
+    X86::NativeCodeDebugValueMap at: register nativeCodeDebugRegisterValue put: register
+}.
+
+(
+    X86::RAX, X86::RCX, X86::RDX, X86::RBX, X86::RSP, X86::RBP, X86::RSI, X86::RDI,
+    X86::R8, X86::R9, X86::R10, X86::R11, X86::R12, X86::R13, X86::R14, X86::R15,
+
+    X86::XMM0, X86::XMM1, X86::XMM2, X86::XMM3, X86::XMM4, X86::XMM5, X86::XMM6, X86::XMM7,
+    X86::XMM8, X86::XMM9, X86::XMM10, X86::XMM11, X86::XMM12, X86::XMM13, X86::XMM14, X86::XMM15
+) do: {:(AsmRegister)register :: Void |
+    X86_64::NativeCodeDebugValueMap at: register nativeCodeDebugRegisterValue put: register
+}.
+
+AsmX86CompilationTarget definition: {
+    public override method registerFromNativeCodeDebugValue: (debugValue: Int32) ::=> AsmRegister
+        := X86::NativeCodeDebugValueMap at: debugValue
+}.
+
+AsmX86_64CompilationTarget definition: {
+    public override method registerFromNativeCodeDebugValue: (debugValue: Int32) ::=> AsmRegister
+        := X86_64::NativeCodeDebugValueMap at: debugValue
+}.
 
 public final class AsmX86InstructionDefinition superclass: Object; definition: {
     public field mnemonic => Symbol.
