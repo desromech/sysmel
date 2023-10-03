@@ -146,6 +146,7 @@ public class NativeCodeLinkerSymbolTable superclass: Object; definition: {
                 convertedSymbol
                     section: (sectionDictionary at: symbol section);
                     value: (symbol value + sectionOffset asIntPointer);
+                    size: symbol size;
                     yourself.
             }.
 

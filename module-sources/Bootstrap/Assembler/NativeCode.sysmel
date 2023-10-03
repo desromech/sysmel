@@ -142,7 +142,7 @@ AsmObjectCode definition: {
                 sourceProgramEntity: each sourceProgramEntity;
                 contentSymbol: convertSymbolBlock(each contentSymbol);
                 trampolineTarget: convertSymbolBlock(each trampolineTarget);
-                stackMap: each stackMap asNativeCodeStackMap;
+                stackMap: (each stackMap ifNotNil: each stackMap asNativeCodeStackMap);
 
                 debugSourcePosition: each debugSourcePosition;
                 debugSourceNode: each debugSourceNode;
@@ -430,7 +430,7 @@ NativeCode definition: {
                     sourceProgramEntity: each sourceProgramEntity;
                     contentSymbol: convertSymbolBlock(each contentSymbol);
                     trampolineTarget: convertSymbolBlock(each trampolineTarget);
-                    stackMap: (each stackMap asAsmStackMapWithTextSection: textSection target: compilationTarget);
+                    stackMap: (each stackMap ifNotNil: (each stackMap asAsmStackMapWithTextSection: textSection target: compilationTarget));
 
                     debugSourcePosition: each debugSourcePosition;
                     debugSourceNode: each debugSourceNode;

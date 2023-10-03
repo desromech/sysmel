@@ -86,25 +86,25 @@ public final struct GarbageCollector::PointerList definition: {
 
 public global GarbageCollector::ObjectHeaderSize := 16sz.
 
-private global GarbageCollector::GammaFactor := 3sz.
-private global GarbageCollector::NurseryFraction := 4sz.
-private global GarbageCollector::MinimalCollectionThreshold := 4sz << 20sz.
+public global GarbageCollector::GammaFactor := 3sz.
+public global GarbageCollector::NurseryFraction := 4sz.
+public global GarbageCollector::MinimalCollectionThreshold := 4sz << 20sz.
 
-private global GarbageCollector::CurrentHeapSize mutable => Size := 0sz.
-private global GarbageCollector::CurrentYoungHeapSize mutable => Size := 0sz.
-private global GarbageCollector::NextCollectionThreshold mutable => Size := 0sz.
-private global GarbageCollector::NextYoungCollectionThreshold mutable => Size := 0sz.
+public global GarbageCollector::CurrentHeapSize mutable => Size := 0sz.
+public global GarbageCollector::CurrentYoungHeapSize mutable => Size := 0sz.
+public global GarbageCollector::NextCollectionThreshold mutable => Size := 0sz.
+public global GarbageCollector::NextYoungCollectionThreshold mutable => Size := 0sz.
 
-private global GarbageCollector::IsCollectingYoungGeneration mutable => Boolean := false.
+public global GarbageCollector::IsCollectingYoungGeneration mutable => Boolean := false.
 
-private global GarbageCollector::FirstYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
-private global GarbageCollector::LastYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+public global GarbageCollector::FirstYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+public global GarbageCollector::LastYoungAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
 
-private global GarbageCollector::FirstAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
-private global GarbageCollector::LastAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+public global GarbageCollector::FirstAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
+public global GarbageCollector::LastAllocatedObject mutable => GarbageCollector::ObjectHeader pointer := nil.
 
-private global GarbageCollector::MarkingStack mutable := GarbageCollector::PointerList basicNew.
-private global GarbageCollector::RememberedSet mutable := GarbageCollector::PointerList basicNew.
+public global GarbageCollector::MarkingStack mutable := GarbageCollector::PointerList basicNew.
+public global GarbageCollector::RememberedSet mutable := GarbageCollector::PointerList basicNew.
 
 public global GarbageCollector::WhiteColor := 0u8.
 public global GarbageCollector::GrayColor := 1u8.
@@ -144,7 +144,7 @@ public nogc function GarbageCollector::allocate(size: Size) => Void pointer := {
     object + 1iptr reinterpretCastTo: Void pointer
 }.
 
-private inline nogc function GarbageCollector::addYoungAllocatedObject(object: GarbageCollector::ObjectHeader pointer) => Void := {
+public inline nogc function GarbageCollector::addYoungAllocatedObject(object: GarbageCollector::ObjectHeader pointer) => Void := {
     GarbageCollector::LastYoungAllocatedObject ifNotNil: {
         GarbageCollector::LastYoungAllocatedObject _ next: object.
         GarbageCollector::LastYoungAllocatedObject := object.
@@ -153,7 +153,7 @@ private inline nogc function GarbageCollector::addYoungAllocatedObject(object: G
     }.
 }.
 
-private inline nogc function GarbageCollector::addOldAllocatedObject(object: GarbageCollector::ObjectHeader pointer) => Void := {
+public inline nogc function GarbageCollector::addOldAllocatedObject(object: GarbageCollector::ObjectHeader pointer) => Void := {
     GarbageCollector::LastAllocatedObject ifNotNil: {
         GarbageCollector::LastAllocatedObject _ next: object.
         GarbageCollector::LastAllocatedObject := object.
@@ -162,9 +162,9 @@ private inline nogc function GarbageCollector::addOldAllocatedObject(object: Gar
     }.
 }.
 
-private global GarbageCollector::IsInitialized mutable => Boolean := false.
-private global GarbageCollector::RelocatedStaticObjectSegmentEnd mutable => UIntPointer := 0uptr.
-private global GarbageCollector::RelocatedStaticObjectSegmentDifference mutable => UIntPointer := 0uptr.
+public global GarbageCollector::IsInitialized mutable => Boolean := false.
+public global GarbageCollector::RelocatedStaticObjectSegmentEnd mutable => UIntPointer := 0uptr.
+public global GarbageCollector::RelocatedStaticObjectSegmentDifference mutable => UIntPointer := 0uptr.
 
 public nogc function GarbageCollector::relocatePointerValue(pointerValue: UIntPointer) => UIntPointer
     := ObjectModel::isNonNullPointerValue(pointerValue)
@@ -558,7 +558,7 @@ public nogc function GarbageCollector::mark() => Void := {
     }
 }.
 
-private inline nogc function GarbageCollector::isDeadObjectPointer(objectPointer: UIntPointer) => Boolean := {
+public inline nogc function GarbageCollector::isDeadObjectPointer(objectPointer: UIntPointer) => Boolean := {
     let header := objectPointer reinterpretCastTo: ObjectModel::TupleHeader pointer.
     (header _ gcColor = GarbageCollector::WhiteColor) && (GarbageCollector::IsCollectingYoungGeneration not || header _ isYoung).
 }.

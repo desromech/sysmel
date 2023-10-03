@@ -2237,10 +2237,13 @@ public final class Dwarf::ObjectDebugInformationGenerator superclass: AsmObjectD
     public field typeDieDictionary => ObjectPointerDictionary.
     public field lineWriter => Dwarf::DebugLineWriter.
 
+    public field generatedProgramEntityDieSet => ObjectPointerSet.
+
     public override method initialize => Void := {
         super initialize.
         programEntityDieDictionary := ObjectPointerDictionary new.
         typeDieDictionary := ObjectPointerDictionary new.
+        generatedProgramEntityDieSet := ObjectPointerSet new.
         lineWriter := Dwarf::DebugLineWriter new.
     }.
 
@@ -2667,6 +2670,9 @@ FunctionDefinition extend: {
                 trampolineWithTargetDie: (debugGenerator getOrCreateDieForProgramEntity: self);
                 pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize.
         } ifNil: {
+            (debugGenerator generatedProgramEntityDieSet includes: self) ifTrue: {return: void}.
+            debugGenerator generatedProgramEntityDieSet add: self.
+
             let subprogram := debugGenerator getOrCreateDieForProgramEntity: self.
             subprogram
                 pcRangeSymbol: generatedFunction contentSymbol pointerSize: debugGenerator pointerSize.

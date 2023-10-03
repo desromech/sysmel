@@ -139,10 +139,11 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     }.
 
     public method compileGlobalVariable: (globalVariable: HIRGlobalVariable) ::=> MIRGlobalVariable := {
+        let isInHirModule := hirModule includesGlobalValue: globalVariable.
         let mirGlobalVariable := (MIRGlobalVariable withName: globalVariable name type: globalVariable type valueType: globalVariable valueType isValueInstance: false compilationTarget: compilationTarget)
             sourceProgramEntity: globalVariable sourceBinding;
             isReadOnly: globalVariable isReadOnly;
-            isExternal: globalVariable isExternal;
+            isExternal: globalVariable isExternal || isInHirModule not;
             isThreadLocal: globalVariable isThreadLocal;
             yourself.
         targetModule addProgramEntity: mirGlobalVariable.
@@ -155,19 +156,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
         globalValueDictionary at: globalVariable ifAbsentPut: {|
             self compileGlobalVariable: globalVariable
         }.
-    }.
-
-    public method translateFunction: (function: HIRFunction) ::=> MIRValue
-        := globalValueDictionary at: function ifAbsentPut: {|
-            self compileFunction: function
-        }.
-
-    public method compileFunction: (function: HIRFunction) ::=> MIRValue := {
-        let functionObject := MIRGlobalVariable withName: function name type: Function valueType: Function isValueInstance: true compilationTarget: compilationTarget.
-        targetModule addProgramEntity: functionObject.
-        globalValueDictionary at: function put: functionObject.
-
-        functionObject
     }.
 
     public method compileCapturelessUncheckedFunctionEntryPoint: (functionDefinition: HIRFunctionDefinition) ::=> MIRProgramEntity := {

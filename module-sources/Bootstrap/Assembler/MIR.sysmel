@@ -620,6 +620,7 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         ## Make the capture vector pointer stack map location.
         function captureVectorPointerValue ifNotNil: {
             captureVectorPointerStackMapLocation := self validStackMapLocationForValue: function captureVectorPointerValue.
+            stackMap captureBase: captureVectorPointerStackMapLocation
         }.
 
         function captures do: {:(MIRLocalValue)eachLocal :: Void |
