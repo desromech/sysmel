@@ -1,0 +1,52 @@
+public final struct SmallStringBuffer definition: {
+    private global Capacity => Size := 64sz.
+
+    public field data => Char8[Capacity].
+    public field size => Size.
+
+    public inline method capacity => Size := Capacity.
+
+    public inline method nextPut: (c: Char8) ::=> Void := {
+        size >= Capacity ifTrue: {
+            error("SmallStringBuffer overflow")
+        }.
+
+        data at: size put: c.
+        size := size + 1sz
+    }.
+
+    public method printReversedOn: (stream: Stream) ::=> Void := {
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            stream nextPut: data[size - i - 1sz]
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public override method printOn: (stream: Stream) ::=> Void := {
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            stream nextPut: data[i]
+        } continueWith: (i := i + 1sz)
+    }.
+
+    public override method asString ::=> String := {
+        let result := String basicAllocate: size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            result char8At: i put: data[i]
+        } continueWith: (i := i + 1sz).
+
+        result
+    }.
+
+    public method asReversedString ::=> String := {
+        let result := String basicAllocate: size.
+        let i mutable := 0sz.
+        while: (i < size) do: {
+            result char8At: i put: data[size - i - 1sz]
+        } continueWith: (i := i + 1sz).
+
+        result
+    }.
+
+}.

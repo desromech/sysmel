@@ -43,6 +43,7 @@ loadSourceNamed: "NativeCode.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
 loadSourceNamed: "SourceCode.sysmel".
+loadSourceNamed: "SmallStringBuffer.sysmel".
 loadSourceNamed: "StringSymbol.sysmel".
 loadSourceNamed: "String.sysmel".
 loadSourceNamed: "StringStream.sysmel".

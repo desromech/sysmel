@@ -333,7 +333,10 @@ UInt8 extend: {
         := self asUInt32 asString.
 
     public override final method printString => String
-        := self asUInt32 asString.
+        := self asUInt32 printString.
+
+    public override final method printOn: (stream: Stream) ::=> Void
+        := self asUInt32 printOn: stream.
 }.
 
 UInt16 extend: {
@@ -346,7 +349,10 @@ UInt16 extend: {
         := self asUInt32 asString.
 
     public override final method printString => String
-        := self asUInt32 asString.
+        := self asUInt32 printString.
+
+    public override final method printOn: (stream: Stream) ::=> Void
+        := self asUInt32 printOn: stream.
 }.
 
 UInt32 extend: {
@@ -355,33 +361,34 @@ UInt32 extend: {
         self asUInt16 printHexOn: stream.
     }.
 
-    public override final method asString => String := {
-        let digitCount mutable := 0sz.
+    public method printReversedOnSmallStringBuffer: (buffer: SmallStringBuffer ref) ::=> Void := {
         let currentValue mutable := self.
-
-        ## Count the required number of digits.
-        do: {
-            currentValue := currentValue / 10u32.
-            digitCount := digitCount + 1sz.
-        } while: (currentValue ~= 0u32).
-
-        let result := String basicAllocate: digitCount.
-        
-        ## Emit the string
-        currentValue := self.
-        let digitIndex mutable := 0sz.
         do: {
             let digit := currentValue % 10u32.
             currentValue := currentValue / 10u32.
-            result at: digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
-            digitIndex := digitIndex + 1sz
+            buffer nextPut: '0'c8 + digit asChar8
         } while: (currentValue ~= 0u32).
-
-        result
     }.
 
-    public override final method printString => String
-        := self asString.
+    public override final method asString => String
+        := self printString.
+
+    public override final method printString => String := {
+        <primitive: #UInt32::printString>
+        let buffer mutable := SmallStringBuffer basicNew.
+        self printReversedOnSmallStringBuffer: buffer.
+        buffer asReversedString
+    }.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        ObjectModel::isLogical() ifTrue: {
+            stream string: self printString
+        } ifFalse: {
+            let buffer mutable := SmallStringBuffer basicNew.
+            self printReversedOnSmallStringBuffer: buffer.
+            buffer printReversedOn: stream
+        }.
+    }.
 }.
 
 UInt64 extend: {
@@ -390,33 +397,34 @@ UInt64 extend: {
         self asUInt32 printHexOn: stream.
     }.
 
-    public override final method asString => String := {
-        let digitCount mutable := 0sz.
+    public method printReversedOnSmallStringBuffer: (buffer: SmallStringBuffer ref) ::=> Void := {
         let currentValue mutable := self.
-
-        ## Count the required number of digits.
-        do: {
-            currentValue := currentValue / 10u64.
-            digitCount := digitCount + 1sz.
-        } while: (currentValue ~= 0u64).
-
-        let result := String basicAllocate: digitCount.
-        
-        ## Emit the string
-        currentValue := self.
-        let digitIndex mutable := 0sz.
         do: {
             let digit := currentValue % 10u64.
             currentValue := currentValue / 10u64.
-            result at: digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
-            digitIndex := digitIndex + 1sz
+            buffer nextPut: '0'c8 + digit asChar8
         } while: (currentValue ~= 0u64).
-
-        result
     }.
 
-    public override final method printString => String
-        := self asString.
+    public override final method asString => String
+        := self printString.
+
+    public override final method printString => String := {
+        <primitive: #UInt64::printString>
+        let buffer mutable := SmallStringBuffer basicNew.
+        self printReversedOnSmallStringBuffer: buffer.
+        buffer asReversedString
+    }.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        ObjectModel::isLogical() ifTrue: {
+            stream string: self printString
+        } ifFalse: {
+            let buffer mutable := SmallStringBuffer basicNew.
+            self printReversedOnSmallStringBuffer: buffer.
+            buffer printReversedOn: stream
+        }.
+    }.
 }.
 
 Int8 extend: {
@@ -428,7 +436,10 @@ Int8 extend: {
         := self asInt32 asString.
 
     public override final method printString => String
-        := self asInt32 asString.
+        := self asInt32 printString.
+
+    public override final method printOn: (stream: Stream) ::=> Void
+        := self asInt32 printOn: stream.
 }.
 
 Int16 extend: {
@@ -440,7 +451,10 @@ Int16 extend: {
         := self asInt32 asString.
 
     public override final method printString => String
-        := self asInt32 asString.
+        := self asInt32 printString.
+
+    public override final method printOn: (stream: Stream) ::=> Void
+        := self asInt32 printOn: stream.
 }.
 
 Int32 extend: {
@@ -448,37 +462,33 @@ Int32 extend: {
         self asUInt32 printHexOn: stream.
     }.
 
-    public override final method asString => String := {
+    public method printReversedOnSmallStringBuffer: (buffer: SmallStringBuffer ref) ::=> Void := {
         let absoluteValue := self >= 0i32 ifTrue: self asUInt32 ifFalse: self negated asUInt32.
-        let isNegative := self < 0i32.
-        let digitCount mutable := 0sz.
-        let currentValue mutable := absoluteValue.
-
-        ## Count the required number of digits.
-        do: {
-            currentValue := currentValue / 10u32.
-            digitCount := digitCount + 1sz.
-        } while: (currentValue ~= 0u32).
-
-        let prefixSize := isNegative ifTrue: 1sz ifFalse: 0sz.
-        let result := String basicAllocate: prefixSize + digitCount.
-        
-        ## Emit the string
-        isNegative ifTrue: (result at: 0sz put: '-'c8).
-        currentValue := absoluteValue.
-        let digitIndex mutable := 0sz.
-        do: {
-            let digit := currentValue % 10u32.
-            currentValue := currentValue / 10u32.
-            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
-            digitIndex := digitIndex + 1sz
-        } while: (currentValue ~= 0u32).
-
-        result
+        absoluteValue printReversedOnSmallStringBuffer: buffer.
+        self < 0i32 ifTrue: {
+            buffer nextPut: '-'c8
+        }
     }.
 
-    public override final method printString => String
-        := self asString.
+    public override final method asString => String
+        := self printString.
+
+    public override final method printString => String := {
+        <primitive: #Int32::printString>
+        let buffer mutable := SmallStringBuffer basicNew.
+        self printReversedOnSmallStringBuffer: buffer.
+        buffer asReversedString
+    }.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        ObjectModel::isLogical() ifTrue: {
+            stream string: self printString
+        } ifFalse: {
+            let buffer mutable := SmallStringBuffer basicNew.
+            self printReversedOnSmallStringBuffer: buffer.
+            buffer printReversedOn: stream
+        }.
+    }.
 }.
 
 Int64 extend: {
@@ -486,37 +496,33 @@ Int64 extend: {
         self asUInt64 printHexOn: stream.
     }.
 
-    public override final method asString => String := {
+    public method printReversedOnSmallStringBuffer: (buffer: SmallStringBuffer ref) ::=> Void := {
         let absoluteValue := self >= 0i64 ifTrue: self asUInt64 ifFalse: self negated asUInt64.
-        let isNegative := self < 0i64.
-        let digitCount mutable := 0sz.
-        let currentValue mutable := absoluteValue.
-
-        ## Count the required number of digits.
-        do: {
-            currentValue := currentValue / 10u64.
-            digitCount := digitCount + 1sz.
-        } while: (currentValue ~= 0u64).
-
-        let prefixSize := isNegative ifTrue: 1sz ifFalse: 0sz.
-        let result := String basicAllocate: prefixSize + digitCount.
-        
-        ## Emit the string
-        isNegative ifTrue: (result at: 0sz put: '-'c8).
-        currentValue := absoluteValue.
-        let digitIndex mutable := 0sz.
-        do: {
-            let digit := currentValue % 10u64.
-            currentValue := currentValue / 10u64.
-            result at: prefixSize + digitCount - digitIndex - 1sz put: '0'c8 + digit asChar8.
-            digitIndex := digitIndex + 1sz
-        } while: (currentValue ~= 0u64).
-
-        result
+        absoluteValue printReversedOnSmallStringBuffer: buffer.
+        self < 0i64 ifTrue: {
+            buffer nextPut: '-'c8
+        }
     }.
 
-    public override final method printString => String
-        := self asString.
+    public override final method asString => String
+        := self printString.
+
+    public override final method printString => String := {
+        <primitive: #Int64::printString>
+        let buffer mutable := SmallStringBuffer basicNew.
+        self printReversedOnSmallStringBuffer: buffer.
+        buffer asReversedString
+    }.
+
+    public override final method printOn: (stream: Stream) ::=> Void := {
+        ObjectModel::isLogical() ifTrue: {
+            stream string: self printString
+        } ifFalse: {
+            let buffer mutable := SmallStringBuffer basicNew.
+            self printReversedOnSmallStringBuffer: buffer.
+            buffer printReversedOn: stream
+        }.
+    }.
 }.
 
 Float32 definition: {
