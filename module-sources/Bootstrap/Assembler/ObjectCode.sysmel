@@ -637,6 +637,13 @@ AsmSymbol definition: {
     public method isFunction => Boolean
         := type = AsmSymbol::Type::Function.
 
+    public method makeVariable => Void := {
+        type := AsmSymbol::Type::Variable.
+    }.
+
+    public method isVariable => Boolean
+        := type = AsmSymbol::Type::Variable.
+
     public method makeTLS => Void := {
         type := AsmSymbol::Type::TLS.
     }.

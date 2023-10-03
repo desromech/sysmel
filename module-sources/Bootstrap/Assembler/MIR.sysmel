@@ -1186,7 +1186,11 @@ MIRProgramEntity definition: {
             self isWeak ifTrue: (symbol makeWeak).
             self isPrivate ifTrue: (symbol makePrivate).
         }.
-        self isThreadLocal ifTrue: (symbol makeTLS).
+        self isThreadLocal ifTrue: {
+            symbol makeTLS
+        } ifFalse: {
+            self isVariable ifTrue: (symbol makeVariable)
+        }.
         
         symbol
     }.

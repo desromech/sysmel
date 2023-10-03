@@ -277,7 +277,7 @@ let elfSymbolVisibilityMap := #{
 let elfSymbolTypeMap := #{
     AsmSymbol::Type::None : Elf::SymbolTableType::Notype.
     AsmSymbol::Type::Function : Elf::SymbolTableType::Func.
-    AsmSymbol::Type::Variable : Elf::SymbolTableType::Notype.
+    AsmSymbol::Type::Variable : Elf::SymbolTableType::Object.
     AsmSymbol::Type::TLS : Elf::SymbolTableType::TLS.
 }.
 
