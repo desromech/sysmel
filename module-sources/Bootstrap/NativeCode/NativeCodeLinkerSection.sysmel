@@ -9,7 +9,7 @@ public class NativeCodeLinkerSection superclass: Object; definition: {
     public override method initialize => Void := {
         sourceSections := OrderedCollection new.
         linkedSection := NativeCodeSection new.
-        linkedSection alignment. 1sz.
+        linkedSection alignment: 1sz.
 
         debugSourceNodes := OrderedOffsetTableBuilder new.
         debugSourcePositions := OrderedOffsetTableBuilder new.

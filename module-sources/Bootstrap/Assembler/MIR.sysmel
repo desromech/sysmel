@@ -226,7 +226,7 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
     public method picTableSymbol ::=> AsmSymbol
         := picTableSymbol ifNil: { picTableSymbol := AsmSymbol new
             name: #sysmelPICTable;
-            makePublic;
+            makePrivate;
             yourself
         }.
 

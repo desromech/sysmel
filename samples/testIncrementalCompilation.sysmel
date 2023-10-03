@@ -103,11 +103,14 @@ printLine(linkedCode fullPrintString).
 *#
 
 {
+public global TestGlobal mutable := 5i32.
+public global TestGlobal2 mutable := 5i64.
+
 public function add(a: Int32, b: Int32) => Int32
-    := a + b.
+    := a + b + TestGlobal.
 
 public externC function main(argc: Int32, argv: Char8 const pointer) ::=> Int32
-    := add(argc, 3i32).
+    := add(argc, 3i32) * TestGlobal + TestGlobal2 asInt32.
 
 let hirModule := HIRModuleCompilationContext forDefaultTarget
     exclusiveCompilationMode: true;

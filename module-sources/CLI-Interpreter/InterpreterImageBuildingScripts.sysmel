@@ -1,4 +1,4 @@
-let UseIncrementalCompilation := false.
+let UseIncrementalCompilation := true.
 
 CLISysmelInterpreter definition: {
     __Meta__ definition: {

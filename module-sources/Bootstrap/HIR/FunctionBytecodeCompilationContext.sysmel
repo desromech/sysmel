@@ -640,7 +640,7 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
 
     public method compileMakeByteArrayWithElements: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         let elements := operands allButFirst collect: {:(Int16)each :: HIRValue | self valueOfOperand: each}.
-        self storeInTemporary: operands first value: (builder makeArray: elements)
+        self storeInTemporary: operands first value: (builder makeByteArray: elements)
     }.
 
     public method compileMakeClosureWithCaptures: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
