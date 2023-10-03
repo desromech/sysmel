@@ -4,6 +4,3 @@ loadSourceNamed: "Function.sysmel".
 loadSourceNamed: "Environment.sysmel".
 loadSourceNamed: "SemanticAnalyzer.sysmel".
 AnalysisQueue current waitPendingAnalysis.
-loadSourceNamed: "MonadicParser.sysmel".
-loadSourceNamed: "SysmelLanguage.sysmel".
-loadSourceNamed: "SourceCode.sysmel".

@@ -1,14 +1,14 @@
-public class MonadicParserStreamEndMarkClass definition: {
+public class ParsecStreamEndMarkClass definition: {
     let singleton := SelfType new.
     __Meta__ definition: {
-        public method uniqueInstance => MonadicParserStreamEndMarkClass
+        public method uniqueInstance => ParsecStreamEndMarkClass
             := singleton.
     }.
 }.
 
-public global MonadicParserStreamEndMark := MonadicParserStreamEndMarkClass uniqueInstance.
+public global ParsecStreamEndMark := ParsecStreamEndMarkClass uniqueInstance.
 
-public class MonadicParserState definition: {
+public class ParsecState definition: {
     public field sourceCollection => SequenceableCollection.
     public field sourceCode => SourceCode.
     public field position => Size.
@@ -41,7 +41,7 @@ public class MonadicParserState definition: {
         let peekPosition := position + offset.
         peekPosition < sourceCollection size
             ifTrue: (sourceCollection at: peekPosition)
-            ifFalse: MonadicParserStreamEndMark
+            ifFalse: ParsecStreamEndMark
     }.
 
     public method peek ::=> AnyValue
@@ -67,8 +67,8 @@ public class MonadicParserState definition: {
         := SourcePosition for: sourceCode startIndex: sourceCollection size asUInt32 endIndex: sourceCollection size asUInt32.
 }.
 
-public abstract class MonadicParserResult superclass: Object; definition: {
-    public field state => MonadicParserState.
+public abstract class ParsecResult superclass: Object; definition: {
+    public field state => ParsecState.
     public field value.
     public field startPosition => Size.
     public field endPosition => Size.
@@ -101,7 +101,7 @@ public abstract class MonadicParserResult superclass: Object; definition: {
     public virtual method errorMessage => String := "No an error".
 }.
 
-public class MonadicParserErrorResult superclass: MonadicParserResult; definition: {
+public class ParsecErrorResult superclass: ParsecResult; definition: {
     public field message => String.
     public field messageTemplate => String.
     public field messageTemplateParameters => Array.
@@ -122,47 +122,47 @@ public class MonadicParserErrorResult superclass: MonadicParserResult; definitio
     }.
 }.
 
-public abstract class MonadicParser definition: {
+public abstract class Parsec definition: {
     __Meta__ extend: {
-        public method end => MonadicParser
+        public method end => Parsec
             := MonadicEndParser new.
 
-        public method any => MonadicParser
+        public method any => Parsec
             := MonadicAnyParser new.
 
-        public method predicate: predicate errorMessage: (errorMessage: String) ::=> MonadicParser
+        public method predicate: predicate errorMessage: (errorMessage: String) ::=> Parsec
             := MonadicPredicateParser new
                 predicate: predicate;
                 errorMessage: errorMessage;
                 yourself.
 
-        public method white ::=> MonadicParser
+        public method white ::=> Parsec
             := self predicate: {:(Char8)character :: Boolean | character <= ' 'c8 } errorMessage: "Expected a whitespace.".
 
-        public method digit ::=> MonadicParser
+        public method digit ::=> Parsec
             := self predicate: {:(Char8)character :: Boolean | ('0'c8 <= character) && (character <= '9'c8) } errorMessage: "Expected a digit.".
 
-        public method alpha ::=> MonadicParser
+        public method alpha ::=> Parsec
             := self predicate: {:(Char8)character :: Boolean |
                 (('A'c8 <= character) && (character <= 'Z'c8)) ||
                 (('a'c8 <= character) && (character <= 'z'c8))
             } errorMessage: "Expected an alphabetic character.".
 
-        public method alphaNum ::=> MonadicParser
+        public method alphaNum ::=> Parsec
             := self predicate: {:(Char8)character :: Boolean |
                 (('A'c8 <= character) && (character <= 'Z'c8)) ||
                 (('a'c8 <= character) && (character <= 'z'c8)) ||
                 (('0'c8 <= character) && (character <= '9'c8))
             } errorMessage: "Expected an alphanumeric character.".
 
-        public method identifierStart ::=> MonadicParser
+        public method identifierStart ::=> Parsec
             := self predicate: {:(Char8)character :: Boolean |
                 (('A'c8 <= character) && (character <= 'Z'c8)) ||
                 (('a'c8 <= character) && (character <= 'z'c8)) ||
                 (character = '_'c8)
             } errorMessage: "Expected an alphabetic character.".
 
-        public method identifierMiddle ::=> MonadicParser
+        public method identifierMiddle ::=> Parsec
             := self predicate: {:(Char8)character :: Boolean |
                 (('A'c8 <= character) && (character <= 'Z'c8)) ||
                 (('a'c8 <= character) && (character <= 'z'c8)) ||
@@ -173,60 +173,60 @@ public abstract class MonadicParser definition: {
 
     public field isOmmittingValue => Boolean.
 
-    public method withoutValue => MonadicParser := {
+    public method withoutValue => Parsec := {
         isOmmittingValue := true.
         self
     }.
 
-    public method parse: (sourceCollection: SequenceableCollection) ::=> MonadicParserResult
-        := self parseWithState: (MonadicParserState for: sourceCollection).
+    public method parse: (sourceCollection: SequenceableCollection) ::=> ParsecResult
+        := self parseWithState: (ParsecState for: sourceCollection).
 
-    public method parseSourceCode: (sourceCode: SourceCode) ::=> MonadicParserResult
-        := self parseWithState: (MonadicParserState forSourceCode: sourceCode).
+    public method parseSourceCode: (sourceCode: SourceCode) ::=> ParsecResult
+        := self parseWithState: (ParsecState forSourceCode: sourceCode).
 
-    public abstract method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
+    public abstract method parseWithState: (state: ParsecState) ::=> ParsecResult
         := self subclassResponsibility.
 
-    public method makeResult: value withState: (state: MonadicParserState) ::=> MonadicParserResult
-        := MonadicParserResult new
+    public method makeResult: value withState: (state: ParsecState) ::=> ParsecResult
+        := ParsecResult new
             state: state;
             value: value;
             startPosition: state memento;
             endPosition: state memento;
             yourself.
 
-    public method makeResultWithState: (state: MonadicParserState) ::=> MonadicParserResult
-        := MonadicParserResult new
+    public method makeResultWithState: (state: ParsecState) ::=> ParsecResult
+        := ParsecResult new
             state: state;
             startPosition: state memento;
             endPosition: state memento;
             yourself.
 
-    public method makeResult: value from: (startPosition: Size) withState: (state: MonadicParserState) ::=> MonadicParserResult
-        := MonadicParserResult new
+    public method makeResult: value from: (startPosition: Size) withState: (state: ParsecState) ::=> ParsecResult
+        := ParsecResult new
             state: state;
             value: value;
             startPosition: startPosition;
             endPosition: state memento;
             yourself.
 
-    public method makeResultFrom: (startPosition: Size) withState: (state: MonadicParserState) ::=> MonadicParserResult
-        := MonadicParserResult new
+    public method makeResultFrom: (startPosition: Size) withState: (state: ParsecState) ::=> ParsecResult
+        := ParsecResult new
             state: state;
             startPosition: startPosition;
             endPosition: state memento;
             yourself.
 
-    public method makeError: (message: String) withState: (state: MonadicParserState) ::=> MonadicParserResult
-        := MonadicParserErrorResult new
+    public method makeError: (message: String) withState: (state: ParsecState) ::=> ParsecResult
+        := ParsecErrorResult new
             state: state;
             message: message;
             startPosition: state memento;
             endPosition: state memento;
             yourself.
 
-    public method makeError: (messageTemplate: String) formatWith: (messageTemplateParameters: Array) withState: (state: MonadicParserState) ::=> MonadicParserResult
-        := MonadicParserErrorResult new
+    public method makeError: (messageTemplate: String) formatWith: (messageTemplateParameters: Array) withState: (state: ParsecState) ::=> ParsecResult
+        := ParsecErrorResult new
             state: state;
             messageTemplate: messageTemplate;
             messageTemplateParameters: messageTemplateParameters;
@@ -234,72 +234,72 @@ public abstract class MonadicParser definition: {
             endPosition: state memento;
             yourself.
 
-    public virtual method -- (nextParser: MonadicParser) ::=> MonadicParser
+    public virtual method -- (nextParser: Parsec) ::=> Parsec
         := MonadicCombinatorSequenceParser new
             parsers: (Array with: self with: nextParser);
             yourself.
 
-    public virtual method | (nextParser: MonadicParser) ::=> MonadicParser
+    public virtual method | (nextParser: Parsec) ::=> Parsec
         := MonadicCombinatorAlternativesParser new
             parsers: (Array with: self with: nextParser);
             yourself.
 
-    public virtual method memoized => MonadicParser 
+    public virtual method memoized => Parsec 
         := MonadicMemoizedDelegateParser new
             parser: self;
             yourself.
 
-    public method optional => MonadicParser
+    public method optional => Parsec
         := MonadicCombinatorOptionalParser new
             parser: self;
             yourself.
 
-    public method star => MonadicParser
+    public method star => Parsec
         := MonadicCombinatorRepetitionParser new
             parser: self;
             yourself.
 
-    public method plus => MonadicParser
+    public method plus => Parsec
         := MonadicCombinatorRepetitionParser new
             parser: self;
             minimalCount: 1sz;
             yourself.
-    public method plusN: (minimalCount: Size) ::=> MonadicParser
+    public method plusN: (minimalCount: Size) ::=> Parsec
         := MonadicCombinatorRepetitionParser new
             parser: self;
             minimalCount: minimalCount;
             yourself.
 
-    public method negate => MonadicParser
+    public method negate => Parsec
         := MonadicCombinatorNegateParser new
             parser: self;
             yourself.
 
-    public method not => MonadicParser
+    public method not => Parsec
         := MonadicCombinatorNotParser new
             parser: self;
             yourself.
 
-    public method trim: (trimmingParser: MonadicParser) ::=> MonadicParser
+    public method trim: (trimmingParser: Parsec) ::=> Parsec
         := MonadicCombinatorTrimParser new
             trimmingParser: trimmingParser;
             parser: self;
             yourself.
 
-    public method ==> (valueComputationBlock: (MonadicParserResult) => AnyValue) ::=> MonadicParser
+    public method ==> (valueComputationBlock: (ParsecResult) => AnyValue) ::=> Parsec
         := MonadicValueComputationParser new
             parser: self;
             valueComputationBlock: valueComputationBlock;
             yourself.
 }.
 
-public class MonadicEpsilonParser superclass: MonadicParser; definition: {
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
+public class MonadicEpsilonParser superclass: Parsec; definition: {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult
         := self makeResult: nil withState: state.
 }.
 
-public class MonadicEndParser superclass: MonadicParser; definition: {
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+public class MonadicEndParser superclass: Parsec; definition: {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         state atEnd ifTrue: {
             self makeResult: nil withState: state. 
         } ifFalse: {
@@ -308,10 +308,10 @@ public class MonadicEndParser superclass: MonadicParser; definition: {
     }
 }.
 
-public class MonadicElementParser superclass: MonadicParser; definition: {
+public class MonadicElementParser superclass: Parsec; definition: {
     public field expectedElement => AnyValue.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         state atEnd not && (expectedElement = state peek) ifTrue: {
             state advance.
@@ -327,7 +327,7 @@ AnyValue extend: {
         := MonadicElementParser new expectedElement: self; yourself
 }.
 
-public class MonadicPredicateParser superclass: MonadicParser; definition: {
+public class MonadicPredicateParser superclass: Parsec; definition: {
     public field predicate.
     public field errorMessage => String.
 
@@ -336,7 +336,7 @@ public class MonadicPredicateParser superclass: MonadicParser; definition: {
             := self new predicate: predicate; yourself
     }.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         state atEnd not && predicate(state peek) ifTrue: {
             state advance.
@@ -347,8 +347,8 @@ public class MonadicPredicateParser superclass: MonadicParser; definition: {
     }.
 }.
 
-public class MonadicAnyParser superclass: MonadicParser; definition: {
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+public class MonadicAnyParser superclass: Parsec; definition: {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         state atEnd ifTrue: {
             self makeError: "Unexpected end." withState: state.
@@ -360,10 +360,10 @@ public class MonadicAnyParser superclass: MonadicParser; definition: {
     }.
 }.
 
-public class MonadicSequenceParser superclass: MonadicParser; definition: {
+public class MonadicSequenceParser superclass: Parsec; definition: {
     public field expectedSequence => SequenceableCollection.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         (expectedSequence size <= state remainingSize) && (expectedSequence allSatisfyWithIndex: {:expectedElement :(Size)index :: Boolean |
             expectedElement = (state peek: index)
@@ -377,14 +377,14 @@ public class MonadicSequenceParser superclass: MonadicParser; definition: {
 }.
 
 SequenceableCollection extend: {
-    public method asMonadicParser => MonadicParser
+    public method asParsec => Parsec
         := MonadicSequenceParser new expectedSequence: self; yourself.
 }.
 
-public class MonadicSetParser superclass: MonadicParser; definition: {
+public class MonadicSetParser superclass: Parsec; definition: {
     public field expectedSet => Collection.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         state atEnd not && (expectedSet includes: state peek) ifTrue: {
             state advance.
@@ -396,25 +396,25 @@ public class MonadicSetParser superclass: MonadicParser; definition: {
 }.
 
 Collection extend: {
-    public method asMonadicSetParser => MonadicParser
+    public method asMonadicSetParser => Parsec
         := MonadicSetParser new expectedSet: self; yourself.
 }.
 
-public class MonadicCombinatorSequenceParser superclass: MonadicParser; definition: {
+public class MonadicCombinatorSequenceParser superclass: Parsec; definition: {
     public field parsers => Array.
 
-    public override method -- (nextParser: MonadicParser) ::=> MonadicParser
+    public override method -- (nextParser: Parsec) ::=> Parsec
         := MonadicCombinatorSequenceParser new
             parsers: parsers -- (Array with: nextParser);
             yourself.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         let parserCount := parsers size.
         let i mutable := 0sz.
         let resultValue => Array := isOmmittingValue ifTrue: nil ifFalse: (Array new: parserCount).
         while: (i < parserCount) do: {
-            let parser => MonadicParser := parsers at: i.
+            let parser => Parsec := parsers at: i.
             let parserResult := parser parseWithState: state.
             parserResult isError ifTrue: {return: parserResult}.
 
@@ -427,21 +427,21 @@ public class MonadicCombinatorSequenceParser superclass: MonadicParser; definiti
     }.
 }.
 
-public class MonadicCombinatorAlternativesParser superclass: MonadicParser; definition: {
+public class MonadicCombinatorAlternativesParser superclass: Parsec; definition: {
     public field parsers => Array.
 
-    public override method | (nextParser: MonadicParser) ::=> MonadicParser
+    public override method | (nextParser: Parsec) ::=> Parsec
         := MonadicCombinatorAlternativesParser new
             parsers: parsers -- (Array with: nextParser);
             yourself.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
-        let parserResult mutable => MonadicParserResult := nil.
+        let parserResult mutable => ParsecResult := nil.
         let i mutable := 0sz.
         let parserCount := parsers size.
         while: (i < parserCount) do: {
-            let parser => MonadicParser := parsers at: i.
+            let parser => Parsec := parsers at: i.
             parserResult := parser parseWithState: state.
             parserResult isValid ifTrue: {return: parserResult}.
             state restoreMemento: startPosition.
@@ -451,10 +451,10 @@ public class MonadicCombinatorAlternativesParser superclass: MonadicParser; defi
     }.
 }.
 
-public class MonadicCombinatorOptionalParser superclass: MonadicParser; definition: {
-    public field parser => MonadicParser.
+public class MonadicCombinatorOptionalParser superclass: Parsec; definition: {
+    public field parser => Parsec.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         let parseResult := parser parseWithState: state.
         parseResult isError ifTrue: {
@@ -466,10 +466,10 @@ public class MonadicCombinatorOptionalParser superclass: MonadicParser; definiti
     }.
 }.
 
-public class MonadicCombinatorNegateParser superclass: MonadicParser; definition: {
-    public field parser => MonadicParser.
+public class MonadicCombinatorNegateParser superclass: Parsec; definition: {
+    public field parser => Parsec.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         let parseResult := parser parseWithState: state.
         parseResult isValid ifTrue: {
@@ -482,10 +482,10 @@ public class MonadicCombinatorNegateParser superclass: MonadicParser; definition
     }.
 }.
 
-public class MonadicCombinatorNotParser superclass: MonadicParser; definition: {
-    public field parser => MonadicParser.
+public class MonadicCombinatorNotParser superclass: Parsec; definition: {
+    public field parser => Parsec.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         let parseResult := parser parseWithState: state.
         parseResult isValid ifTrue: {
@@ -497,16 +497,16 @@ public class MonadicCombinatorNotParser superclass: MonadicParser; definition: {
     }.
 }.
 
-public class MonadicCombinatorRepetitionParser superclass: MonadicParser; definition: {
-    public field parser => MonadicParser.
+public class MonadicCombinatorRepetitionParser superclass: Parsec; definition: {
+    public field parser => Parsec.
     public field minimalCount => Size.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let startPosition := state memento.
         let currentPosition mutable := startPosition.
 
         let resultValue => OrderedCollection := isOmmittingValue ifTrue: nil ifFalse: OrderedCollection new.
-        let nextParseResult mutable => MonadicParserResult := nil.
+        let nextParseResult mutable => ParsecResult := nil.
         let i mutable := 0sz.
         while: (i < minimalCount) do: {
             nextParseResult := parser parseWithState: state.
@@ -529,11 +529,11 @@ public class MonadicCombinatorRepetitionParser superclass: MonadicParser; defini
     }.
 }.
 
-public class MonadicCombinatorTrimParser superclass: MonadicParser; definition: {
-    public field trimmingParser => MonadicParser.
-    public field parser => MonadicParser.
+public class MonadicCombinatorTrimParser superclass: Parsec; definition: {
+    public field trimmingParser => Parsec.
+    public field parser => Parsec.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         {
             let trimLeftPosition := state memento.
             let trimLeftResult := trimmingParser parseWithState: state.
@@ -557,11 +557,11 @@ public class MonadicCombinatorTrimParser superclass: MonadicParser; definition: 
     }.
 }.
 
-public class MonadicValueComputationParser superclass: MonadicParser; definition: {
-    public field parser => MonadicParser.
-    public field valueComputationBlock => ((MonadicParserResult) => AnyValue).
+public class MonadicValueComputationParser superclass: Parsec; definition: {
+    public field parser => Parsec.
+    public field valueComputationBlock => ((ParsecResult) => AnyValue).
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         let parseResult := parser parseWithState: state.
         parseResult isValid ifTrue: {
             parseResult copy
@@ -573,32 +573,32 @@ public class MonadicValueComputationParser superclass: MonadicParser; definition
     }
 }.
 
-public class MonadicDelegateParser superclass: MonadicParser; definition: {
-    public field parser => MonadicParser.
+public class MonadicDelegateParser superclass: Parsec; definition: {
+    public field parser => Parsec.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult
         := parser parseWithState: state.
 
-    (public method := (newParser: MonadicParser)) ::=> Void := {
+    (public method := (newParser: Parsec)) ::=> Void := {
         parser := newParser
     }.
 }.
 
 public class MonadicMemoizedDelegateParser superclass: MonadicDelegateParser; definition: {
-    public override method memoized => MonadicParser
+    public override method memoized => Parsec
         := self.
 
-    public override method parseWithState: (state: MonadicParserState) ::=> MonadicParserResult := {
+    public override method parseWithState: (state: ParsecState) ::=> ParsecResult := {
         state parseWithMemoizationOf: parser
     }.
 }.
 
-MonadicParserState extend: {
+ParsecState extend: {
     public method validMemoizationTable => Dictionary
         := memoizationTable ifNil: {memoizationTable := Dictionary new}.
 
-    public method parseWithMemoizationOf: (parser: MonadicParser) ::=> MonadicParserResult := {
-        let memoizedResult => MonadicParserResult := self validMemoizationTable at: (Array with: position with: parser) ifAbsentPut: {:: MonadicParserResult |
+    public method parseWithMemoizationOf: (parser: Parsec) ::=> ParsecResult := {
+        let memoizedResult => ParsecResult := self validMemoizationTable at: (Array with: position with: parser) ifAbsentPut: {:: ParsecResult |
             parser parseWithState: self
         }.
 

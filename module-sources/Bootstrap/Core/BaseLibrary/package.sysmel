@@ -42,6 +42,7 @@ loadSourceNamed: "OrderedOffsetTableBuilder.sysmel".
 loadSourceNamed: "NativeCode.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Utility.sysmel".
+loadSourceNamed: "SourceCode.sysmel".
 loadSourceNamed: "StringSymbol.sysmel".
 loadSourceNamed: "String.sysmel".
 loadSourceNamed: "StringStream.sysmel".

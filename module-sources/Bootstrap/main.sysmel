@@ -1,9 +1,13 @@
 ## Primitive definitions.
 loadSourceNamed: "BootstrapEnvSetup/package.sysmel".
 loadSourceNamed: "Core/package.sysmel".
+loadPackageNamed: "Parsec".
+loadPackageNamed: "SysmelLanguage".
 
 loadPackageNamed: "MiniSUnit".
 loadPackageNamed: "CoreTests".
+loadPackageNamed: "ParsecTests".
+loadPackageNamed: "SysmelLanguageTests".
 
 loadPackageNamed: "ImageBuilder".
 
