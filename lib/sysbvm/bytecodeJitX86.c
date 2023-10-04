@@ -3,7 +3,11 @@
 #include "sysbvm/assert.h"
 #include "sysbvm/dictionary.h"
 #include "sysbvm/function.h"
+#include "sysbvm/programEntity.h"
+#include "sysbvm/elf.h"
 #include "sysbvm/stackFrame.h"
+#include "sysbvm/sourcePosition.h"
+#include "sysbvm/sourceCode.h"
 #include "internal/context.h"
 #include <string.h>
 #include <stdlib.h>
@@ -1173,6 +1177,217 @@ static void sysbvm_jit_emitUnwindInfo(sysbvm_bytecodeJit_t *jit)
 #endif
 }
 
+typedef struct sysbvm_jit_x64_elfSectionHeaders_s
+{
+    sysbvm_elf64_sectionHeader_t null;
+    sysbvm_elf64_sectionHeader_t text;
+    sysbvm_elf64_sectionHeader_t symtab;
+    sysbvm_elf64_sectionHeader_t str;
+    sysbvm_elf64_sectionHeader_t shstr;
+} sysbvm_jit_x64_elfSectionHeaders_t;
+
+typedef struct sysbvm_jit_x64_elfSymbolTable_s
+{
+    sysbvm_elf64_symbol_t null;
+    sysbvm_elf64_symbol_t sourceFile;
+    sysbvm_elf64_symbol_t text;
+    sysbvm_elf64_symbol_t jittedFunction;
+} sysbvm_jit_x64_elfSymbolTable_t;
+
+typedef struct sysbvm_jit_x64_elfContentFooter_s
+{
+    sysbvm_jit_x64_elfSymbolTable_t symbols;
+    sysbvm_jit_x64_elfSectionHeaders_t sections;
+} sysbvm_jit_x64_elfContentFooter_t;
+
+static size_t sysbvm_jit_emitObjectFileCString(sysbvm_bytecodeJit_t *jit, const char *cstring)
+{
+    size_t result = jit->objectFileContent.size;
+    sysbvm_dynarray_addAll(&jit->objectFileContent, strlen(cstring) + 1, cstring);
+    return result;
+}
+
+static size_t sysbvm_jit_emitObjectFileSourceFileName(sysbvm_bytecodeJit_t *jit)
+{
+    if(!sysbvm_tuple_isNonNullPointer(jit->sourcePosition))
+        return 0;
+
+    sysbvm_sourcePosition_t *sourcePosition = (sysbvm_sourcePosition_t*)jit->sourcePosition;
+    if(!sysbvm_tuple_isNonNullPointer(sourcePosition->sourceCode))
+        return 0;
+
+    sysbvm_sourceCode_t *sourceCode = (sysbvm_sourceCode_t*)sourcePosition->sourceCode;
+    
+    size_t nameOffset = jit->objectFileContent.size;
+    bool hasEmittedName = false;
+
+    if(sourceCode->directory)
+    {
+        size_t byteSize = sysbvm_tuple_getSizeInBytes(sourceCode->directory);
+        if(byteSize > 0)
+        {
+            sysbvm_dynarray_addAll(&jit->objectFileContent, byteSize, SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(sourceCode->directory)->bytes);
+            hasEmittedName = true;
+
+            char slash = '/';
+            sysbvm_dynarray_add(&jit->objectFileContent, &slash);
+        }
+    }
+
+    if(sourceCode->name)
+    {
+        size_t byteSize = sysbvm_tuple_getSizeInBytes(sourceCode->name);
+        if(byteSize > 0)
+        {
+            sysbvm_dynarray_addAll(&jit->objectFileContent, byteSize, SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(sourceCode->name)->bytes);
+            hasEmittedName = true;
+        }
+    }
+
+    if(!hasEmittedName)
+        return 0;
+
+    char nullTerminator = 0;
+    sysbvm_dynarray_add(&jit->objectFileContent, &nullTerminator);
+    return nameOffset;
+}
+
+static bool sysbvm_jit_emitObjectFileProgramEntityRecursiveName(sysbvm_bytecodeJit_t *jit, sysbvm_programEntity_t *programEntity)
+{
+    if(!programEntity)
+        return false;
+
+    bool hasEmittedName = sysbvm_jit_emitObjectFileProgramEntityRecursiveName(jit, (sysbvm_programEntity_t*)programEntity->owner);
+    if(sysbvm_tuple_isBytes(programEntity->name))
+    {
+        if(hasEmittedName)
+        {
+            char dot = '.';
+            sysbvm_dynarray_add(&jit->objectFileContent, &dot);
+        }
+        size_t byteSize = sysbvm_tuple_getSizeInBytes(programEntity->name);
+        sysbvm_dynarray_addAll(&jit->objectFileContent, byteSize, SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(programEntity->name)->bytes);
+        hasEmittedName = hasEmittedName || byteSize > 0;
+    }
+
+    return hasEmittedName;
+}
+
+static size_t sysbvm_jit_emitObjectFileJittedFunctionName(sysbvm_bytecodeJit_t *jit)
+{
+    size_t nameOffset = jit->objectFileContent.size;
+
+    // Emit the program entity name;
+    bool hasEmittedName = sysbvm_jit_emitObjectFileProgramEntityRecursiveName(jit, (sysbvm_programEntity_t*)jit->compiledProgramEntity);
+
+    // Function source location and pointer number.
+    if(!hasEmittedName)
+    {
+        char pointerBuffer[32];
+        uint32_t sourceLine, sourceColumn;
+        sysbvm_sourcePosition_getStartLineAndColumn(jit->context, jit->sourcePosition, &sourceLine, &sourceColumn);
+
+        snprintf(pointerBuffer, sizeof(pointerBuffer), "%d:%d-%08llx", sourceLine, sourceColumn, (unsigned long long)sysbvm_tuple_identityHash(jit->compiledProgramEntity));
+        sysbvm_dynarray_addAll(&jit->objectFileContent, strlen(pointerBuffer), pointerBuffer);
+    }
+
+    char nullTerminator = 0;
+    sysbvm_dynarray_add(&jit->objectFileContent, &nullTerminator);
+
+    return nameOffset;
+}
+
+static void sysbvm_jit_emitObjectFile(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_elf64_header_t header = {};
+    sysbvm_jit_x64_elfContentFooter_t footer = {};
+
+    size_t stringTableOffset = jit->objectFileContent.size;
+    footer.sections.null.name = sysbvm_jit_emitObjectFileCString(jit, ""); // Null string
+    footer.sections.text.name = sysbvm_jit_emitObjectFileCString(jit, ".text");
+    footer.sections.symtab.name = sysbvm_jit_emitObjectFileCString(jit, ".symtab");
+    footer.sections.str.name = sysbvm_jit_emitObjectFileCString(jit, ".str");
+    footer.sections.shstr.name = sysbvm_jit_emitObjectFileCString(jit, ".shstr");
+
+    footer.symbols.sourceFile.name = sysbvm_jit_emitObjectFileSourceFileName(jit);
+    footer.symbols.sourceFile.info = SYSBVM_ELF64_SYM_INFO(SYSBVM_STT_FILE, SYSBVM_STB_LOCAL);
+
+    footer.symbols.text.sectionHeaderIndex = 1;
+    footer.symbols.text.info = SYSBVM_ELF64_SYM_INFO(SYSBVM_STT_SECTION, SYSBVM_STB_LOCAL);
+
+    footer.symbols.jittedFunction.name = sysbvm_jit_emitObjectFileJittedFunctionName(jit);
+    footer.symbols.jittedFunction.info = SYSBVM_ELF64_SYM_INFO(SYSBVM_STT_FUNC, SYSBVM_STB_LOCAL);
+    footer.symbols.jittedFunction.sectionHeaderIndex = 1;
+    footer.symbols.jittedFunction.value = 0;
+    footer.symbols.jittedFunction.size = jit->instructions.size;
+
+    header.ident[SYSBVM_EI_MAG0] = 0x7f;
+    header.ident[SYSBVM_EI_MAG1] = 'E';
+    header.ident[SYSBVM_EI_MAG2] = 'L';
+    header.ident[SYSBVM_EI_MAG3] = 'F';
+    header.ident[SYSBVM_EI_CLASS] = SYSBVM_ELFCLASS64;
+    header.ident[SYSBVM_EI_DATA] = SYSBVM_ELFDATA2LSB;
+    header.ident[SYSBVM_EI_VERSION] = SYSBVM_ELFCURRENT_VERSION;
+    header.type = SYSBVM_ET_REL;
+    header.machine = SYSBVM_EM_X86_64;
+    header.elfHeaderSize = sizeof(header);
+    header.version = SYSBVM_ELFCURRENT_VERSION;
+    header.sectionHeaderEntrySize = sizeof(footer.sections.null);
+    header.sectionHeaderNum = sizeof(footer.sections) / sizeof(footer.sections.null);
+    header.sectionHeaderNameStringTableIndex = offsetof(sysbvm_jit_x64_elfSectionHeaders_t, shstr) / sizeof(sysbvm_elf64_sectionHeader_t);
+
+    size_t stringTableEnd = jit->objectFileContent.size;
+    size_t stringTableSize = stringTableEnd - stringTableOffset;
+
+    footer.sections.text.type = SYSBVM_SHT_PROGBITS;
+    footer.sections.text.flags = SYSBVM_SHF_ALLOC | SYSBVM_SHF_EXECINSTR;
+    footer.sections.text.addressAlignment = 1;
+
+    footer.sections.str.type = SYSBVM_SHT_STRTAB;
+    footer.sections.str.offset = stringTableOffset;
+    footer.sections.str.address = stringTableOffset;
+    footer.sections.str.addressAlignment = 1;
+    footer.sections.str.size = stringTableSize;
+
+    footer.sections.shstr.type = SYSBVM_SHT_STRTAB;
+    footer.sections.shstr.offset = stringTableOffset;
+    footer.sections.shstr.address = stringTableOffset;
+    footer.sections.shstr.addressAlignment = 1;
+    footer.sections.shstr.size = stringTableSize;
+
+    size_t symbolTableOffset = jit->objectFileContent.size;
+    footer.sections.symtab.type = SYSBVM_SHT_SYMTAB;
+    footer.sections.symtab.offset = symbolTableOffset;
+    footer.sections.symtab.address = symbolTableOffset;
+    footer.sections.symtab.entrySize = sizeof(sysbvm_elf64_symbol_t);
+    footer.sections.symtab.addressAlignment = 1;
+    footer.sections.symtab.link = offsetof(sysbvm_jit_x64_elfSectionHeaders_t, str) / sizeof(sysbvm_elf64_sectionHeader_t);
+    footer.sections.symtab.info = sizeof(sysbvm_jit_x64_elfSymbolTable_t) / sizeof(sysbvm_elf64_symbol_t);
+    footer.sections.symtab.size = sizeof(sysbvm_jit_x64_elfSymbolTable_t);
+
+    sysbvm_dynarray_addAll(&jit->objectFileHeader, sizeof(header), &header);
+    sysbvm_dynarray_addAll(&jit->objectFileContent, sizeof(footer), &footer);
+}
+
+static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit, sysbvm_elf64_header_t *header, uint8_t *instructionsPointers, uint8_t *objectFileContentPointer, sysbvm_jit_x64_elfContentFooter_t *footer)
+{
+    (void)jit;
+    header->sectionHeadersOffset = (uintptr_t)&footer->sections - (uintptr_t)header;
+    sysbvm_elf64_off_t contentOffset = (uintptr_t)objectFileContentPointer - (uintptr_t)header;
+    sysbvm_elf64_addr_t contentBaseAddress = (uintptr_t)objectFileContentPointer;
+
+    footer->sections.text.offset = (uintptr_t)instructionsPointers - (uintptr_t)header;
+    footer->sections.text.address = (sysbvm_elf64_addr_t)instructionsPointers;
+    footer->sections.text.size = jit->instructions.size;
+
+    footer->sections.symtab.offset += contentOffset;
+    footer->sections.symtab.address += contentBaseAddress;
+    footer->sections.str.offset += contentOffset;
+    footer->sections.str.address += contentBaseAddress;
+    footer->sections.shstr.offset += contentOffset;
+    footer->sections.shstr.address += contentBaseAddress;
+}
+
 SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
 {
     // Apply the PC target relative relocations.
@@ -1183,14 +1398,23 @@ SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
     }
 
     sysbvm_jit_emitUnwindInfo(jit);
+    sysbvm_jit_emitObjectFile(jit);
 }
 
-SYSBVM_API void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
+SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
 {
-    memcpy(codeZonePointer, jit->instructions.data, jit->instructions.size);
 
-    size_t constantsOffset = sysbvm_sizeAlignedTo(jit->instructions.size, 16);
+    size_t objectFileHeaderOffset = 0;
+    size_t codeOffset = sysbvm_sizeAlignedTo(jit->objectFileHeader.size, 16);
+    size_t constantsOffset = codeOffset + sysbvm_sizeAlignedTo(jit->instructions.size, 16);
     size_t unwindInfoOffset = constantsOffset + sysbvm_sizeAlignedTo(jit->constants.size, 16);
+    size_t objectFileContentOffset = unwindInfoOffset + sysbvm_sizeAlignedTo(jit->unwindInfo.size, 16);
+
+    uint8_t *objectFileHeaderPointer = codeZonePointer + objectFileHeaderOffset;
+    memcpy(objectFileHeaderPointer, jit->objectFileHeader.data, jit->objectFileHeader.size);
+
+    uint8_t *instructionsPointers = codeZonePointer + codeOffset;
+    memcpy(instructionsPointers, jit->instructions.data, jit->instructions.size);
 
     uint8_t *constantZonePointer = codeZonePointer + constantsOffset;
     memcpy(constantZonePointer, jit->constants.data, jit->constants.size);
@@ -1198,7 +1422,7 @@ SYSBVM_API void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZon
     for(size_t i = 0; i < jit->relocations.size; ++i)
     {
         sysbvm_bytecodeJitRelocation_t *relocation = sysbvm_dynarray_entryOfTypeAt(jit->relocations, sysbvm_bytecodeJitRelocation_t, i);
-        uint8_t *relocationTarget = codeZonePointer + relocation->offset;
+        uint8_t *relocationTarget = instructionsPointers + relocation->offset;
         intptr_t relocationTargetAddress = (intptr_t)relocationTarget;
 
         intptr_t relativeValue = (intptr_t)constantZonePointer + relocation->value - relocationTargetAddress + relocation->addend;
@@ -1216,6 +1440,16 @@ SYSBVM_API void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZon
     uint8_t *unwindInfoZonePointer = codeZonePointer + unwindInfoOffset;
     memcpy(unwindInfoZonePointer, jit->unwindInfo.data, jit->unwindInfo.size);
 
+    uint8_t *objectFileContentPointer = codeZonePointer + objectFileContentOffset;
+    memcpy(objectFileContentPointer, jit->objectFileContent.data, jit->objectFileContent.size);
+
+    sysbvm_jit_fixupObjectFile(jit,
+        (sysbvm_elf64_header_t*)objectFileHeaderPointer,
+        instructionsPointers,
+        objectFileContentPointer,
+        (sysbvm_jit_x64_elfContentFooter_t*) (objectFileContentPointer + jit->objectFileContent.size - sizeof(sysbvm_jit_x64_elfContentFooter_t))
+    );
+
 #ifdef _WIN32
     RUNTIME_FUNCTION *runtimeFunction = (RUNTIME_FUNCTION*)unwindInfoZonePointer;
     runtimeFunction->UnwindInfoAddress = (DWORD)(sizeof(RUNTIME_FUNCTION) + unwindInfoZonePointer - codeZonePointer);
@@ -1224,6 +1458,8 @@ SYSBVM_API void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZon
         // Store the handle in the context for cleanup.
     }
 #endif
+
+    return instructionsPointers;
 }
 
 #endif // SYSBVM_ARCH_X86_64

@@ -993,6 +993,8 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
     gcFrame.bytecode->localVectorSize = gcFrame.compiler->assembler->usedTemporaryCount;
     gcFrame.bytecode->literalVector = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->assembler->literals);
 
+    gcFrame.bytecode->definition = (sysbvm_tuple_t)gcFrame.definition;
+
     gcFrame.bytecode->arguments = gcFrame.sourceAnalyzedDefinition->arguments;
     gcFrame.bytecode->captures = gcFrame.sourceAnalyzedDefinition->captures;
     gcFrame.bytecode->temporaryTypes = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->assembler->temporaryTypes);

@@ -53,6 +53,8 @@ typedef struct sysbvm_bytecodeJitPCRelocation_s
 typedef struct sysbvm_bytecodeJit_s
 {
     sysbvm_context_t *context;
+    sysbvm_tuple_t sourcePosition;
+    sysbvm_tuple_t compiledProgramEntity;
 
     size_t argumentCount;
     size_t captureVectorSize;
@@ -72,12 +74,14 @@ typedef struct sysbvm_bytecodeJit_s
     int32_t stackCallReservationSize;
     int32_t cfiFrameOffset;
 
+    sysbvm_dynarray_t objectFileHeader;
     sysbvm_dynarray_t instructions;
     sysbvm_dynarray_t constants;
     sysbvm_dynarray_t relocations;
     sysbvm_dynarray_t pcRelocations;
     sysbvm_dynarray_t unwindInfo;
     sysbvm_dynarray_t unwindInfoBytecode;
+    sysbvm_dynarray_t objectFileContent;
     size_t prologueSize;
 
     intptr_t *pcDestinations;
@@ -122,7 +126,7 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
 // Backend specific methods.
 SYSBVM_API void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit);
 SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit);
-SYSBVM_API void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer);
+SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer);
 
 SYSBVM_API void sysbvm_jit_callNoResult0(sysbvm_bytecodeJit_t *jit, void *functionPointer);
 SYSBVM_API void sysbvm_jit_callWithContextNoResult0(sysbvm_bytecodeJit_t *jit, void *functionPointer);

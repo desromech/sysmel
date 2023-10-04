@@ -27,7 +27,7 @@ enum {
 
 enum {
     SYSBVM_ELFCLASS32 = 1,
-    SYSBVM_ELFCLASS64 = 1,
+    SYSBVM_ELFCLASS64 = 2,
 };
 
 enum {
@@ -36,11 +36,25 @@ enum {
 };
 
 enum {
+    SYSBVM_ELFCURRENT_VERSION = 1
+};
+
+enum {
+    SYSBVM_EM_X86_64 = 62
+};
+
+enum {
     SYSBVM_ET_NONE = 0,
     SYSBVM_ET_REL = 1,
     SYSBVM_ET_EXEC = 2,
     SYSBVM_ET_DYN = 3,
     SYSBVM_ET_CORE = 4,
+};
+
+enum {
+    SYSBVM_SHF_WRITE = 1,
+    SYSBVM_SHF_ALLOC = 2,
+    SYSBVM_SHF_EXECINSTR = 4,
 };
 
 enum {
@@ -75,7 +89,10 @@ enum {
     SYSBVM_STT_OBJECT = 1,
     SYSBVM_STT_FUNC = 2,
     SYSBVM_STT_SECTION = 3,
+    SYSBVM_STT_FILE = 4,
 };
+
+#define SYSBVM_ELF64_SYM_INFO(type, binding) (((binding) << 4) | (type))
 
 typedef struct sysbvm_elf64_header_s
 {

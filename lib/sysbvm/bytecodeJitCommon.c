@@ -1,7 +1,9 @@
 #include "sysbvm/bytecodeJit.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/association.h"
+#include "sysbvm/elf.h"
 #include "sysbvm/gc.h"
+#include "sysbvm/gdb.h"
 #include "sysbvm/environment.h"
 #include "sysbvm/function.h"
 #include "sysbvm/stackFrame.h"
@@ -9,6 +11,7 @@
 #include "internal/context.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #ifdef SYSBVM_JIT_SUPPORTED
 
@@ -25,6 +28,8 @@ SYSBVM_API void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_
     sysbvm_dynarray_initialize(&jit->pcRelocations, sizeof(sysbvm_bytecodeJitPCRelocation_t), 0);
     sysbvm_dynarray_initialize(&jit->unwindInfo, 1, 64);
     sysbvm_dynarray_initialize(&jit->unwindInfoBytecode, 1, 64);
+    sysbvm_dynarray_initialize(&jit->objectFileHeader, 1, sizeof(sysbvm_elf64_header_t));
+    sysbvm_dynarray_initialize(&jit->objectFileContent, 1, 1024);
 }
 
 SYSBVM_API size_t sysbvm_bytecodeJit_addBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
@@ -119,6 +124,8 @@ SYSBVM_API void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
     free(jit->pcDestinations);
     sysbvm_dynarray_destroy(&jit->unwindInfo);
     sysbvm_dynarray_destroy(&jit->unwindInfoBytecode);
+    sysbvm_dynarray_destroy(&jit->objectFileHeader);
+    sysbvm_dynarray_destroy(&jit->objectFileContent);
 }
 
 SYSBVM_API bool sysbvm_bytecodeJit_getLiteralValueForOperand(sysbvm_bytecodeJit_t *jit, int16_t operand, sysbvm_tuple_t *outLiteralValue)
@@ -180,6 +187,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeJit_symbolValueBinding_getValue(sysbvm_
     return sysbvm_symbolValueBinding_getValue(valueBinding);
 }
 
+SYSBVM_API void sysbvm_jit_dumpCodeToFileNamed(const void *code, size_t codeSize, const char *fileName)
+{
+    FILE *file = fopen(fileName, "wb");
+    if(!file)
+        return;
+
+    (void)fwrite(code, codeSize, 1, file);
+    fclose(file);
+}
+
 SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionBytecode_t *functionBytecode)
 {
     (void)context;
@@ -187,6 +204,9 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
 
     sysbvm_bytecodeJit_t jit;
     sysbvm_bytecodeJit_initialize(&jit, context);
+
+    jit.sourcePosition = functionBytecode->sourcePosition;
+    jit.compiledProgramEntity = functionBytecode->definition;
 
     jit.literalVectorGCRoot = sysbvm_heap_allocateGCRootTableEntry(&context->heap);
     *jit.literalVectorGCRoot = functionBytecode->literalVector;
@@ -401,17 +421,27 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
 
     sysbvm_jit_finish(&jit);
 
+    size_t objectFileHeaderSize = sysbvm_sizeAlignedTo(jit.objectFileHeader.size, 16);
     size_t textSectionSize = sysbvm_sizeAlignedTo(jit.instructions.size, 16);
     size_t rodataSectionSize = sysbvm_sizeAlignedTo(jit.constants.size, 16) + sysbvm_sizeAlignedTo(jit.unwindInfo.size, 16);
+    size_t objectFileContentSize = sysbvm_sizeAlignedTo(jit.objectFileContent.size, 16);
 
-    size_t requiredCodeSize = textSectionSize + rodataSectionSize;
+    size_t requiredCodeSize = objectFileHeaderSize + textSectionSize + rodataSectionSize + objectFileContentSize;
     uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&context->heap, requiredCodeSize, 16);
     memset(codeZonePointer, 0xcc, textSectionSize); // int3;
     memset(codeZonePointer + textSectionSize, 0, rodataSectionSize); // int3;
-    sysbvm_jit_installIn(&jit, codeZonePointer);
+    uint8_t *entryPointPointer = sysbvm_jit_installIn(&jit, codeZonePointer);
     sysbvm_heap_unlockCodeZone(&context->heap, codeZonePointer, requiredCodeSize);
 
-    functionBytecode->jittedCode = sysbvm_tuple_systemHandle_encode(context, (sysbvm_systemHandle_t)(uintptr_t)codeZonePointer);
+    // Register the object file with gdb.
+    if(jit.objectFileHeader.size > 0 && jit.objectFileContent.size > 0)
+    {
+        sysbvm_gdb_jit_code_entry_t *entry = (sysbvm_gdb_jit_code_entry_t*)calloc(1, sizeof(sysbvm_gdb_jit_code_entry_t));
+        sysbvm_dynarray_add(&context->jittedObjectFileEntries, &entry);
+        sysbvm_gdb_registerObjectFile(entry, codeZonePointer, requiredCodeSize);
+    }
+
+    functionBytecode->jittedCode = sysbvm_tuple_systemHandle_encode(context, (sysbvm_systemHandle_t)(uintptr_t)entryPointPointer);
     functionBytecode->jittedCodeSessionToken = context->roots.sessionToken;
 
     // Patch the trampoline.

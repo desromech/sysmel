@@ -4,6 +4,7 @@
 #include "sysbvm/orderedCollection.h"
 #include "sysbvm/environment.h"
 #include "sysbvm/gc.h"
+#include "sysbvm/gdb.h"
 #include "sysbvm/stackFrame.h"
 #include "sysbvm/string.h"
 #include "sysbvm/set.h"
@@ -1459,6 +1460,7 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     context->jitEnabled = sysbvm_context_default_jitEnabled && !contextOptions->nojit;
     context->gcDisabled = contextOptions->gcType == SYSBVM_GC_TYPE_DISABLED;
     context->heap.useMallocForHeap = contextOptions->gcType == SYSBVM_GC_TYPE_DEFAULT || contextOptions->gcType == SYSBVM_GC_TYPE_NON_MOVING  || contextOptions->gcType == SYSBVM_GC_TYPE_DISABLED;
+    sysbvm_dynarray_initialize(&context->jittedObjectFileEntries, sizeof(sysbvm_gdb_jit_code_entry_t*), 1024);
     sysbvm_dynarray_initialize(&context->markingStack, sizeof(sysbvm_tuple_t), 1<<20);
 
     sysbvm_heap_initialize(&context->heap);
@@ -1577,6 +1579,18 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_create(void)
 SYSBVM_API void sysbvm_context_destroy(sysbvm_context_t *context)
 {
     if(!context) return;
+
+    // Unregister the jitted object codes.
+    {
+        sysbvm_gdb_jit_code_entry_t **registeredEntries = (sysbvm_gdb_jit_code_entry_t**)context->jittedObjectFileEntries.data;
+        for(size_t i = 0; i < context->jittedObjectFileEntries.size; ++i)
+        {
+            sysbvm_gdb_jit_code_entry_t *entry = registeredEntries[i];
+            sysbvm_gdb_unregisterObjectFile(entry);
+            free(entry);
+        }
+        sysbvm_dynarray_destroy(&context->jittedObjectFileEntries);
+    }
 
     // Destroy the context heap.
     sysbvm_dynarray_destroy(&context->markingStack);

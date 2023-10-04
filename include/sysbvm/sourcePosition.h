@@ -32,6 +32,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithIndices(sysbvm_context
 SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithUnion(sysbvm_context_t *context, sysbvm_tuple_t startSourcePosition, sysbvm_tuple_t endSourcePosition);
 
 /**
+ * Retrieves the source position start line and column.
+ */
+SYSBVM_API bool sysbvm_sourcePosition_getStartLineAndColumn(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, uint32_t *outLine, uint32_t *outColumn);
+
+/**
  * Dumps a source position.
  */ 
 SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition);

@@ -26,6 +26,16 @@ SYSBVM_API sysbvm_tuple_t sysbvm_sourcePosition_createWithUnion(sysbvm_context_t
     return sysbvm_sourcePosition_create(context, start->sourceCode, start->startIndex, end->endIndex);
 }
 
+SYSBVM_API bool sysbvm_sourcePosition_getStartLineAndColumn(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition, uint32_t *outLine, uint32_t *outColumn)
+{
+    if(!sysbvm_tuple_isNonNullPointer(sourcePosition))
+        return false;
+
+    sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)sourcePosition;
+    sysbvm_sourceCode_computeLineAndColumnForIndex(context, sourcePositionObject->sourceCode, sourcePositionObject->startIndex, outLine, outColumn);
+    return true;
+}
+
 SYSBVM_API void sysbvm_sourcePosition_dump(sysbvm_context_t *context, sysbvm_tuple_t sourcePosition)
 {
     if(!sysbvm_tuple_isNonNullPointer(sourcePosition)) return;

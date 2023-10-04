@@ -353,6 +353,7 @@ struct sysbvm_context_s
     bool jitEnabled;
     bool gcDisabled;
     sysbvm_dynarray_t markingStack;
+    sysbvm_dynarray_t jittedObjectFileEntries;
 };
 
 #endif //SYSBVM_INTERNAL_CONTEXT_H
