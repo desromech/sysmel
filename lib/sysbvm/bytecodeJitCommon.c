@@ -1,76 +1,21 @@
+#include "sysbvm/bytecodeJit.h"
+#include "sysbvm/assert.h"
+#include "sysbvm/association.h"
+#include "sysbvm/gc.h"
+#include "sysbvm/environment.h"
+#include "sysbvm/function.h"
+#include "sysbvm/stackFrame.h"
+#include "sysbvm/type.h"
 #include "internal/context.h"
-#include "internal/dynarray.h"
+#include <string.h>
+#include <stdlib.h>
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN 
-#define NOMINMAX
-#include <windows.h>
-#endif
+#ifdef SYSBVM_JIT_SUPPORTED
 
-typedef sysbvm_tuple_t (*sysbvm_bytecodeJit_entryPoint) (sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments);
+extern uint8_t sysbvm_implicitVariableBytecodeOperandCountTable[16];
+void sysbvm_bytecodeInterpreter_ensureTablesAreFilled();
 
-typedef enum sysbvm_bytecodeJitRelocationType_e
-{
-    SYSBVM_BYTECODE_JIT_RELOCATION_RELATIVE32,
-    SYSBVM_BYTECODE_JIT_RELOCATION_RELATIVE64,
-} sysbvm_bytecodeJitRelocationType_t;
-
-typedef struct sysbvm_bytecodeJitRelocation_s
-{
-    size_t offset;
-    sysbvm_bytecodeJitRelocationType_t type;
-    intptr_t value;
-    intptr_t addend;
-} sysbvm_bytecodeJitRelocation_t;
-
-typedef struct sysbvm_bytecodeJitPCRelocation_s
-{
-    size_t offset;
-    size_t targetPC;
-    intptr_t addend;
-} sysbvm_bytecodeJitPCRelocation_t;
-
-typedef struct sysbvm_bytecodeJit_s
-{
-    sysbvm_context_t *context;
-
-    size_t argumentCount;
-    size_t captureVectorSize;
-    size_t literalCount;
-    size_t localVectorSize;
-
-    int32_t contextPointerOffset;
-    int32_t localVectorOffset;
-    int32_t argumentVectorOffset;
-    int32_t literalVectorOffset;
-    int32_t captureVectorOffset;
-    int32_t pcOffset;
-    int32_t stackFrameRecordOffset;
-    int32_t callArgumentVectorSizeOffset;
-    int32_t callArgumentVectorOffset;
-    int32_t stackFrameSize;
-    int32_t stackCallReservationSize;
-    int32_t cfiFrameOffset;
-
-    sysbvm_dynarray_t instructions;
-    sysbvm_dynarray_t constants;
-    sysbvm_dynarray_t relocations;
-    sysbvm_dynarray_t pcRelocations;
-    sysbvm_dynarray_t unwindInfo;
-    sysbvm_dynarray_t unwindInfoBytecode;
-    size_t prologueSize;
-
-    intptr_t *pcDestinations;
-
-    sysbvm_tuple_t *literalVectorGCRoot;
-} sysbvm_bytecodeJit_t;
-
-static size_t sizeAlignedTo(size_t pointer, size_t alignment)
-{
-    return (pointer + alignment - 1) & (~(alignment - 1));
-}
-
-static void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_context_t *context)
+SYSBVM_API void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_context_t *context)
 {
     memset(jit, 0, sizeof(sysbvm_bytecodeJit_t));
     jit->context = context;
@@ -82,37 +27,37 @@ static void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_cont
     sysbvm_dynarray_initialize(&jit->unwindInfoBytecode, 1, 64);
 }
 
-static size_t sysbvm_bytecodeJit_addBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
+SYSBVM_API size_t sysbvm_bytecodeJit_addBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
 {
     return sysbvm_dynarray_addAll(&jit->instructions, byteCount, bytes);
 }
 
-static size_t sysbvm_bytecodeJit_addByte(sysbvm_bytecodeJit_t *jit, uint8_t byte)
+SYSBVM_API size_t sysbvm_bytecodeJit_addByte(sysbvm_bytecodeJit_t *jit, uint8_t byte)
 {
     return sysbvm_bytecodeJit_addBytes(jit, 1, &byte);
 }
 
-static size_t sysbvm_bytecodeJit_addConstantsBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
+SYSBVM_API size_t sysbvm_bytecodeJit_addConstantsBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
 {
     size_t offset = jit->constants.size;
     sysbvm_dynarray_addAll(&jit->constants, byteCount, bytes);
     return offset;
 }
 
-static size_t sysbvm_bytecodeJit_addUnwindInfoBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
+SYSBVM_API size_t sysbvm_bytecodeJit_addUnwindInfoBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes)
 {
     size_t offset = jit->unwindInfo.size;
     sysbvm_dynarray_addAll(&jit->unwindInfo, byteCount, bytes);
     return offset;
 }
 
-static size_t sysbvm_bytecodeJit_addUnwindInfoByte(sysbvm_bytecodeJit_t *jit, uint8_t byte)
+SYSBVM_API size_t sysbvm_bytecodeJit_addUnwindInfoByte(sysbvm_bytecodeJit_t *jit, uint8_t byte)
 {
     return sysbvm_bytecodeJit_addUnwindInfoBytes(jit, 1, &byte);
 }
 
 #ifdef _WIN32
-static void sysbvm_bytecodeJit_uwop(sysbvm_bytecodeJit_t *jit, uint8_t opcode, uint8_t operationInfo)
+SYSBVM_API void sysbvm_bytecodeJit_uwop(sysbvm_bytecodeJit_t *jit, uint8_t opcode, uint8_t operationInfo)
 {
     uint8_t prologueOffset = (uint8_t)jit->instructions.size;
     uint8_t operation = (operationInfo << 4) | opcode;
@@ -120,17 +65,17 @@ static void sysbvm_bytecodeJit_uwop(sysbvm_bytecodeJit_t *jit, uint8_t opcode, u
     sysbvm_dynarray_addAll(&jit->unwindInfoBytecode, 2, &code);
 }
 
-static void sysbvm_bytecodeJit_uwop_pushNonVol(sysbvm_bytecodeJit_t *jit, uint8_t reg)
+SYSBVM_API void sysbvm_bytecodeJit_uwop_pushNonVol(sysbvm_bytecodeJit_t *jit, uint8_t reg)
 {
     sysbvm_bytecodeJit_uwop(jit, /*UWOP_PUSH_NONVOL */0 , reg);
 }
 
-static void sysbvm_bytecodeJit_uwop_setFPReg(sysbvm_bytecodeJit_t *jit)
+SYSBVM_API void sysbvm_bytecodeJit_uwop_setFPReg(sysbvm_bytecodeJit_t *jit)
 {
     sysbvm_bytecodeJit_uwop(jit, /* UWOP_SET_FPREG */3, 0);
 }
 
-static void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amount)
+SYSBVM_API void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amount)
 {
     if(amount == 0) return;
 
@@ -155,17 +100,17 @@ static void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t amou
 
 #endif
 
-static void sysbvm_bytecodeJit_addPCRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitPCRelocation_t relocation)
+SYSBVM_API void sysbvm_bytecodeJit_addPCRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitPCRelocation_t relocation)
 {
     sysbvm_dynarray_add(&jit->pcRelocations, &relocation);
 }
 
-static void sysbvm_bytecodeJit_addRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitRelocation_t relocation)
+SYSBVM_API void sysbvm_bytecodeJit_addRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitRelocation_t relocation)
 {
     sysbvm_dynarray_add(&jit->relocations, &relocation);
 }
 
-static void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
+SYSBVM_API void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
 {
     sysbvm_dynarray_destroy(&jit->instructions);
     sysbvm_dynarray_destroy(&jit->constants);
@@ -176,7 +121,7 @@ static void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
     sysbvm_dynarray_destroy(&jit->unwindInfoBytecode);
 }
 
-static bool sysbvm_bytecodeJit_getLiteralValueForOperand(sysbvm_bytecodeJit_t *jit, int16_t operand, sysbvm_tuple_t *outLiteralValue)
+SYSBVM_API bool sysbvm_bytecodeJit_getLiteralValueForOperand(sysbvm_bytecodeJit_t *jit, int16_t operand, sysbvm_tuple_t *outLiteralValue)
 {
     *outLiteralValue = SYSBVM_NULL_TUPLE;
     int16_t vectorType = operand & SYSBVM_OPERAND_VECTOR_BITMASK;
@@ -193,56 +138,49 @@ static bool sysbvm_bytecodeJit_getLiteralValueForOperand(sysbvm_bytecodeJit_t *j
     return false;   
 }
 
-#if defined(SYSBVM_ARCH_X86_64)
-#   include "bytecodeJitX86.c"
-#elif defined(SYSBVM_ARCH_AARCH64)
-// CHECK Properly for ARMv8
-#   include "bytecodeJitArmArch64.c"
-#endif
-
-static sysbvm_tuple_t sysbvm_bytecodeJit_slotAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeJit_slotAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
 {
     size_t slotIndex = sysbvm_typeSlot_getIndex(typeSlot);
     return sysbvm_tuple_slotAt(context, tuple, slotIndex);
 }
 
-static sysbvm_tuple_t sysbvm_bytecodeJit_slotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeJit_slotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot)
 {
     sysbvm_tuple_t slotReferenceType = sysbvm_typeSlot_getValidReferenceType(context, typeSlot);
     return sysbvm_referenceType_withTupleAndTypeSlot(context, slotReferenceType, tuple, typeSlot);
 }
 
-static void sysbvm_bytecodeJit_slotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
+SYSBVM_API void sysbvm_bytecodeJit_slotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tuple, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
 {
     size_t slotIndex = sysbvm_typeSlot_getIndex(typeSlot);
     sysbvm_tuple_slotAtPut(context, tuple, slotIndex, value);
 }
 
-static sysbvm_tuple_t sysbvm_bytecodeJit_refSlotAt(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeJit_refSlotAt(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot)
 {
     size_t slotIndex = sysbvm_typeSlot_getIndex(typeSlot);
     return sysbvm_tuple_slotAt(context, sysbvm_pointerLikeType_load(context, tupleReference), slotIndex);
 }
 
-static sysbvm_tuple_t sysbvm_bytecodeJit_refSlotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeJit_refSlotReferenceAt(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot)
 {
     sysbvm_tuple_t slotReferenceType = sysbvm_typeSlot_getValidReferenceType(context, typeSlot);
     return sysbvm_referenceType_incrementWithTypeSlot(context, slotReferenceType, tupleReference, typeSlot);
 }
 
-static void sysbvm_bytecodeJit_refSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
+SYSBVM_API void sysbvm_bytecodeJit_refSlotAtPut(sysbvm_context_t *context, sysbvm_tuple_t tupleReference, sysbvm_tuple_t typeSlot, sysbvm_tuple_t value)
 {
     size_t slotIndex = sysbvm_typeSlot_getIndex(typeSlot);
     sysbvm_tuple_slotAtPut(context, sysbvm_pointerLikeType_load(context, tupleReference), slotIndex, value);
 }
 
-static sysbvm_tuple_t sysbvm_bytecodeJit_symbolValueBinding_getValue(sysbvm_context_t *context, sysbvm_tuple_t valueBinding)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeJit_symbolValueBinding_getValue(sysbvm_context_t *context, sysbvm_tuple_t valueBinding)
 {
     (void)context;
     return sysbvm_symbolValueBinding_getValue(valueBinding);
 }
 
-static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionBytecode_t *functionBytecode)
+SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionBytecode_t *functionBytecode)
 {
     (void)context;
     sysbvm_bytecodeInterpreter_ensureTablesAreFilled();
@@ -463,8 +401,8 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
 
     sysbvm_jit_finish(&jit);
 
-    size_t textSectionSize = sizeAlignedTo(jit.instructions.size, 16);
-    size_t rodataSectionSize = sizeAlignedTo(jit.constants.size, 16) + sizeAlignedTo(jit.unwindInfo.size, 16);
+    size_t textSectionSize = sysbvm_sizeAlignedTo(jit.instructions.size, 16);
+    size_t rodataSectionSize = sysbvm_sizeAlignedTo(jit.constants.size, 16) + sysbvm_sizeAlignedTo(jit.unwindInfo.size, 16);
 
     size_t requiredCodeSize = textSectionSize + rodataSectionSize;
     uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&context->heap, requiredCodeSize, 16);
@@ -481,3 +419,5 @@ static void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functionByt
 
     sysbvm_bytecodeJit_jitFree(&jit);
 }
+
+#endif

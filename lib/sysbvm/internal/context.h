@@ -5,7 +5,7 @@
 
 #include "sysbvm/context.h"
 #include "heap.h"
-#include "dynarray.h"
+#include "sysbvm/dynarray.h"
 
 #define GLOBAL_LOOKUP_CACHE_ENTRY_COUNT 256
 #define PIC_ENTRY_COUNT 16

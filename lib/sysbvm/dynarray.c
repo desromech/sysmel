@@ -1,4 +1,4 @@
-#include "dynarray.h"
+#include "sysbvm/dynarray.h"
 #include <stdlib.h>
 #include <string.h>
 

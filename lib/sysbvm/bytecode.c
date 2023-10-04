@@ -1,4 +1,5 @@
 #include "sysbvm/bytecode.h"
+#include "sysbvm/bytecodeJit.h"
 #include "sysbvm/array.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/association.h"
@@ -21,22 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(__x86_64__) || defined(_M_X64)
-#   define SYSBVM_ARCH_X86_64 1
-#endif
-
-#if defined(__aarch64__)
-#   define SYSBVM_ARCH_AARCH64 1
-#endif
-
-#if defined(SYSBVM_ARCH_X86_64)
-#   define SYSBVM_JIT_SUPPORTED
-#endif
 
 static bool sysbvm_bytecodeInterpreter_tablesAreFilled;
-static uint8_t sysbvm_implicitVariableBytecodeOperandCountTable[16];
+uint8_t sysbvm_implicitVariableBytecodeOperandCountTable[16];
 
-static void sysbvm_bytecodeInterpreter_ensureTablesAreFilled()
+void sysbvm_bytecodeInterpreter_ensureTablesAreFilled()
 {
     if(sysbvm_bytecodeInterpreter_tablesAreFilled)
         return;
@@ -88,7 +78,7 @@ SYSBVM_API uint8_t sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(u
     }
 }
 
-static uint8_t sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_t opcode)
+SYSBVM_API uint8_t sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_t opcode)
 {
     switch(opcode)
     {
@@ -100,7 +90,7 @@ static uint8_t sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_t op
     }
 }
 
-static sysbvm_tuple_t sysbvm_bytecodeInterpreter_functionApplyNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_functionApplyNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags)
 {
     if((applicationFlags & (SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK | SYSBVM_FUNCTION_APPLICATION_FLAGS_VARIADIC_EXPANDED)) == 0 &&
         sysbvm_function_isVariadic(context, function))
@@ -157,7 +147,7 @@ static sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSend(sysbvm_context_t 
     return sysbvm_function_apply2(context, method, receiverAndArguments[0], message);
 }
 
-static sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t receiverType, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t receiverType, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
 {
     sysbvm_tuple_t method = sysbvm_type_lookupSelector(context, receiverType, selector);
     if(method)
@@ -178,7 +168,7 @@ static sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNo
     return sysbvm_function_apply2(context, method, receiverAndArguments[0], message);
 }
 
-static sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
 {
     return sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(context, sysbvm_tuple_getType(context, receiverAndArguments[0]), selector, argumentCount, receiverAndArguments, applicationFlags);
 }
@@ -539,10 +529,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_activateAndApply(sysbvm_con
     sysbvm_stackFrame_popRecord((sysbvm_stackFrameRecord_t*)&activationRecord);
     return activationRecord.result;
 }
-
-#ifdef SYSBVM_JIT_SUPPORTED
-#include "bytecodeJitCommon.c"
-#endif
 
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_apply(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments)
 {

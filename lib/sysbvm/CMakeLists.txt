@@ -1,5 +1,4 @@
 set(sysbvm_sources
-    internal/dynarray.c
     array.c
     arraySlice.c
     assert.c
@@ -8,16 +7,21 @@ set(sysbvm_sources
     boolean.c
     bytecode.c
     bytecodeCompiler.c
+    bytecodeJitCommon.c
+    bytecodeJitX86.c
     byteStream.c
     context.c
     dictionary.c
+    dynarray.c
     environment.c
     errors.c
     exceptions.c
     filesystem.c
     float.c
     function.c
+    elf.c
     gc.c
+    gdb.c
     heap.c
     integer.c
     interpreter.c

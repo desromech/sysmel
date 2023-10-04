@@ -1,3 +1,14 @@
+#include "sysbvm/bytecodeJit.h"
+#include "sysbvm/array.h"
+#include "sysbvm/assert.h"
+#include "sysbvm/dictionary.h"
+#include "sysbvm/function.h"
+#include "sysbvm/stackFrame.h"
+#include "internal/context.h"
+#include <string.h>
+#include <stdlib.h>
+
+#if defined(SYSBVM_JIT_SUPPORTED) && defined(SYSBVM_ARCH_X86_64)
 #define USE_OLD_STACK_LAYOUT 0
 
 typedef enum sysbvm_x86_register_e
@@ -66,7 +77,6 @@ typedef enum sysbvm_x86_register_e
 static void sysbvm_jit_x86_mov64Absolute(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t destination, uint64_t value);
 static void sysbvm_jit_moveRegisterToOperand(sysbvm_bytecodeJit_t *jit, int16_t operand, sysbvm_x86_register_t reg);
 static void sysbvm_jit_moveOperandToRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t reg, int16_t operand);
-static void sysbvm_jit_moveOperandToOperand(sysbvm_bytecodeJit_t *jit, int16_t destinationOperand, int16_t sourceOperand);
 static void sysbvm_jit_moveOperandToCallArgumentVector(sysbvm_bytecodeJit_t *jit, int16_t operand, int32_t callArgumentVectorIndex);
 
 static uint8_t sysbvm_jit_x86_modRM(int8_t rm, uint8_t regOpcode, uint8_t mod)
@@ -486,18 +496,18 @@ static void sysbvm_jit_x86_jitLoadContextInRegister(sysbvm_bytecodeJit_t *jit, s
     sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, reg, SYSBVM_X86_RBP, jit->contextPointerOffset);
 }
 
-static void sysbvm_jit_callNoResult0(sysbvm_bytecodeJit_t *jit, void *functionPointer)
+SYSBVM_API void sysbvm_jit_callNoResult0(sysbvm_bytecodeJit_t *jit, void *functionPointer)
 {
     sysbvm_jit_x86_call(jit, functionPointer);
 }
 
-static void sysbvm_jit_callWithContextNoResult0(sysbvm_bytecodeJit_t *jit, void *functionPointer)
+SYSBVM_API void sysbvm_jit_callWithContextNoResult0(sysbvm_bytecodeJit_t *jit, void *functionPointer)
 {
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_x86_call(jit, functionPointer);
 }
 
-static void sysbvm_jit_callWithContext1(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t resultOperand, int16_t argumentOperand0)
+SYSBVM_API void sysbvm_jit_callWithContext1(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t resultOperand, int16_t argumentOperand0)
 {
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, argumentOperand0);
@@ -505,7 +515,7 @@ static void sysbvm_jit_callWithContext1(sysbvm_bytecodeJit_t *jit, void *functio
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_callWithContext2(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t resultOperand, int16_t argumentOperand0, int16_t argumentOperand1)
+SYSBVM_API void sysbvm_jit_callWithContext2(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t resultOperand, int16_t argumentOperand0, int16_t argumentOperand1)
 {
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, argumentOperand0);
@@ -514,7 +524,7 @@ static void sysbvm_jit_callWithContext2(sysbvm_bytecodeJit_t *jit, void *functio
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_callWithContextNoResult2(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t argumentOperand0, int16_t argumentOperand1)
+SYSBVM_API void sysbvm_jit_callWithContextNoResult2(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t argumentOperand0, int16_t argumentOperand1)
 {
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, argumentOperand0);
@@ -522,7 +532,7 @@ static void sysbvm_jit_callWithContextNoResult2(sysbvm_bytecodeJit_t *jit, void 
     sysbvm_jit_x86_call(jit, functionPointer);
 }
 
-static void sysbvm_jit_callWithContextNoResult3(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t argumentOperand0, int16_t argumentOperand1, int16_t argumentOperand2)
+SYSBVM_API void sysbvm_jit_callWithContextNoResult3(sysbvm_bytecodeJit_t *jit, void *functionPointer, int16_t argumentOperand0, int16_t argumentOperand1, int16_t argumentOperand2)
 {
     sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, argumentOperand0);
@@ -613,7 +623,7 @@ static void *sysbvm_jit_getTrampolineOrEntryPointForBytecode(sysbvm_bytecodeJit_
 
     // Install the trampoline in the code zone.
     size_t trampolineCodeSize = sizeof(trampolineCode);
-    size_t requiredCodeSize = sizeAlignedTo(trampolineCodeSize, 16);
+    size_t requiredCodeSize = sysbvm_sizeAlignedTo(trampolineCodeSize, 16);
     uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&jit->context->heap, requiredCodeSize, 16);
     memset(codeZonePointer, 0xcc, requiredCodeSize); // int3;
     memcpy(codeZonePointer, trampolineCode, trampolineCodeSize);
@@ -625,7 +635,7 @@ static void *sysbvm_jit_getTrampolineOrEntryPointForBytecode(sysbvm_bytecodeJit_
     return codeZonePointer;
 }
 
-static void sysbvm_jit_patchTrampolineWithRealEntryPoint(sysbvm_bytecodeJit_t *jit, sysbvm_functionBytecode_t *bytecode)
+SYSBVM_API void sysbvm_jit_patchTrampolineWithRealEntryPoint(sysbvm_bytecodeJit_t *jit, sysbvm_functionBytecode_t *bytecode)
 {
     if(bytecode->jittedCodeTrampoline && bytecode->jittedCodeTrampolineSessionToken == jit->context->roots.sessionToken)
     {
@@ -640,7 +650,7 @@ static void sysbvm_jit_patchTrampolineWithRealEntryPoint(sysbvm_bytecodeJit_t *j
     }
 }
 
-static void sysbvm_jit_functionApply(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags)
+SYSBVM_API void sysbvm_jit_functionApply(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags)
 {
     bool isNoTypecheck = applicationFlags & SYSBVM_FUNCTION_APPLICATION_FLAGS_NO_TYPECHECK;
 
@@ -685,7 +695,7 @@ static void sysbvm_jit_functionApply(sysbvm_bytecodeJit_t *jit, int16_t resultOp
     sysbvm_jit_functionApplyVia(jit, resultOperand, functionOperand, argumentCount, argumentOperands, applicationFlags, &sysbvm_bytecodeInterpreter_functionApplyNoCopyArguments);
 }
 
-static void sysbvm_jit_send(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t selectorOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags)
+SYSBVM_API void sysbvm_jit_send(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t selectorOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags)
 {
     // Move the arguments into the call vector.
     for(size_t i = 0; i < argumentCount + 1; ++i)
@@ -706,7 +716,7 @@ static void sysbvm_jit_send(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, in
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_sendWithReceiverType(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t receiverTypeOperand, int16_t selectorOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags)
+SYSBVM_API void sysbvm_jit_sendWithReceiverType(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t receiverTypeOperand, int16_t selectorOperand, size_t argumentCount, int16_t *argumentOperands, int applicationFlags)
 {
     // Push all of the arguments in the stack.
     for(size_t i = 0; i < argumentCount + 1; ++i)
@@ -729,7 +739,7 @@ static void sysbvm_jit_sendWithReceiverType(sysbvm_bytecodeJit_t *jit, int16_t r
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_makeArray(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, size_t elementCount, int16_t *elementOperands)
+SYSBVM_API void sysbvm_jit_makeArray(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, size_t elementCount, int16_t *elementOperands)
 {
     if(resultOperand < 0)
         return;
@@ -747,7 +757,7 @@ static void sysbvm_jit_makeArray(sysbvm_bytecodeJit_t *jit, int16_t resultOperan
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_makeByteArray(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, size_t elementCount, int16_t *elementOperands)
+SYSBVM_API void sysbvm_jit_makeByteArray(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, size_t elementCount, int16_t *elementOperands)
 {
     if(resultOperand < 0)
         return;
@@ -766,7 +776,7 @@ static void sysbvm_jit_makeByteArray(sysbvm_bytecodeJit_t *jit, int16_t resultOp
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_makeDictionary(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, size_t elementCount, int16_t *elementOperands)
+SYSBVM_API void sysbvm_jit_makeDictionary(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, size_t elementCount, int16_t *elementOperands)
 {
     if(resultOperand < 0)
         return;
@@ -785,7 +795,7 @@ static void sysbvm_jit_makeDictionary(sysbvm_bytecodeJit_t *jit, int16_t resultO
     }
 }
 
-static void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionDefinitionOperand, size_t captureCount, int16_t *elementOperands)
+SYSBVM_API void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_t resultOperand, int16_t functionDefinitionOperand, size_t captureCount, int16_t *elementOperands)
 {
     if(resultOperand < 0)
         return;
@@ -809,7 +819,7 @@ static void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, int16_
     sysbvm_jit_moveRegisterToOperand(jit, resultOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_jumpRelative(sysbvm_bytecodeJit_t *jit, size_t targetPC)
+SYSBVM_API void sysbvm_jit_jumpRelative(sysbvm_bytecodeJit_t *jit, size_t targetPC)
 {
     uint8_t instruction[] = {
         0xE9, 0x00, 0x00, 0x00, 0x00,
@@ -835,7 +845,7 @@ static void sysbvm_jit_x86_cmpRAXWithImmediate32(sysbvm_bytecodeJit_t *jit, int3
     sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
 }
 
-static void sysbvm_jit_jumpRelativeIfTrue(sysbvm_bytecodeJit_t *jit, int16_t conditionOperand, size_t targetPC)
+SYSBVM_API void sysbvm_jit_jumpRelativeIfTrue(sysbvm_bytecodeJit_t *jit, int16_t conditionOperand, size_t targetPC)
 {
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_RAX, conditionOperand);
     sysbvm_jit_x86_cmpRAXWithImmediate32(jit, SYSBVM_TRUE_TUPLE);
@@ -854,7 +864,7 @@ static void sysbvm_jit_jumpRelativeIfTrue(sysbvm_bytecodeJit_t *jit, int16_t con
     sysbvm_bytecodeJit_addPCRelocation(jit, relocation);
 }
 
-static void sysbvm_jit_jumpRelativeIfFalse(sysbvm_bytecodeJit_t *jit, int16_t conditionOperand, size_t targetPC)
+SYSBVM_API void sysbvm_jit_jumpRelativeIfFalse(sysbvm_bytecodeJit_t *jit, int16_t conditionOperand, size_t targetPC)
 {
     sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_RAX, conditionOperand);
     sysbvm_jit_x86_cmpRAXWithImmediate32(jit, SYSBVM_TRUE_TUPLE);
@@ -916,7 +926,7 @@ static void sysbvm_jit_cfi_endPrologue(sysbvm_bytecodeJit_t *jit)
     jit->prologueSize = jit->instructions.size;
 }
 
-static void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
+SYSBVM_API void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
 {
 #ifndef _WIN32
     sysbvm_jit_x86_endbr64(jit);
@@ -1104,7 +1114,7 @@ static void sysbvm_jit_moveOperandToCallArgumentVector(sysbvm_bytecodeJit_t *jit
     sysbvm_jit_x86_mov64IntoMemoryWithOffset(jit, SYSBVM_X86_RBP, callArgumentVectorOffset, scratchRegister);
 }
 
-static void sysbvm_jit_moveOperandToOperand(sysbvm_bytecodeJit_t *jit, int16_t destinationOperand, int16_t sourceOperand)
+SYSBVM_API void sysbvm_jit_moveOperandToOperand(sysbvm_bytecodeJit_t *jit, int16_t destinationOperand, int16_t sourceOperand)
 {
     if(destinationOperand < 0)
         return;
@@ -1113,7 +1123,7 @@ static void sysbvm_jit_moveOperandToOperand(sysbvm_bytecodeJit_t *jit, int16_t d
     sysbvm_jit_moveRegisterToOperand(jit, destinationOperand, SYSBVM_X86_RAX);
 }
 
-static void sysbvm_jit_return(sysbvm_bytecodeJit_t *jit, int16_t operand)
+SYSBVM_API void sysbvm_jit_return(sysbvm_bytecodeJit_t *jit, int16_t operand)
 {
     // Disconnect from the stack unwinder.
     sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_64_ARG0, SYSBVM_X86_RBP, jit->stackFrameRecordOffset);
@@ -1123,7 +1133,7 @@ static void sysbvm_jit_return(sysbvm_bytecodeJit_t *jit, int16_t operand)
     sysbvm_jit_epilogue(jit);
 }
 
-static void sysbvm_jit_storePC(sysbvm_bytecodeJit_t *jit, uint16_t pc)
+SYSBVM_API void sysbvm_jit_storePC(sysbvm_bytecodeJit_t *jit, uint16_t pc)
 {
     sysbvm_jit_x86_movImmediateI32IntoMemory64WithOffset(jit, SYSBVM_X86_RBP, jit->pcOffset, pc);
 }
@@ -1163,7 +1173,7 @@ static void sysbvm_jit_emitUnwindInfo(sysbvm_bytecodeJit_t *jit)
 #endif
 }
 
-static void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
+SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
 {
     // Apply the PC target relative relocations.
     for(size_t i = 0; i < jit->pcRelocations.size; ++i)
@@ -1175,12 +1185,12 @@ static void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
     sysbvm_jit_emitUnwindInfo(jit);
 }
 
-static void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
+SYSBVM_API void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
 {
     memcpy(codeZonePointer, jit->instructions.data, jit->instructions.size);
 
-    size_t constantsOffset = sizeAlignedTo(jit->instructions.size, 16);
-    size_t unwindInfoOffset = constantsOffset + sizeAlignedTo(jit->constants.size, 16);
+    size_t constantsOffset = sysbvm_sizeAlignedTo(jit->instructions.size, 16);
+    size_t unwindInfoOffset = constantsOffset + sysbvm_sizeAlignedTo(jit->constants.size, 16);
 
     uint8_t *constantZonePointer = codeZonePointer + constantsOffset;
     memcpy(constantZonePointer, jit->constants.data, jit->constants.size);
@@ -1215,3 +1225,5 @@ static void sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePoi
     }
 #endif
 }
+
+#endif // SYSBVM_ARCH_X86_64
