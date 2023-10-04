@@ -82,6 +82,7 @@ typedef struct sysbvm_bytecodeJit_s
     sysbvm_dynarray_t unwindInfo;
     sysbvm_dynarray_t unwindInfoBytecode;
     sysbvm_dynarray_t objectFileContent;
+    size_t objectFileContentJittedFunctionNameOffset;
     size_t prologueSize;
 
     intptr_t *pcDestinations;

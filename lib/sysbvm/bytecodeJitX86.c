@@ -12,6 +12,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef __linux__
+#include <unistd.h>
+#include <fcntl.h>
+#endif
+
 #if defined(SYSBVM_JIT_SUPPORTED) && defined(SYSBVM_ARCH_X86_64)
 #define USE_OLD_STACK_LAYOUT 0
 
@@ -1276,6 +1281,7 @@ static bool sysbvm_jit_emitObjectFileProgramEntityRecursiveName(sysbvm_bytecodeJ
 static size_t sysbvm_jit_emitObjectFileJittedFunctionName(sysbvm_bytecodeJit_t *jit)
 {
     size_t nameOffset = jit->objectFileContent.size;
+    jit->objectFileContentJittedFunctionNameOffset = nameOffset;
 
     // Emit the program entity name;
     bool hasEmittedName = sysbvm_jit_emitObjectFileProgramEntityRecursiveName(jit, (sysbvm_programEntity_t*)jit->compiledProgramEntity);
@@ -1388,6 +1394,30 @@ static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit, sysbvm_elf64_h
     footer->sections.shstr.address += contentBaseAddress;
 }
 
+static int sysbvm_jit_perfMapFD;
+static void sysbvm_jit_emitPerfSymbolFor(sysbvm_bytecodeJit_t *jit, uint8_t *instructionsPointers)
+{
+#ifdef __linux__
+    char buffer[2048];
+
+    if(!sysbvm_jit_perfMapFD)
+    {
+        snprintf(buffer, sizeof(buffer), "/tmp/perf-%d.map", getpid());
+        sysbvm_jit_perfMapFD = open(buffer, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    }
+
+    if(sysbvm_jit_perfMapFD < 0) return;
+
+    int symbolRecordSize = snprintf(buffer, sizeof(buffer), "%llx %llx %s\n", (long long)instructionsPointers, (long long)jit->instructions.size, (const char *)jit->objectFileContent.data + jit->objectFileContentJittedFunctionNameOffset);
+    ssize_t writeSize = write(sysbvm_jit_perfMapFD, buffer, symbolRecordSize);
+    if(writeSize != symbolRecordSize)
+        perror("Failed write map file entry");
+#else
+    (void)jit;
+    (void)instructionsPointers;
+#endif
+}
+
 SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
 {
     // Apply the PC target relative relocations.
@@ -1403,7 +1433,6 @@ SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
 
 SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
 {
-
     size_t objectFileHeaderOffset = 0;
     size_t codeOffset = sysbvm_sizeAlignedTo(jit->objectFileHeader.size, 16);
     size_t constantsOffset = codeOffset + sysbvm_sizeAlignedTo(jit->instructions.size, 16);
@@ -1449,6 +1478,8 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
         objectFileContentPointer,
         (sysbvm_jit_x64_elfContentFooter_t*) (objectFileContentPointer + jit->objectFileContent.size - sizeof(sysbvm_jit_x64_elfContentFooter_t))
     );
+
+    sysbvm_jit_emitPerfSymbolFor(jit, instructionsPointers);
 
 #ifdef _WIN32
     RUNTIME_FUNCTION *runtimeFunction = (RUNTIME_FUNCTION*)unwindInfoZonePointer;
