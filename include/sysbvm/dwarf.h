@@ -417,12 +417,23 @@ typedef struct sysbvm_dwarf_cfi_builder_s {
 
     size_t cieOffset;
     size_t cieContentOffset;
+    size_t initialStackFrameSize;
+    sysbvm_dwarf_cie_t cie;
 
     size_t fdeOffset;
     size_t fdeContentOffset;
     size_t fdeInitialPC;
     size_t fdeInitialLocationOffset;
     size_t fdeAddressingRangeOffset;
+
+    size_t currentPC;
+    size_t stackFrameSize;
+    size_t stackPointerRegister;
+    size_t framePointerRegister;
+    size_t stackFrameSizeAtFramePointer;
+    bool hasFramePointerRegister;
+
+    bool isInPrologue;
 } sysbvm_dwarf_cfi_builder_t;
 
 SYSBVM_API size_t sysbvm_dwarf_encodeByte(sysbvm_dynarray_t *buffer, uint8_t value);
@@ -445,5 +456,14 @@ SYSBVM_API void sysbvm_dwarf_cfi_endCIE(sysbvm_dwarf_cfi_builder_t *cfi);
 SYSBVM_API void sysbvm_dwarf_cfi_beginFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc);
 SYSBVM_API void sysbvm_dwarf_cfi_endFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc);
 SYSBVM_API void sysbvm_dwarf_cfi_finish(sysbvm_dwarf_cfi_builder_t *cfi);
+
+SYSBVM_API void sysbvm_dwarf_cfi_setPC(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc);
+SYSBVM_API void sysbvm_dwarf_cfi_cfaInRegisterWithOffset(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, intptr_t offset);
+SYSBVM_API void sysbvm_dwarf_cfi_cfaInRegisterWithFactoredOffset(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, size_t offset);
+SYSBVM_API void sysbvm_dwarf_cfi_registerValueAtFactoredOffset(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, size_t offset);
+SYSBVM_API void sysbvm_dwarf_cfi_pushRegister(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg);
+SYSBVM_API void sysbvm_dwarf_cfi_saveFramePointerInRegister(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, intptr_t offset);
+SYSBVM_API void sysbvm_dwarf_cfi_stackSizeAdvance(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc, size_t increment);
+SYSBVM_API void sysbvm_dwarf_cfi_endPrologue(sysbvm_dwarf_cfi_builder_t *cfi);
 
 #endif //SYSBVM_DWARF_H

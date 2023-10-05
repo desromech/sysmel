@@ -899,10 +899,14 @@ static void sysbvm_jit_cfi_beginPrologue(sysbvm_bytecodeJit_t *jit)
 {
     sysbvm_dwarf_cie_t ehCie = {};
     ehCie.codeAlignmentFactor = 1;
-    ehCie.dataAlignmentFactor = sizeof(uintptr_t);
+    ehCie.dataAlignmentFactor = -sizeof(uintptr_t);
     ehCie.pointerSize = sizeof(uintptr_t);
     ehCie.returnAddressRegister = sizeof(uintptr_t) == 8 ? DW_X64_REG_RA : DW_X86_REG_RA;
+    jit->dwarfEhBuilder.initialStackFrameSize = 1; // Return address
+    jit->dwarfEhBuilder.stackPointerRegister = sizeof(uintptr_t) == 8 ? DW_X64_REG_RSP : DW_X86_REG_ESP;
     sysbvm_dwarf_cfi_beginCIE(&jit->dwarfEhBuilder, &ehCie);
+    sysbvm_dwarf_cfi_cfaInRegisterWithFactoredOffset(&jit->dwarfEhBuilder, jit->dwarfEhBuilder.stackPointerRegister, 1);
+    sysbvm_dwarf_cfi_registerValueAtFactoredOffset(&jit->dwarfEhBuilder, sizeof(uintptr_t) == 8 ? DW_X64_REG_RA : DW_X86_REG_RA, 1);
 
     sysbvm_dwarf_cfi_endCIE(&jit->dwarfEhBuilder);
     sysbvm_dwarf_cfi_beginFDE(&jit->dwarfEhBuilder, jit->instructions.size);
@@ -913,6 +917,8 @@ static void sysbvm_jit_cfi_pushRBP(sysbvm_bytecodeJit_t *jit)
 #ifdef _WIN32
     sysbvm_bytecodeJit_uwop_pushNonVol(jit, 5);
 #endif
+    sysbvm_dwarf_cfi_setPC(&jit->dwarfEhBuilder, jit->instructions.size);
+    sysbvm_dwarf_cfi_pushRegister(&jit->dwarfEhBuilder, sizeof(uintptr_t) == 8 ? DW_X64_REG_RBP : DW_X86_REG_EBP);
 }
 
 static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit, int32_t offset)
@@ -922,18 +928,23 @@ static void sysbvm_jit_cfi_storeStackInFramePointer(sysbvm_bytecodeJit_t *jit, i
     jit->cfiFrameOffset = offset / 16;
     sysbvm_bytecodeJit_uwop_setFPReg(jit);
 #endif
+    sysbvm_dwarf_cfi_setPC(&jit->dwarfEhBuilder, jit->instructions.size);
+    sysbvm_dwarf_cfi_saveFramePointerInRegister(&jit->dwarfEhBuilder, sizeof(uintptr_t) == 8 ? DW_X64_REG_RBP : DW_X86_REG_EBP, offset);
 }
 
 static void sysbvm_jit_cfi_subtract(sysbvm_bytecodeJit_t *jit, size_t subtractionAmount)
 {
+    if(!subtractionAmount) return;
 #ifdef _WIN32
     sysbvm_bytecodeJit_uwop_alloc(jit, subtractionAmount);
 #endif
+    sysbvm_dwarf_cfi_stackSizeAdvance(&jit->dwarfEhBuilder, jit->instructions.size, subtractionAmount);
 }
 
 static void sysbvm_jit_cfi_endPrologue(sysbvm_bytecodeJit_t *jit)
 {
     jit->prologueSize = jit->instructions.size;
+    sysbvm_dwarf_cfi_endPrologue(&jit->dwarfEhBuilder);
 }
 
 SYSBVM_API void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)

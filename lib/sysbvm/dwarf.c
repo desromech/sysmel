@@ -1,4 +1,5 @@
 #include "sysbvm/dwarf.h"
+#include "sysbvm/assert.h"
 #include <stdbool.h>
 #include <string.h>
 
@@ -118,6 +119,7 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginCIE(sysbvm_dwarf_cfi_builder_t *cfi, sysbv
 {
     cfi->cieOffset = sysbvm_dwarf_encodeDWord(&cfi->buffer, 0);
     cfi->cieContentOffset = sysbvm_dwarf_encodeDwarfPointer(&cfi->buffer, cfi->isEhFrame ? 0 : -1 ); // CIE_id
+    cfi->cie = *cie;
     sysbvm_dwarf_encodeByte(&cfi->buffer, cfi->version);
     sysbvm_dwarf_encodeCString(&cfi->buffer, ""); // Argumentation
     if(!cfi->isEhFrame)
@@ -147,6 +149,11 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_
     cfi->fdeInitialPC = pc;
     cfi->fdeInitialLocationOffset = sysbvm_dwarf_encodePointer(&cfi->buffer, cfi->fdeInitialLocationOffset);
     cfi->fdeAddressingRangeOffset = sysbvm_dwarf_encodePointer(&cfi->buffer, 0);
+    cfi->currentPC = cfi->fdeInitialPC;
+    cfi->stackFrameSize = cfi->initialStackFrameSize;
+    cfi->framePointerRegister = 0;
+    cfi->hasFramePointerRegister = false;
+    cfi->isInPrologue = true;
 }
 
 SYSBVM_API void sysbvm_dwarf_cfi_endFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc)
@@ -163,3 +170,100 @@ SYSBVM_API void sysbvm_dwarf_cfi_finish(sysbvm_dwarf_cfi_builder_t *cfi)
 {
     sysbvm_dwarf_encodeDWord(&cfi->buffer, 0);
 }
+
+SYSBVM_API void sysbvm_dwarf_cfi_setPC(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc)
+{
+    size_t advance = pc - cfi->currentPC;
+    if(advance)
+    {
+        size_t advanceFactor = advance / cfi->cie.codeAlignmentFactor;
+        if(advanceFactor <= 63)
+        {
+            sysbvm_dwarf_encodeByte(&cfi->buffer, (DW_OP_CFA_advance_loc << 6) | advanceFactor);
+        }
+        else
+        {
+            if(advanceFactor <= 0xFF)
+            {
+                sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_advance_loc1);
+                sysbvm_dwarf_encodeByte(&cfi->buffer, advanceFactor);
+            }
+            else if(advanceFactor <= 0xFFFF)
+            {
+                sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_advance_loc2);
+                sysbvm_dwarf_encodeWord(&cfi->buffer, advanceFactor);
+            }
+            else
+            {
+                SYSBVM_ASSERT(advanceFactor <= 0xFFFFFFFF);
+                sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_advance_loc4);
+                sysbvm_dwarf_encodeDWord(&cfi->buffer, advanceFactor);
+            }
+        }
+    }
+
+    cfi->currentPC = pc;
+}
+
+SYSBVM_API void sysbvm_dwarf_cfi_cfaInRegisterWithOffset(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, intptr_t offset)
+{
+    sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_def_cfa);
+    sysbvm_dwarf_encodeULEB128(&cfi->buffer, reg);
+    sysbvm_dwarf_encodeULEB128(&cfi->buffer, offset);
+}
+
+SYSBVM_API void sysbvm_dwarf_cfi_cfaInRegisterWithFactoredOffset(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, size_t offset)
+{
+    sysbvm_dwarf_cfi_cfaInRegisterWithOffset(cfi, reg, sizeof(uintptr_t) * offset);
+}
+
+SYSBVM_API void sysbvm_dwarf_cfi_registerValueAtFactoredOffset(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, size_t offset)
+{
+    if(reg <= 63) {
+        sysbvm_dwarf_encodeByte(&cfi->buffer, (DW_OP_CFA_offset << 6) | reg);
+        sysbvm_dwarf_encodeULEB128(&cfi->buffer, offset);
+    } else {
+        sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_offset_extended);
+        sysbvm_dwarf_encodeULEB128(&cfi->buffer, reg);
+        sysbvm_dwarf_encodeULEB128(&cfi->buffer, offset);
+    }
+}
+
+SYSBVM_API void sysbvm_dwarf_cfi_pushRegister(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg)
+{
+    ++cfi->stackFrameSize;
+    if(!cfi->hasFramePointerRegister)
+        sysbvm_dwarf_cfi_cfaInRegisterWithFactoredOffset(cfi, cfi->stackPointerRegister, cfi->stackFrameSize);
+    sysbvm_dwarf_cfi_registerValueAtFactoredOffset(cfi, reg, cfi->stackFrameSize);
+}
+
+SYSBVM_API void sysbvm_dwarf_cfi_saveFramePointerInRegister(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, intptr_t offset)
+{
+    SYSBVM_ASSERT(!cfi->hasFramePointerRegister);
+    SYSBVM_ASSERT((offset % sizeof(uintptr_t)) == 0);
+
+    cfi->hasFramePointerRegister = true;
+    cfi->framePointerRegister = reg;
+    cfi->stackFrameSizeAtFramePointer = cfi->stackFrameSize - offset / sizeof(uintptr_t);
+    sysbvm_dwarf_cfi_cfaInRegisterWithFactoredOffset(cfi, reg, cfi->stackFrameSizeAtFramePointer);
+}
+
+SYSBVM_API void sysbvm_dwarf_cfi_stackSizeAdvance(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc, size_t increment)
+{
+    if(!cfi->isInPrologue) return;
+    if(!increment) return;
+    
+    cfi->stackFrameSize += increment / sizeof(uintptr_t);
+    if(!cfi->hasFramePointerRegister)
+    {
+        sysbvm_dwarf_cfi_setPC(cfi, pc);
+        sysbvm_dwarf_cfi_cfaInRegisterWithFactoredOffset(cfi, cfi->stackPointerRegister, cfi->stackFrameSizeAtFramePointer);
+    }
+}
+
+SYSBVM_API void sysbvm_dwarf_cfi_endPrologue(sysbvm_dwarf_cfi_builder_t *cfi)
+{
+    SYSBVM_ASSERT(cfi->isInPrologue);
+    cfi->isInPrologue = false;
+}
+
