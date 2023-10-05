@@ -577,8 +577,16 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_firstInstanceWithType(sysbvm_contex
     (void)arguments;
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
-    // TODO: Implement this by traversing the object linked list.
-    return SYSBVM_NULL_TUPLE;
+    sysbvm_tuple_t expectedType = arguments[0];
+
+    sysbvm_heap_mallocObjectHeader_t *nextObject = context->heap.firstMallocObject;
+    while(nextObject && ((sysbvm_tuple_header_t *)(nextObject + 1))->typePointer != expectedType)
+        nextObject = nextObject->next;
+    
+    if(!nextObject)
+        return SYSBVM_NULL_TUPLE;
+
+    return (sysbvm_tuple_t)(nextObject + 1);
 }
 
 static sysbvm_tuple_t sysbvm_tuple_primitive_nextInstanceWithSameType(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -587,9 +595,53 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_nextInstanceWithSameType(sysbvm_con
     (void)closure;
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
-    sysbvm_tuple_t *object = &arguments[0];
-    (void)object;
-    return SYSBVM_NULL_TUPLE;
+    sysbvm_tuple_t object = arguments[0];
+    if(!sysbvm_tuple_isNonNullPointer(object))
+        return SYSBVM_NULL_TUPLE;
+
+    sysbvm_tuple_header_t *objectHeader = (sysbvm_tuple_header_t*)object;
+    sysbvm_tuple_t expectedType = objectHeader->typePointer;
+
+    sysbvm_heap_mallocObjectHeader_t *objectPreheader = (sysbvm_heap_mallocObjectHeader_t*)object - 1;
+    sysbvm_heap_mallocObjectHeader_t *nextObject = objectPreheader->next;
+    while(nextObject && ((sysbvm_tuple_header_t *)(nextObject + 1))->typePointer != expectedType)
+        nextObject = nextObject->next;
+    
+    if(!nextObject)
+        return SYSBVM_NULL_TUPLE;
+
+    return (sysbvm_tuple_t)(nextObject + 1);
+}
+
+static sysbvm_tuple_t sysbvm_tuple_primitive_firstInstance(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 0) sysbvm_error_argumentCountMismatch(0, argumentCount);
+
+    if(!context->heap.firstMallocObject)
+        return SYSBVM_NULL_TUPLE;
+
+    return (sysbvm_tuple_t)(context->heap.firstMallocObject + 1);
+}
+
+static sysbvm_tuple_t sysbvm_tuple_primitive_nextInstance(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
+
+    sysbvm_tuple_t object = arguments[0];
+    if(!sysbvm_tuple_isNonNullPointer(object))
+        return SYSBVM_NULL_TUPLE;
+
+    sysbvm_heap_mallocObjectHeader_t *objectPreheader = (sysbvm_heap_mallocObjectHeader_t*)object - 1;
+    sysbvm_heap_mallocObjectHeader_t *nextObject = objectPreheader->next;
+    if(!nextObject)
+        return SYSBVM_NULL_TUPLE;
+
+    return (sysbvm_tuple_t)(nextObject + 1);
 }
 
 static sysbvm_tuple_t sysbvm_tuple_primitive_recordBindingWithOwnerAndName(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -657,6 +709,8 @@ void sysbvm_tuple_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_markDummyValue, "RawTuple::markDumyValue");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_firstInstanceWithType, "RawTuple::firstInstanceWithType");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_nextInstanceWithSameType, "RawTuple::nextInstanceWithSameType");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_firstInstance, "RawTuple::firstInstance");
+    sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_nextInstance, "RawTuple::nextInstance");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_recordBindingWithOwnerAndName, "RawTuple::recordBindingWithOwnerAndName");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_objectModel_isLogical, "ObjectModel::isLogical");
     sysbvm_primitiveTable_registerFunction(sysbvm_tuple_primitive_objectModel_isNative, "ObjectModel::isNative");
@@ -697,6 +751,8 @@ void sysbvm_tuple_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveMethod(context, "RawTuple::markDummyValue", context->roots.anyValueType, "__markDummyValue__", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE | SYSBVM_FUNCTION_FLAGS_FINAL, NULL, sysbvm_tuple_primitive_markDummyValue);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::firstInstanceWithType", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_firstInstanceWithType);
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::nextInstanceWithSameType", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_nextInstanceWithSameType);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::firstInstance", 0, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_firstInstance);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "RawTuple::nextInstance", 1, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_tuple_primitive_nextInstance);
 
     sysbvm_context_setIntrinsicPrimitiveMethod(context, context->roots.anyValueType, "recordBindingWithOwner:andName:", 3, SYSBVM_FUNCTION_FLAGS_VIRTUAL, NULL, sysbvm_tuple_primitive_recordBindingWithOwnerAndName);
 
