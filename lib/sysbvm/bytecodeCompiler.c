@@ -1032,6 +1032,7 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
 
     // Finish by installing it on the definition.
     gcFrame.definition->bytecode = (sysbvm_tuple_t)gcFrame.bytecode;
+    gcFrame.definition->sourceAnalyzedDefinition = SYSBVM_NULL_TUPLE;
 
     gcFrame.bytecode->debugSourcePositions = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourcePositions);
     gcFrame.bytecode->debugSourceEnvironments = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourceEnvironments);

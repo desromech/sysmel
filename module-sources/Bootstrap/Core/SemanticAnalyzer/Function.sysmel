@@ -12,6 +12,20 @@ public final class FunctionASTInterpretationStrategy superclass: FunctionInterpr
 
 public global Function::CurrentInterpretationStrategy := ValueBox with: FunctionASTInterpretationStrategy new.
 
+FunctionDefinition definition: {
+    public eager method captures => Array := {
+        bytecode ifNotNil: {
+            return: bytecode captures
+        }.
+
+        sourceAnalyzedDefinition ifNotNil: {
+            return: sourceAnalyzedDefinition captures
+        }.
+
+        error("Function definition is missing definition with capture list.")
+    }
+}.
+
 Function definition: {
     public eager method setupWithFunctionDefinition: (newDefinition: FunctionDefinition) captureEnvironment: (newCaptureEnvironment: Environment) ::=> Void := {
         flags := newDefinition flags.
@@ -75,7 +89,7 @@ Function definition: {
         }.
 
         let newCaptureVector => AnySequenceTuple := definition captureVectorType new.
-        definition sourceAnalyzedDefinition captures doWithIndex: {:(SymbolBinding)captureBinding :(Size)index |
+        definition captures doWithIndex: {:(SymbolBinding)captureBinding :(Size)index |
             newCaptureVector at: index put: (captureEnvironment evaluateSymbolBinding: captureBinding)
         }.
 

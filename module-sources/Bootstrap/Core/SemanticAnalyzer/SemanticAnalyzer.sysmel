@@ -270,7 +270,7 @@ ASTLambdaNode definition: {
             functionDefinition ensureAnalysis.
             let captureVector => AnySequenceTuple := functionDefinition captureVectorType basicAllocate.
             
-            functionDefinition sourceAnalyzedDefinition captures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Void |
+            functionDefinition captures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Void |
                 captureVector at: index put: (environment evaluateSymbolBinding: eachCapture sourceBinding)
             }.
 
@@ -321,7 +321,7 @@ ASTLambdaNode definition: {
         result analyzedType: functionDefinition type.
 
         ## Optimize the captureless lambdas.
-        functionDefinition sourceAnalyzedDefinition captures isEmpty ifTrue: {
+        functionDefinition captures isEmpty ifTrue: {
             let capturelessClosure => Function := functionDefinition type new.
             capturelessClosure setupWithFunctionDefinition: functionDefinition captureVector: functionDefinition captureVectorType basicAllocate.
             name ifNotNil: {
@@ -341,7 +341,7 @@ ASTLambdaNode definition: {
     public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
         let functionDefinition := self functionDefinition.
         let captureVector => AnySequenceTuple := functionDefinition captureVectorType basicAllocate.
-        functionDefinition sourceAnalyzedDefinition captures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Untyped |
+        functionDefinition captures doWithIndex: {:(SymbolCaptureBinding)eachCapture :(Size)index :: Untyped |
             captureVector at: index put: (eachCapture sourceBinding evaluateWithActivationEnvironment: environment)
         }.
 
