@@ -535,7 +535,6 @@ FunctionBytecodeAssembler definition: {
             localVectorSize: self usedTemporaryCount;
             yourself.
 
-        let debugSourceASTNodes := OrderedOffsetTableBuilder new.
         let debugSourcePositions := OrderedOffsetTableBuilder new.
         let debugSourceEnvironments := OrderedOffsetTableBuilder new.
 
@@ -547,7 +546,6 @@ FunctionBytecodeAssembler definition: {
             instructionOffset := instructionOffset + eachInstruction assembledSize.
 
             ## Generate the debug table entries.
-            debugSourceASTNodes withOffset: pc asUInt32 addValue: eachInstruction sourceASTNode.
             debugSourcePositions withOffset: pc asUInt32 addValue: eachInstruction sourcePosition.
             debugSourceEnvironments withOffset: pc asUInt32 addValue: eachInstruction sourceEnvironment.
         }.
@@ -561,7 +559,6 @@ FunctionBytecodeAssembler definition: {
 
         ## Store the debug information tables.
         result
-            debugSourceASTNodes: debugSourceASTNodes finish;
             debugSourcePositions: debugSourcePositions finish;
             debugSourceEnvironments: debugSourceEnvironments finish.
 

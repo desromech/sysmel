@@ -1,5 +1,6 @@
 #include "sysbvm/bytecodeCompiler.h"
 #include "sysbvm/array.h"
+#include "sysbvm/assert.h"
 #include "sysbvm/orderedCollection.h"
 #include "sysbvm/orderedOffsetTable.h"
 #include "sysbvm/ast.h"
@@ -935,7 +936,6 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
         sysbvm_functionBytecode_t *bytecode;
         sysbvm_functionBytecodeAssemblerAbstractInstruction_t *instruction;
 
-        sysbvm_tuple_t debugSourceASTNodes;
         sysbvm_tuple_t debugSourcePositions;
         sysbvm_tuple_t debugSourceEnvironments;
     } gcFrame = {
@@ -1006,7 +1006,6 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
 
     // Tables for the debug information.
     gcFrame.bytecode->sourcePosition = gcFrame.sourceAnalyzedDefinition->sourcePosition;
-    gcFrame.debugSourceASTNodes = sysbvm_orderedOffsetTableBuilder_create(context);
     gcFrame.debugSourcePositions = sysbvm_orderedOffsetTableBuilder_create(context);
     gcFrame.debugSourceEnvironments = sysbvm_orderedOffsetTableBuilder_create(context);
 
@@ -1021,7 +1020,6 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
 
 
         // Add the debug annotations.
-        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourceASTNodes, pc, gcFrame.instruction->sourceASTNode);
         sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourcePositions, pc, gcFrame.instruction->sourcePosition);
         sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourceEnvironments, pc, gcFrame.instruction->sourceEnvironment);
     }
@@ -1035,7 +1033,6 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
     // Finish by installing it on the definition.
     gcFrame.definition->bytecode = (sysbvm_tuple_t)gcFrame.bytecode;
 
-    gcFrame.bytecode->debugSourceASTNodes = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourceASTNodes);
     gcFrame.bytecode->debugSourcePositions = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourcePositions);
     gcFrame.bytecode->debugSourceEnvironments = sysbvm_orderedOffsetTableBuilder_finish(context, gcFrame.debugSourceEnvironments);
 }
@@ -1372,14 +1369,24 @@ static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveCompileIntoBytecode(sysbvm_c
 
     sysbvm_functionDefinition_t *functionDefinition = (sysbvm_functionDefinition_t*)(*lambdaNode)->functionDefinition;
     sysbvm_tuple_t functionDefinitionOperand = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, (sysbvm_tuple_t)functionDefinition);
-    sysbvm_functionSourceAnalyzedDefinition_t *sourceAnalyzedDefinition = (sysbvm_functionSourceAnalyzedDefinition_t*)functionDefinition->sourceAnalyzedDefinition;
 
-    size_t captureVectorSize = sysbvm_array_getSize(sourceAnalyzedDefinition->captures);
+    sysbvm_tuple_t captureList = SYSBVM_NULL_TUPLE;
+    if(functionDefinition->bytecode)
+    {
+        captureList = ((sysbvm_functionBytecode_t*)functionDefinition->bytecode)->captures;
+    }
+    else
+    {
+        SYSBVM_ASSERT(functionDefinition->sourceAnalyzedDefinition);
+        captureList = ((sysbvm_functionSourceAnalyzedDefinition_t*)functionDefinition->sourceAnalyzedDefinition)->captures;
+    }
+
+    size_t captureVectorSize = sysbvm_array_getSize(captureList);
     sysbvm_tuple_t captureVector = sysbvm_array_create(context, captureVectorSize);
     
     for(size_t i = 0; i < captureVectorSize; ++i)
     {
-        sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(sourceAnalyzedDefinition->captures, i));
+        sysbvm_tuple_t captureBinding = sysbvm_symbolCaptureBinding_getSourceBinding(sysbvm_array_at(captureList, i));
         sysbvm_tuple_t captureValue = sysbvm_functionBytecodeDirectCompiler_getBindingValue(context, *compiler, captureBinding);
 
         sysbvm_array_atPut(captureVector, i, captureValue);

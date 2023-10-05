@@ -42,10 +42,6 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
             builder sourcePosition: (bytecode debugSourcePositions atOffsetOrNil: pc asUInt32).
         }.
 
-        bytecode debugSourceASTNodes ifNotNil: {
-            builder sourceASTNode: (bytecode debugSourceASTNodes atOffsetOrNil: pc asUInt32)
-        }.
-
         bytecode debugSourceEnvironments ifNotNil: {
             builder sourceEnvironment: (bytecode debugSourceEnvironments atOffsetOrNil: pc asUInt32)
         }.
