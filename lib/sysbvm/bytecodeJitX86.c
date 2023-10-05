@@ -1533,9 +1533,14 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
 #   ifdef __APPLE__
         // It takes the FDE parameter
         if(jit->dwarfEhBuilder.fdeOffset > 0)
-            __register_frame(ehFrameZonePointer + jit->dwarfEhBuilder.fdeOffset);
+        {
+            void *fdePointer = ehFrameZonePointer + jit->dwarfEhBuilder.fdeOffset;
+            sysbvm_dynarray_add(&jit->context->jittedRegisteredFrames, &fdePointer);
+            __register_frame(fdePointer);
+        }
 #   else
         // Send the eh_frame section.
+        sysbvm_dynarray_add(&jit->context->jittedRegisteredFrames, &ehFrameZonePointer);
         __register_frame(ehFrameZonePointer);
 #   endif
     }

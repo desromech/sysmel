@@ -43,21 +43,26 @@ typedef uintptr_t sysbvm_tuple_t;
  */
 typedef intptr_t sysbvm_stuple_t;
 
-// Identity hash and flags
-#define SYSBVM_TUPLE_IDENTITY_HASH_MASK ((uintptr_t)-16)
-#define SYSBVM_TUPLE_IDENTITY_HASH_FLAGS_MASK ((uintptr_t)15)
+#define SYSBVM_TUPLE_GC_COLOR_SHIFT 0
+#define SYSBVM_TUPLE_GC_COLOR_BITS 2
+#define SYSBVM_TUPLE_GC_COLOR_MASK (((1 << SYSBVM_TUPLE_GC_COLOR_BITS) - 1) << SYSBVM_TUPLE_GC_COLOR_SHIFT)
 
-#define SYSBVM_TUPLE_IDENTITY_HASH_IMMUTABLE_BIT ((uintptr_t)1)
-#define SYSBVM_TUPLE_IDENTITY_HASH_NEEDS_FINALIZATION_BIT ((uintptr_t)2)
-#define SYSBVM_TUPLE_IDENTITY_HASH_DUMMY_VALUE_BIT ((uintptr_t)4)
+#define SYSBVM_TUPLE_FLAGS_SHIFT SYSBVM_TUPLE_GC_COLOR_BITS
+#define SYSBVM_TUPLE_FLAGS_BITS 6
+#define SYSBVM_TUPLE_FLAGS_DIRTY (1 << SYSBVM_TUPLE_FLAGS_SHIFT)
+#define SYSBVM_TUPLE_FLAGS_YOUNG (1 << (SYSBVM_TUPLE_FLAGS_SHIFT + 1))
+#define SYSBVM_TUPLE_FLAGS_RESERVED (1 << (SYSBVM_TUPLE_FLAGS_SHIFT + 2))
+#define SYSBVM_TUPLE_FLAGS_IMMUTABLE (1 << (SYSBVM_TUPLE_FLAGS_SHIFT + 3))
+#define SYSBVM_TUPLE_FLAGS_NEEDS_FINALIZATION (1 << (SYSBVM_TUPLE_FLAGS_SHIFT + 4))
+#define SYSBVM_TUPLE_FLAGS_DUMMY_VALUE (1 << (SYSBVM_TUPLE_FLAGS_SHIFT + 5))
 
-// Type pointer and flags
-#define SYSBVM_TUPLE_TYPE_POINTER_MASK ((uintptr_t)-16)
-#define SYSBVM_TUPLE_TYPE_FLAGS_MASK ((uintptr_t)15)
+#define SYSBVM_TUPLE_OBJECT_KIND_SHIFT (SYSBVM_TUPLE_FLAGS_SHIFT + SYSBVM_TUPLE_FLAGS_BITS)
+#define SYSBVM_TUPLE_OBJECT_KIND_BITS 2
+#define SYSBVM_TUPLE_OBJECT_KIND_MASK (((1 << SYSBVM_TUPLE_OBJECT_KIND_BITS) - 1) << SYSBVM_TUPLE_OBJECT_KIND_SHIFT)
 
-#define SYSBVM_TUPLE_TYPE_GC_COLOR_MASK ((uintptr_t)3)
-#define SYSBVM_TUPLE_TYPE_BYTES_BIT ((uintptr_t)4)
-#define SYSBVM_TUPLE_TYPE_WEAK_OBJECT_BIT ((uintptr_t)8)
+#define SYSBVM_TUPLE_IDENTITY_HASH_SHIFT 10
+#define SYSBVM_TUPLE_IDENTITY_HASH_BITS 22
+#define SYSBVM_TUPLE_IDENTITY_HASH_MASK (((1 << SYSBVM_TUPLE_IDENTITY_HASH_BITS) - 1) << SYSBVM_TUPLE_IDENTITY_HASH_SHIFT)
 
 #define SYSBVM_TUPLE_TAG_BIT_COUNT 4
 #define SYSBVM_TUPLE_TAG_BIT_MASK 15
@@ -70,6 +75,15 @@ typedef intptr_t sysbvm_stuple_t;
 
 #define SYSBVM_IMMEDIATE_INT_MIN ( -((sysbvm_stuple_t)1 << (sysbvm_stuple_t)(SYSBVM_IMMEDIATE_BIT_COUNT - 1)) )
 #define SYSBVM_IMMEDIATE_INT_MAX ( ((sysbvm_stuple_t)1 << (sysbvm_stuple_t)(SYSBVM_IMMEDIATE_BIT_COUNT - 1)) - 1 )
+
+typedef enum sysbvm_object_kind_e
+{
+    SYSBVM_TUPLE_OBJECT_KIND_POINTERS = 0,
+    SYSBVM_TUPLE_OBJECT_KIND_WEAK_POINTERS = 1,
+    SYSBVM_TUPLE_OBJECT_KIND_BYTES = 2,
+    SYSBVM_TUPLE_OBJECT_KIND_COMPLEX = 3,
+    SYSBVM_TUPLE_OBJECT_KIND_IMMEDIATE
+} sysbvm_object_kind_t;
 
 /**
  * The different immediate pointer tags.
@@ -125,10 +139,20 @@ typedef enum sysbvm_tuple_immediate_trivial_index_e
  */
 typedef struct sysbvm_tuple_header_s
 {
-    uintptr_t typePointerAndFlags;
-    uintptr_t identityHashAndFlags;
-    uintptr_t objectSize;
-    sysbvm_tuple_t forwardingPointer; // Used by the moving GC
+    union
+    {
+        sysbvm_tuple_t typePointer;
+
+        struct
+        {
+            uint32_t typePointer32;
+            uint32_t typePointer32Padding;
+        };
+        uint64_t typePointer64;
+    };
+
+    uint32_t identityHashAndFlags;
+    uint32_t objectSize;
 } sysbvm_tuple_header_t;
 
 /**
@@ -215,7 +239,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_tuple_getImmediateTrivialTypeWithIndex(sysbvm_c
  */
 SYSBVM_INLINE void sysbvm_tuple_setType(sysbvm_object_tuple_t *objectTuple, sysbvm_tuple_t newType)
 {
-    objectTuple->header.typePointerAndFlags = (objectTuple->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_FLAGS_MASK) | newType;
+    objectTuple->header.typePointer = newType;
 }
 
 /**
@@ -223,7 +247,7 @@ SYSBVM_INLINE void sysbvm_tuple_setType(sysbvm_object_tuple_t *objectTuple, sysb
  */
 SYSBVM_INLINE sysbvm_tuple_t sysbvm_pointerTuple_getType(sysbvm_tuple_t tuple)
 {
-    return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_POINTER_MASK;
+    return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointer;
 }
 
 /**
@@ -233,7 +257,7 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_getType(sysbvm_context_t *context, sys
 {
     if(sysbvm_tuple_isNonNullPointer(tuple))
     {
-        return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_POINTER_MASK;
+        return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointer;
     }
     else
     {
@@ -246,11 +270,34 @@ SYSBVM_INLINE sysbvm_tuple_t sysbvm_tuple_getType(sysbvm_context_t *context, sys
 }
 
 /**
+ * Gets the tuple object kind.
+ */
+SYSBVM_INLINE sysbvm_object_kind_t sysbvm_tuple_getObjectKind(sysbvm_tuple_t tuple)
+{
+    if(sysbvm_tuple_isNonNullPointer(tuple))
+        return (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_OBJECT_KIND_MASK) >> SYSBVM_TUPLE_OBJECT_KIND_SHIFT;
+    else
+        return SYSBVM_TUPLE_OBJECT_KIND_IMMEDIATE;
+}
+
+/**
+ * Sets the tuple object kind.
+ */
+SYSBVM_INLINE void sysbvm_tuple_setObjectKind(sysbvm_tuple_t tuple, sysbvm_object_kind_t newKind)
+{
+    if(sysbvm_tuple_isNonNullPointer(tuple))
+    {
+        sysbvm_tuple_header_t *header = &SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header;
+        header->identityHashAndFlags = (header->identityHashAndFlags & ~SYSBVM_TUPLE_OBJECT_KIND_MASK) | (newKind << SYSBVM_TUPLE_OBJECT_KIND_SHIFT);
+    }
+}
+
+/**
  * Is this a bytes tuple?
  */
 SYSBVM_INLINE bool sysbvm_tuple_isBytes(sysbvm_tuple_t tuple)
 {
-    return sysbvm_tuple_isNonNullPointer(tuple) && (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_BYTES_BIT) != 0;
+    return sysbvm_tuple_getObjectKind(tuple) == SYSBVM_TUPLE_OBJECT_KIND_BYTES;
 }
 
 /**
@@ -258,7 +305,7 @@ SYSBVM_INLINE bool sysbvm_tuple_isBytes(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE bool sysbvm_tuple_isWeakObject(sysbvm_tuple_t tuple)
 {
-    return sysbvm_tuple_isNonNullPointer(tuple) && (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_WEAK_OBJECT_BIT) != 0;
+    return sysbvm_tuple_getObjectKind(tuple) == SYSBVM_TUPLE_OBJECT_KIND_WEAK_POINTERS;
 }
 
 /**
@@ -267,23 +314,7 @@ SYSBVM_INLINE bool sysbvm_tuple_isWeakObject(sysbvm_tuple_t tuple)
 SYSBVM_INLINE void sysbvm_tuple_markWeakObject(sysbvm_tuple_t tuple)
 {
     if(sysbvm_tuple_isNonNullPointer(tuple))
-        SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags |= SYSBVM_TUPLE_TYPE_WEAK_OBJECT_BIT;
-}
-
-/**
- * Is this a weak or bytes object tuple?
- */
-SYSBVM_INLINE bool sysbvm_tuple_isWeakOrBytesObject(sysbvm_tuple_t tuple)
-{
-    return !sysbvm_tuple_isNonNullPointer(tuple) || (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & (SYSBVM_TUPLE_TYPE_BYTES_BIT | SYSBVM_TUPLE_TYPE_WEAK_OBJECT_BIT)) != 0;
-}
-
-/**
- * Gets the GC color?
- */
-SYSBVM_INLINE uint32_t sysbvm_tuple_getGCColor(sysbvm_tuple_t tuple)
-{
-    return (uint32_t)(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_GC_COLOR_MASK);
+        sysbvm_tuple_setObjectKind(tuple, SYSBVM_TUPLE_OBJECT_KIND_WEAK_POINTERS);
 }
 
 /**
@@ -292,7 +323,7 @@ SYSBVM_INLINE uint32_t sysbvm_tuple_getGCColor(sysbvm_tuple_t tuple)
 SYSBVM_INLINE bool sysbvm_tuple_isImmutable(sysbvm_tuple_t tuple)
 {
     return sysbvm_tuple_isImmediate(tuple) || !tuple ||
-        ((SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_IDENTITY_HASH_IMMUTABLE_BIT) != 0);
+        ((SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_FLAGS_IMMUTABLE) != 0);
 }
 
 /**
@@ -300,8 +331,8 @@ SYSBVM_INLINE bool sysbvm_tuple_isImmutable(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE void sysbvm_tuple_markImmutable(sysbvm_tuple_t tuple)
 {
-    if(!sysbvm_tuple_isNonNullPointer(tuple))
-        SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= SYSBVM_TUPLE_IDENTITY_HASH_IMMUTABLE_BIT;
+    if(sysbvm_tuple_isNonNullPointer(tuple))
+        SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= SYSBVM_TUPLE_FLAGS_IMMUTABLE;
 }
 
 /**
@@ -309,7 +340,7 @@ SYSBVM_INLINE void sysbvm_tuple_markImmutable(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE bool sysbvm_tuple_isObjectThatNeedsFinalization(sysbvm_tuple_t tuple)
 {
-    return sysbvm_tuple_isNonNullPointer(tuple) && (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_IDENTITY_HASH_NEEDS_FINALIZATION_BIT) != 0;
+    return sysbvm_tuple_isNonNullPointer(tuple) && (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_FLAGS_NEEDS_FINALIZATION) != 0;
 }
 
 /**
@@ -318,7 +349,7 @@ SYSBVM_INLINE bool sysbvm_tuple_isObjectThatNeedsFinalization(sysbvm_tuple_t tup
 SYSBVM_INLINE void sysbvm_tuple_markObjectThatNeedsFinalization(sysbvm_tuple_t tuple)
 {
     if(sysbvm_tuple_isNonNullPointer(tuple))
-        SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= SYSBVM_TUPLE_IDENTITY_HASH_NEEDS_FINALIZATION_BIT;
+        SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= SYSBVM_TUPLE_FLAGS_NEEDS_FINALIZATION;
 }
 
 
@@ -327,7 +358,7 @@ SYSBVM_INLINE void sysbvm_tuple_markObjectThatNeedsFinalization(sysbvm_tuple_t t
  */
 SYSBVM_INLINE bool sysbvm_tuple_isDummyValue(sysbvm_tuple_t tuple)
 {
-    return sysbvm_tuple_isNonNullPointer(tuple) && (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_IDENTITY_HASH_DUMMY_VALUE_BIT) != 0;
+    return sysbvm_tuple_isNonNullPointer(tuple) && (SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_FLAGS_DUMMY_VALUE) != 0;
 }
 
 /**
@@ -336,7 +367,15 @@ SYSBVM_INLINE bool sysbvm_tuple_isDummyValue(sysbvm_tuple_t tuple)
 SYSBVM_INLINE void sysbvm_tuple_markDummyValue(sysbvm_tuple_t tuple)
 {
     if(sysbvm_tuple_isNonNullPointer(tuple))
-        SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= SYSBVM_TUPLE_IDENTITY_HASH_DUMMY_VALUE_BIT;
+        SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags |= SYSBVM_TUPLE_FLAGS_DUMMY_VALUE;
+}
+
+/**
+ * Gets the GC color?
+ */
+SYSBVM_INLINE uint32_t sysbvm_tuple_getGCColor(sysbvm_tuple_t tuple)
+{
+    return (uint32_t)(SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple)->header.identityHashAndFlags & SYSBVM_TUPLE_GC_COLOR_MASK) >> SYSBVM_TUPLE_GC_COLOR_SHIFT;
 }
 
 /**
@@ -345,8 +384,7 @@ SYSBVM_INLINE void sysbvm_tuple_markDummyValue(sysbvm_tuple_t tuple)
 SYSBVM_INLINE void sysbvm_tuple_setGCColor(sysbvm_tuple_t tuple, uint32_t newColor)
 {
     sysbvm_object_tuple_t *objectTuple = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(tuple);
-    objectTuple->header.typePointerAndFlags &= ~SYSBVM_TUPLE_TYPE_GC_COLOR_MASK;
-    objectTuple->header.typePointerAndFlags |= newColor;
+    objectTuple->header.identityHashAndFlags = (objectTuple->header.identityHashAndFlags & ~SYSBVM_TUPLE_GC_COLOR_MASK) | (newColor << SYSBVM_TUPLE_GC_COLOR_SHIFT);
 }
 
 /**
@@ -954,7 +992,7 @@ SYSBVM_INLINE size_t sysbvm_tuple_identityHash(sysbvm_tuple_t tuple)
     if(sysbvm_tuple_isNonNullPointer(tuple))
     {
         sysbvm_object_tuple_t *object = (sysbvm_object_tuple_t*)tuple;
-        return object->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT;
+        return (object->header.identityHashAndFlags & SYSBVM_TUPLE_IDENTITY_HASH_MASK) >> SYSBVM_TUPLE_IDENTITY_HASH_SHIFT;
     }
     else
     {
@@ -967,7 +1005,7 @@ SYSBVM_INLINE size_t sysbvm_tuple_identityHash(sysbvm_tuple_t tuple)
  */
 SYSBVM_INLINE void sysbvm_tuple_setIdentityHash(sysbvm_object_tuple_t *objectTuple, size_t newIdentityHash)
 {
-    objectTuple->header.identityHashAndFlags = (objectTuple->header.identityHashAndFlags & SYSBVM_TUPLE_TAG_BIT_MASK) | ((newIdentityHash & SYSBVM_STORED_IDENTITY_HASH_BIT_MASK) << SYSBVM_TUPLE_TAG_BIT_COUNT);
+    objectTuple->header.identityHashAndFlags = (objectTuple->header.identityHashAndFlags & ~SYSBVM_TUPLE_IDENTITY_HASH_MASK) | ((newIdentityHash << SYSBVM_TUPLE_IDENTITY_HASH_SHIFT) & SYSBVM_TUPLE_IDENTITY_HASH_MASK);
 }
 
 /**

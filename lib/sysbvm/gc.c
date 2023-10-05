@@ -30,6 +30,8 @@ static void sysbvm_gc_markObjectContent(sysbvm_context_t *context, sysbvm_tuple_
     // Do not traverse the slot of byte objects, and the slots of weak objects
     if(!sysbvm_tuple_isBytes(pointer))
     {
+        sysbvm_object_tuple_t *objectTuple = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(pointer);
+
         // By default mark all of the slots.
         size_t strongSlotCount = sysbvm_tuple_getSizeInSlots(pointer);
 
@@ -42,7 +44,7 @@ static void sysbvm_gc_markObjectContent(sysbvm_context_t *context, sysbvm_tuple_
         }
 
         // Mark the object slots
-        sysbvm_tuple_t *slots = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(pointer)->pointers;
+        sysbvm_tuple_t *slots = objectTuple->pointers;
         for(size_t i = 0; i < strongSlotCount; ++i)
             sysbvm_gc_markPointer(context, &slots[i]);
     }
@@ -60,17 +62,6 @@ static void sysbvm_gc_markUntilStackIsEmpty(sysbvm_context_t *context)
     }
 }
 
-static void sysbvm_gc_applyForwardingPointer(void *userdata, sysbvm_tuple_t *pointerAddress)
-{
-    (void)userdata;
-    //sysbvm_context_t *context = (sysbvm_context_t*)userdata;
-
-    sysbvm_tuple_t pointer = *pointerAddress;
-    if(!sysbvm_tuple_isNonNullPointer(pointer))
-        return;
-
-    *pointerAddress = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(pointer)->header.forwardingPointer;
-}
 
 SYSBVM_API void sysbvm_gc_collect(sysbvm_context_t *context)
 {
@@ -88,25 +79,13 @@ static void sysbvm_gc_performCycle(sysbvm_context_t *context)
     sysbvm_gc_iterateRoots(context, context, sysbvm_gc_markPointer);
     sysbvm_gc_markUntilStackIsEmpty(context);
 
-    // If we use the moving GC, compute and apply the forwarding pointers, according to the LISP 2 collection algorithm.
-    if(context->heap.useMallocForHeap)
-    {
-        sysbvm_heap_replaceWeakReferencesWithTombstones(&context->heap);
-    }
-    else
-    {
-        // Phase 2: Compute the forwarding pointers.
-        sysbvm_heap_computeCompactionForwardingPointers(&context->heap);
+    // Phase 2: Replace the weak references with their tombstones.
+    sysbvm_heap_replaceWeakReferencesWithTombstones(&context->heap);
 
-        // Phase 3: Relocate pointers.
-        sysbvm_gc_iterateRoots(context, context, sysbvm_gc_applyForwardingPointer);
-        sysbvm_heap_applyForwardingPointers(&context->heap);
-    }
+    // Phase 3: Sweep
+    sysbvm_heap_sweep(&context->heap);
 
-    // Phase 4: Sweep
-    sysbvm_heap_sweepOrCompact(&context->heap);
-
-    // Phase 5: Swap the GC colors.
+    // Phase 4: Swap the GC colors.
     sysbvm_heap_swapGCColors(&context->heap);
 }
 

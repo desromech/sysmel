@@ -15,6 +15,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef _WIN32
+extern void __deregister_frame(const void*);
+#endif
+
 static bool sysbvm_context_default_jitEnabled = true;
 
 extern void sysbvm_array_registerPrimitives(void);
@@ -1459,8 +1463,8 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     context->identityHashSeed = 1;
     context->jitEnabled = sysbvm_context_default_jitEnabled && !contextOptions->nojit;
     context->gcDisabled = contextOptions->gcType == SYSBVM_GC_TYPE_DISABLED;
-    context->heap.useMallocForHeap = contextOptions->gcType == SYSBVM_GC_TYPE_DEFAULT || contextOptions->gcType == SYSBVM_GC_TYPE_NON_MOVING  || contextOptions->gcType == SYSBVM_GC_TYPE_DISABLED;
     sysbvm_dynarray_initialize(&context->jittedObjectFileEntries, sizeof(sysbvm_gdb_jit_code_entry_t*), 1024);
+    sysbvm_dynarray_initialize(&context->jittedRegisteredFrames, sizeof(void*), 1024);
     sysbvm_dynarray_initialize(&context->markingStack, sizeof(sysbvm_tuple_t), 1<<20);
 
     sysbvm_heap_initialize(&context->heap);
@@ -1592,6 +1596,19 @@ SYSBVM_API void sysbvm_context_destroy(sysbvm_context_t *context)
         sysbvm_dynarray_destroy(&context->jittedObjectFileEntries);
     }
 
+    // Unregister the jitted registered frames.
+    {
+        void **registeredFrames = (void **)context->jittedRegisteredFrames.data;
+        for(size_t i = 0; i < context->jittedRegisteredFrames.size; ++i)
+        {
+#ifdef _WIN32
+#else
+            __deregister_frame(registeredFrames[i]);
+#endif
+        }
+        sysbvm_dynarray_destroy(&context->jittedRegisteredFrames);
+    }
+
     // Destroy the context heap.
     sysbvm_dynarray_destroy(&context->markingStack);
     sysbvm_heap_destroy(&context->heap);
@@ -1600,6 +1617,7 @@ SYSBVM_API void sysbvm_context_destroy(sysbvm_context_t *context)
 
 SYSBVM_API sysbvm_context_t *sysbvm_context_loadImageFromFileNamed(const char *filename)
 {
+#if 0
 #ifdef _WIN32
     FILE *inputFile = NULL;
     if(fopen_s(&inputFile, filename, "rb"))
@@ -1634,10 +1652,15 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_loadImageFromFileNamed(const char *f
 
     context->roots.sessionToken = sysbvm_tuple_systemHandle_encode(context, sysbvm_tuple_systemHandle_decode(context->roots.sessionToken) +  1);
     return context;
+#else
+    (void)filename;
+    return NULL;
+#endif
 }
 
 SYSBVM_API void sysbvm_context_saveImageToFileNamed(sysbvm_context_t *context, const char *filename)
 {
+#if 0    
     sysbvm_gc_collect(context);
 #ifdef _WIN32
     FILE *outputFile = NULL;
@@ -1652,6 +1675,10 @@ SYSBVM_API void sysbvm_context_saveImageToFileNamed(sysbvm_context_t *context, c
     fwrite(&context->roots, sizeof(context->roots), 1, outputFile);
     sysbvm_heap_dumpToFile(&context->heap, outputFile);
     fclose(outputFile);
+#else
+    (void)context;
+    (void)filename;
+#endif
 }
 
 sysbvm_heap_t *sysbvm_context_getHeap(sysbvm_context_t *context)

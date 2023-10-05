@@ -20,23 +20,12 @@ typedef struct sysbvm_heap_mallocObjectHeader_s
     };
 } sysbvm_heap_mallocObjectHeader_t;
 
-typedef struct sysbvm_heap_chunk_s
-{
-    uint32_t capacity;
-    uint32_t size;
-    struct sysbvm_heap_chunk_s *nextChunk;
-} sysbvm_heap_chunk_t;
-
 struct sysbvm_heap_s
 {
-    sysbvm_heap_chunk_t *firstChunk;
-    sysbvm_heap_chunk_t *lastChunk;
-
     sysbvm_heap_mallocObjectHeader_t *firstMallocObject;
     sysbvm_heap_mallocObjectHeader_t *lastMallocObject;
 
     bool shouldAttemptToCollect;
-    bool useMallocForHeap;
 
     size_t totalSize;
     size_t totalCapacity;
@@ -54,13 +43,6 @@ struct sysbvm_heap_s
     size_t codeZoneSize;
     uint8_t *codeZone;
 };
-
-typedef struct sysbvm_heapIterator_s
-{
-    sysbvm_heap_t *heap;
-    sysbvm_heap_chunk_t *chunk;
-    size_t offset;
-} sysbvm_heapIterator_t;
 
 typedef struct sysbvm_heap_relocationRecord_s
 {
@@ -91,23 +73,8 @@ void *sysbvm_heap_allocateAndLockCodeZone(sysbvm_heap_t *heap, size_t size, size
 void sysbvm_heap_lockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size);
 void sysbvm_heap_unlockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size);
 
-void sysbvm_heap_computeCompactionForwardingPointers(sysbvm_heap_t *heap);
 void sysbvm_heap_replaceWeakReferencesWithTombstones(sysbvm_heap_t *heap);
-void sysbvm_heap_applyForwardingPointers(sysbvm_heap_t *heap);
-void sysbvm_heap_sweepOrCompact(sysbvm_heap_t *heap);
+void sysbvm_heap_sweep(sysbvm_heap_t *heap);
 void sysbvm_heap_swapGCColors(sysbvm_heap_t *heap);
-
-void sysbvm_heap_dumpToFile(sysbvm_heap_t *heap, FILE *file);
-bool sysbvm_heap_loadFromFile(sysbvm_heap_t *heap, FILE *file, size_t numberOfRootsToRelocate, sysbvm_tuple_t *rootsToRelocate);
-
-void sysbvm_heapIterator_begin(sysbvm_heap_t *heap, sysbvm_heapIterator_t *iterator);
-void sysbvm_heapIterator_beginWithPointer(sysbvm_heap_t *heap, sysbvm_tuple_t pointer, sysbvm_heapIterator_t *iterator);
-bool sysbvm_heapIterator_isAtEnd(sysbvm_heapIterator_t *iterator);
-
-sysbvm_object_tuple_t *sysbvm_heapIterator_get(sysbvm_heapIterator_t *iterator);
-void sysbvm_heapIterator_advance(sysbvm_heapIterator_t *iterator);
-bool sysbvm_heapIterator_advanceUntilInstanceWithType(sysbvm_heapIterator_t *iterator, sysbvm_tuple_t expectedType);
-void sysbvm_heapIterator_compactionAdvance(sysbvm_heapIterator_t *iterator, size_t sizeToAdvance, sysbvm_object_tuple_t **outObjectPointer, bool commitNewSize);
-void sysbvm_heapIterator_compactionFinish(sysbvm_heapIterator_t *iterator, bool commitNewSize);
 
 #endif //SYSBVM_INTERNAL_HEAP_H

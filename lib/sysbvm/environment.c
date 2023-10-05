@@ -18,8 +18,7 @@ static inline bool sysbvm_symbolBinding_isValueQuick(sysbvm_context_t *context, 
 {
     if(!sysbvm_tuple_isNonNullPointer(binding)) return false;
 
-    sysbvm_tuple_t type = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(binding)->header.typePointerAndFlags & SYSBVM_TUPLE_TYPE_POINTER_MASK;
-    return type == context->roots.symbolValueBindingType;
+    return SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(binding)->header.typePointer == context->roots.symbolValueBindingType;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_analysisQueueEntry_create(sysbvm_context_t *context, sysbvm_tuple_t programEntity)

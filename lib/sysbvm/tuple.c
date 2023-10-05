@@ -145,7 +145,7 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_storedIdentityHash(sysbvm_context_t
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     if(sysbvm_tuple_isNonNullPointer(arguments[0]))
-        return sysbvm_tuple_size_encode(context, SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(arguments[0])->header.identityHashAndFlags >> SYSBVM_TUPLE_TAG_BIT_COUNT);
+        return sysbvm_tuple_size_encode(context, SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(arguments[0])->header.identityHashAndFlags >> SYSBVM_TUPLE_IDENTITY_HASH_SHIFT);
 
     return sysbvm_tuple_size_encode(context, sysbvm_hashMultiply(arguments[0]));
 }
@@ -574,14 +574,11 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_firstInstanceWithType(sysbvm_contex
 {
     (void)context;
     (void)closure;
+    (void)arguments;
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
-    sysbvm_heapIterator_t iterator = {0};
-    sysbvm_heapIterator_begin(&context->heap, &iterator);
-    if(!sysbvm_heapIterator_advanceUntilInstanceWithType(&iterator, arguments[0]))
-        return SYSBVM_NULL_TUPLE;
-
-    return (sysbvm_tuple_t)sysbvm_heapIterator_get(&iterator);
+    // TODO: Implement this by traversing the object linked list.
+    return SYSBVM_NULL_TUPLE;
 }
 
 static sysbvm_tuple_t sysbvm_tuple_primitive_nextInstanceWithSameType(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
@@ -591,15 +588,8 @@ static sysbvm_tuple_t sysbvm_tuple_primitive_nextInstanceWithSameType(sysbvm_con
     if(argumentCount != 1) sysbvm_error_argumentCountMismatch(1, argumentCount);
 
     sysbvm_tuple_t *object = &arguments[0];
-    sysbvm_tuple_t objectType = sysbvm_tuple_getType(context, *object);
-
-    sysbvm_heapIterator_t iterator = {0};
-    sysbvm_heapIterator_beginWithPointer(&context->heap, *object, &iterator);
-    sysbvm_heapIterator_advance(&iterator);
-    if(!sysbvm_heapIterator_advanceUntilInstanceWithType(&iterator, objectType))
-        return SYSBVM_NULL_TUPLE;
-
-    return (sysbvm_tuple_t)sysbvm_heapIterator_get(&iterator);
+    (void)object;
+    return SYSBVM_NULL_TUPLE;
 }
 
 static sysbvm_tuple_t sysbvm_tuple_primitive_recordBindingWithOwnerAndName(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
