@@ -5,6 +5,7 @@
 #include "sysbvm/function.h"
 #include "sysbvm/string.h"
 #include "sysbvm/assert.h"
+#include "sysbvm/backtrace.h"
 #include "internal/context.h"
 #include <stdio.h>
 
@@ -191,6 +192,17 @@ static sysbvm_tuple_t sysbvm_io_primitive_halt(sysbvm_context_t *context, sysbvm
     return SYSBVM_VOID_TUPLE;
 }
 
+static sysbvm_tuple_t sysbvm_io_primitive_haltPrintingBacktrace(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    (void)arguments;
+    if(argumentCount != 0) sysbvm_error_argumentCountMismatch(0, argumentCount);
+
+    sysbvm_backtrace_print();
+    return SYSBVM_VOID_TUPLE;
+}
+
 void sysbvm_io_registerPrimitives(void)
 {
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_printLine, "printLine");
@@ -203,6 +215,7 @@ void sysbvm_io_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_readWholeFileNamedAsByteArray, "IO::readWholeFileNamedAsByteArray");
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_writeWholeFileNamedWithByteArray, "IO::writeWholeFileNamedWithByteArray");
     sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_halt, "halt");
+    sysbvm_primitiveTable_registerFunction(sysbvm_io_primitive_haltPrintingBacktrace, "haltPrintingBacktrace");
 }
 
 void sysbvm_io_setupPrimitives(sysbvm_context_t *context)
@@ -219,4 +232,5 @@ void sysbvm_io_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "IO::writeWholeFileNamedWithString", 2, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_writeWholeFileNamedWithByteArray);
 
     sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "halt", 0, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_halt);
+    sysbvm_context_setIntrinsicSymbolBindingValueWithPrimitiveFunction(context, "haltPrintingBacktrace", 0, SYSBVM_FUNCTION_FLAGS_CORE_PRIMITIVE, NULL, sysbvm_io_primitive_haltPrintingBacktrace);
 }

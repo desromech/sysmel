@@ -15,6 +15,11 @@
 #ifdef __linux__
 #include <unistd.h>
 #include <fcntl.h>
+
+#endif
+
+#ifndef _WIN32
+extern void __register_frame(const void*);
 #endif
 
 //define SYSBVM_EMIT_PERF_STACK_MAP
@@ -1395,7 +1400,10 @@ static void sysbvm_jit_emitObjectFile(sysbvm_bytecodeJit_t *jit)
 static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit, sysbvm_elf64_header_t *header, uint8_t *instructionsPointer, uint8_t *ehFramePointer, uint8_t *objectFileContentPointer, sysbvm_jit_x64_elfContentFooter_t *footer)
 {
     if(jit->dwarfEhBuilder.fdeInitialLocationOffset > 0)
-        memcpy(ehFramePointer + jit->dwarfEhBuilder.fdeInitialLocationOffset, &instructionsPointer, sizeof(instructionsPointer));
+    {
+        int32_t *initialLocationPointer = (int32_t*)(ehFramePointer + jit->dwarfEhBuilder.fdeInitialLocationOffset);
+        *initialLocationPointer = (int32_t) ((uintptr_t)instructionsPointer - (uintptr_t)initialLocationPointer);
+    }
 
     header->sectionHeadersOffset = (uintptr_t)&footer->sections - (uintptr_t)header;
     sysbvm_elf64_off_t contentOffset = (uintptr_t)objectFileContentPointer - (uintptr_t)header;
@@ -1518,6 +1526,18 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
     if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)codeZonePointer))
     {
         // Store the handle in the context for cleanup.
+    }
+#else
+    if(jit->dwarfEhBuilder.buffer.size > 0)
+    {
+#   ifdef __APPLE__
+        // It takes the FDE parameter
+        if(jit->dwarfEhBuilder.fdeOffset > 0)
+            __register_frame(ehFrameZonePointer + jit->dwarfEhBuilder.fdeOffset);
+#   else
+        // Send the eh_frame section.
+        __register_frame(ehFrameZonePointer);
+#   endif
     }
 #endif
 

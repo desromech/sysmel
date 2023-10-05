@@ -14,6 +14,7 @@
 #include "assert.c"
 #include "association.c"
 #include "ast.c"
+#include "backtrace.c"
 #include "boolean.c"
 #include "bytecode.c"
 #include "bytecodeCompiler.c"

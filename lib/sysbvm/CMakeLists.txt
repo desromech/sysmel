@@ -4,6 +4,7 @@ set(sysbvm_sources
     assert.c
     association.c
     ast.c
+    backtrace.c
     boolean.c
     bytecode.c
     bytecodeCompiler.c

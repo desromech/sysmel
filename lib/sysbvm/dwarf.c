@@ -121,7 +121,7 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginCIE(sysbvm_dwarf_cfi_builder_t *cfi, sysbv
     cfi->cieContentOffset = sysbvm_dwarf_encodeDwarfPointer(&cfi->buffer, cfi->isEhFrame ? 0 : -1 ); // CIE_id
     cfi->cie = *cie;
     sysbvm_dwarf_encodeByte(&cfi->buffer, cfi->version);
-    sysbvm_dwarf_encodeCString(&cfi->buffer, ""); // Argumentation
+    sysbvm_dwarf_encodeCString(&cfi->buffer, cfi->isEhFrame ? "zR" : ""); // Argumentation
     if(!cfi->isEhFrame)
     {
         sysbvm_dwarf_encodeByte(&cfi->buffer, sizeof(uintptr_t)); // Address size
@@ -133,6 +133,11 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginCIE(sysbvm_dwarf_cfi_builder_t *cfi, sysbv
         sysbvm_dwarf_encodeByte(&cfi->buffer, cie->returnAddressRegister);
     else
         sysbvm_dwarf_encodeULEB128(&cfi->buffer, cie->returnAddressRegister);
+    if(cfi->isEhFrame)
+    {
+        sysbvm_dwarf_encodeULEB128(&cfi->buffer, 1);
+        sysbvm_dwarf_encodeByte(&cfi->buffer, DW_EH_PE_pcrel | DW_EH_PE_sdata4);
+    }
 }
 
 SYSBVM_API void sysbvm_dwarf_cfi_endCIE(sysbvm_dwarf_cfi_builder_t *cfi)
@@ -147,8 +152,17 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_
     cfi->fdeOffset = sysbvm_dwarf_encodeDWord(&cfi->buffer, 0);
     cfi->fdeContentOffset = sysbvm_dwarf_encodeDwarfPointerPCRelative(&cfi->buffer, cfi->cieOffset);
     cfi->fdeInitialPC = pc;
-    cfi->fdeInitialLocationOffset = sysbvm_dwarf_encodePointer(&cfi->buffer, cfi->fdeInitialLocationOffset);
-    cfi->fdeAddressingRangeOffset = sysbvm_dwarf_encodePointer(&cfi->buffer, 0);
+    if(cfi->isEhFrame)
+    {
+        cfi->fdeInitialLocationOffset = sysbvm_dwarf_encodeDWord(&cfi->buffer, 0);
+        cfi->fdeAddressingRangeOffset = sysbvm_dwarf_encodeDWord(&cfi->buffer, 0);
+        sysbvm_dwarf_encodeULEB128(&cfi->buffer, 0);
+    }
+    else
+    {
+        cfi->fdeInitialLocationOffset = sysbvm_dwarf_encodePointer(&cfi->buffer, 0);
+        cfi->fdeAddressingRangeOffset = sysbvm_dwarf_encodePointer(&cfi->buffer, 0);
+    }
     cfi->currentPC = cfi->fdeInitialPC;
     cfi->stackFrameSize = cfi->initialStackFrameSize;
     cfi->framePointerRegister = 0;
@@ -159,8 +173,16 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_
 SYSBVM_API void sysbvm_dwarf_cfi_endFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc)
 {
     sysbvm_dwarf_encodeAlignment(&cfi->buffer, sizeof(uintptr_t));
-    uintptr_t pcRange = pc - cfi->fdeInitialPC;
-    memcpy(cfi->buffer.data + cfi->fdeAddressingRangeOffset, &pcRange, sizeof(uintptr_t));
+    if(cfi->isEhFrame)
+    {
+        uint32_t pcRange = pc - cfi->fdeInitialPC;
+        memcpy(cfi->buffer.data + cfi->fdeAddressingRangeOffset, &pcRange, sizeof(uint32_t));
+    }
+    else
+    {
+        uintptr_t pcRange = pc - cfi->fdeInitialPC;
+        memcpy(cfi->buffer.data + cfi->fdeAddressingRangeOffset, &pcRange, sizeof(uintptr_t));
+    }
 
     uint32_t fdeSize = cfi->buffer.size - cfi->fdeContentOffset;
     memcpy(cfi->buffer.data + cfi->fdeOffset, &fdeSize, 4);

@@ -2,3 +2,7 @@ halt adoptDefinitionOf: {:: Void |
     <primitive: #halt>
     <targetDefinedPrimitive>
 } withEagerAnalysis.
+
+haltPrintingBacktrace adoptDefinitionOf: {:: Void |
+    <primitive: #haltPrintingBacktrace>
+} withEagerAnalysis.
