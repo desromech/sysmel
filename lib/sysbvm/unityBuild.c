@@ -22,6 +22,7 @@
 #include "byteStream.c"
 #include "context.c"
 #include "dictionary.c"
+#include "dwarf.c"
 #include "dynarray.c"
 #include "environment.c"
 #include "errors.c"

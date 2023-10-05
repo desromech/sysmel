@@ -76,6 +76,8 @@ enum {
     SYSBVM_SHT_REL = 9,
     SYSBVM_SHT_SHLIB = 10,
     SYSBVM_SHT_DYNSYM = 11,
+
+    SHT_X86_64_UNWIND = 0x70000001,
 };
 
 enum {

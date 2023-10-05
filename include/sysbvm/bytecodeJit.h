@@ -4,6 +4,7 @@
 #pragma once
 
 #include "bytecode.h"
+#include "dwarf.h"
 
 #if defined(__x86_64__) || defined(_M_X64)
 #   define SYSBVM_ARCH_X86_64 1
@@ -81,6 +82,7 @@ typedef struct sysbvm_bytecodeJit_s
     sysbvm_dynarray_t pcRelocations;
     sysbvm_dynarray_t unwindInfo;
     sysbvm_dynarray_t unwindInfoBytecode;
+    sysbvm_dwarf_cfi_builder_t dwarfEhBuilder;
     sysbvm_dynarray_t objectFileContent;
     size_t objectFileContentJittedFunctionNameOffset;
     size_t prologueSize;

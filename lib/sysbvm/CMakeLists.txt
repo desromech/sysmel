@@ -12,6 +12,7 @@ set(sysbvm_sources
     byteStream.c
     context.c
     dictionary.c
+    dwarf.c
     dynarray.c
     environment.c
     errors.c
