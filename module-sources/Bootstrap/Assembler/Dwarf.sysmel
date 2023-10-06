@@ -1515,7 +1515,6 @@ Dwarf::DebugLineWriter definition: {
 
     public field minLine => Int32.
     public field maxLine => Int32.
-    public field previousLine => Int32.
     public field lineAdvance => Int32.
     public field lineBase => Int32.
     public field lineRange => Int32.
@@ -1571,7 +1570,7 @@ Dwarf::DebugLineWriter definition: {
     public method computeLineRangeForSections: (sections: SequenceableCollection) ::=> Void := {
         minLine := Int32 maxVal.
         maxLine := Int32 minVal.
-        previousLine := 1i32.
+        let previousLine mutable := 1i32.
 
         sections do: {:(AsmObjectCodeSection)section :: Void |
             section executable ifTrue: {
@@ -1586,13 +1585,18 @@ Dwarf::DebugLineWriter definition: {
                             minLine := minLine min: lineAdvance.
                             maxLine := maxLine max: lineAdvance.
                         }.
+                        previousLine := startLine.
                     }
                 }
             }
         }.
 
+        minLine > maxLine ifTrue: {
+            minLine := maxLine := 1i32
+        }.
+
         lineBase := (minLine min: 127i32) max: -128i32.
-        lineRange := maxLine - minLine min: 255i32.
+        lineRange := (maxLine - minLine min: 255i32) max: 1i32.
     }.
 
     public method writeSourceLocationForSections: (sections: SequenceableCollection) onto: (targetSection: AsmObjectCodeSection) pointerSize: (pointerSize: Size) ::=> Void := {

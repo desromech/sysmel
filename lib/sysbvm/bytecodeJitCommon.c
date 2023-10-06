@@ -1,11 +1,15 @@
 #include "sysbvm/bytecodeJit.h"
 #include "sysbvm/assert.h"
 #include "sysbvm/association.h"
+#include "sysbvm/dwarf.h"
 #include "sysbvm/elf.h"
 #include "sysbvm/gc.h"
 #include "sysbvm/gdb.h"
 #include "sysbvm/environment.h"
 #include "sysbvm/function.h"
+#include "sysbvm/orderedOffsetTable.h"
+#include "sysbvm/sourceCode.h"
+#include "sysbvm/sourcePosition.h"
 #include "sysbvm/stackFrame.h"
 #include "sysbvm/type.h"
 #include "internal/context.h"
@@ -26,6 +30,7 @@ SYSBVM_API void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_
     sysbvm_dynarray_initialize(&jit->constants, 1, 1024);
     sysbvm_dynarray_initialize(&jit->relocations, sizeof(sysbvm_bytecodeJitRelocation_t), 0);
     sysbvm_dynarray_initialize(&jit->pcRelocations, sizeof(sysbvm_bytecodeJitPCRelocation_t), 0);
+    sysbvm_dynarray_initialize(&jit->sourcePositions, sizeof(sysbvm_bytecodeJitSourcePositionRecord_t), 256);
 
     sysbvm_dynarray_initialize(&jit->unwindInfo, 1, 64);
     sysbvm_dynarray_initialize(&jit->unwindInfoBytecode, 1, 64);
@@ -109,6 +114,205 @@ SYSBVM_API void sysbvm_bytecodeJit_uwop_alloc(sysbvm_bytecodeJit_t *jit, size_t 
 
 #endif
 
+SYSBVM_API void sysbvm_bytecodeJit_addSourcePositionRecordWith(sysbvm_bytecodeJit_t *jit, size_t nativePC, sysbvm_tuple_t sourcePosition)
+{
+    if(jit->sourcePositions.size)
+    {
+        sysbvm_bytecodeJitSourcePositionRecord_t *existingRecords = (sysbvm_bytecodeJitSourcePositionRecord_t*)jit->sourcePositions.data;
+        if(existingRecords[jit->sourcePositions.size - 1].sourcePosition == sourcePosition)
+            return;
+    }
+
+    sysbvm_bytecodeJitSourcePositionRecord_t newRecord = {};
+    newRecord.sourcePosition = sourcePosition;
+    newRecord.pc = nativePC;
+    if(!sysbvm_sourcePosition_getStartLineAndColumn(jit->context, sourcePosition, &newRecord.line, &newRecord.column))
+        return;
+
+    sysbvm_dynarray_add(&jit->sourcePositions, &newRecord);
+}
+
+SYSBVM_API void sysbvm_bytecodeJit_addSourcePositionRecord(sysbvm_bytecodeJit_t *jit, sysbvm_functionBytecode_t *functionBytecode, uint16_t bytecodePC, size_t nativePC)
+{
+    if(functionBytecode->debugSourcePositions)
+    {
+        sysbvm_tuple_t foundDebugPosition = sysbvm_orderedOffsetTable_findValueWithOffset(jit->context, functionBytecode->debugSourcePositions, bytecodePC);
+        if(foundDebugPosition)
+        {
+            sysbvm_bytecodeJit_addSourcePositionRecordWith(jit, nativePC, foundDebugPosition);
+            return;
+        }
+    }
+
+    if(functionBytecode->sourcePosition)
+        sysbvm_bytecodeJit_addSourcePositionRecordWith(jit, nativePC, functionBytecode->sourcePosition);
+}
+
+SYSBVM_API int sysbvm_jit_dwarfLineInfoEmissionState_indexOfDirectory(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t directory)
+{
+    for(int i = 0; i < state->directoryCount; ++i)
+    {
+        if(state->directories[i] == directory)
+            return i + 1;
+    }
+
+    return 0;
+}
+
+void sysbvm_jit_dwarfLineInfoEmissionState_addDirectory(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t directory)
+{
+    if(!sysbvm_jit_dwarfLineInfoEmissionState_indexOfDirectory(state, directory))
+    {
+        SYSBVM_ASSERT(state->directoryCount < SYSBVM_JIT_DWARF_LINE_INFO_EMISSION_STATE_MAX_DIRECTORIES);
+        state->directories[state->directoryCount++] = directory;
+    }
+}
+
+SYSBVM_API int sysbvm_jit_dwarfLineInfoEmissionState_indexOfFile(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t file)
+{
+    for(int i = 0; i < state->fileCount; ++i)
+    {
+        if(state->files[i] == file)
+            return i + 1;
+    }
+
+    return 0;
+}
+
+void sysbvm_jit_dwarfLineInfoEmissionState_addSourceCode(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t sourceCode)
+{
+    if(!sysbvm_tuple_isNonNullPointer(sourceCode))
+        return;
+
+    if(!sysbvm_jit_dwarfLineInfoEmissionState_indexOfFile(state, sourceCode))
+    {
+        sysbvm_sourceCode_t *sourceCodeObject = (sysbvm_sourceCode_t*)sourceCode;
+        sysbvm_jit_dwarfLineInfoEmissionState_addDirectory(state, sourceCodeObject->directory);
+
+        state->files[state->fileCount++] = sourceCode;
+    }
+}
+
+void sysbvm_jit_dwarfLineInfoEmissionState_addSourcePositionSourceCode(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t sourcePosition)
+{
+    if(!sysbvm_tuple_isNonNullPointer(sourcePosition))
+        return;
+
+    sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)sourcePosition;
+    sysbvm_jit_dwarfLineInfoEmissionState_addSourceCode(state, sourcePositionObject->sourceCode);
+}
+
+void sysbvm_jit_dwarfLineInfoEmissionState_addSourcePosition(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t sourcePosition, uint32_t line)
+{
+    if(!sysbvm_tuple_isNonNullPointer(sourcePosition))
+        return;
+
+    sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)sourcePosition;
+    sysbvm_jit_dwarfLineInfoEmissionState_addSourceCode(state, sourcePositionObject->sourceCode);
+
+    int lineAdvance = state->previousLine - line;
+    if(abs(lineAdvance) < 8)
+    {
+        if(lineAdvance < state->minLineAdvance)
+            state->minLineAdvance = lineAdvance;
+        if(lineAdvance > state->maxLineAdvance)
+            state->maxLineAdvance = lineAdvance;
+    }
+
+    state->previousLine = line;
+}
+
+void sysbvm_jit_dwarfLineInfoEmissionState_emitSourcePosition(sysbvm_bytecodeJit_t *jit, sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t sourcePosition, size_t pc, uint32_t line, uint32_t column)
+{
+    if(!sysbvm_tuple_isNonNullPointer(sourcePosition))
+        return;
+
+    sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)sourcePosition;
+
+    // Set the source code.
+    if(sourcePositionObject->sourceCode != state->currentFile)
+    {
+        sysbvm_dwarf_debugInfo_line_setFile(&jit->dwarfDebugInfoBuilder, sysbvm_jit_dwarfLineInfoEmissionState_indexOfFile(state, sourcePositionObject->sourceCode));
+        state->currentFile = sourcePositionObject->sourceCode;
+    }
+
+    // Set the column.
+    sysbvm_dwarf_debugInfo_line_setColumn(&jit->dwarfDebugInfoBuilder, column);
+
+    int pcAdvance = pc - state->pc;
+    int lineAdvance = line - state->previousLine;
+    sysbvm_dwarf_debugInfo_line_advanceLineAndPC(&jit->dwarfDebugInfoBuilder, lineAdvance, pcAdvance);
+    state->pc = pc;
+    state->previousLine = line;
+}
+
+SYSBVM_API bool sysbvm_jit_emitDebugLineInfo(sysbvm_bytecodeJit_t *jit)
+{
+    if(!jit->sourcePositions.size)
+        return false;
+
+    sysbvm_jit_dwarfLineInfoEmissionState_t *state = &jit->dwarfLineEmissionState;
+    memset(state, 0, sizeof(*state));
+    sysbvm_jit_dwarfLineInfoEmissionState_addSourcePositionSourceCode(state, jit->sourcePosition);
+
+    // Preprocessing step.
+    sysbvm_bytecodeJitSourcePositionRecord_t *sourcePositionRecords = (sysbvm_bytecodeJitSourcePositionRecord_t*)jit->sourcePositions.data;
+    state->previousLine = 1;
+    state->minLineAdvance = INT32_MAX;
+    state->maxLineAdvance = INT32_MIN;
+    for(size_t i = 0; i < jit->sourcePositions.size; ++i)
+    {
+        sysbvm_bytecodeJitSourcePositionRecord_t *record = sourcePositionRecords + i;
+        sysbvm_jit_dwarfLineInfoEmissionState_addSourcePosition(state, record->sourcePosition, record->line);
+    }
+
+    if(state->minLineAdvance > state->maxLineAdvance)
+        state->minLineAdvance = state->maxLineAdvance = 1;
+
+    state->lineBase = state->minLineAdvance;
+    state->lineRange = state->maxLineAdvance - state->minLineAdvance;
+    if(state->lineRange < 1)
+        state->lineRange = 1;
+
+    jit->dwarfDebugInfoBuilder.lineProgramHeader.lineBase = state->lineBase;
+    jit->dwarfDebugInfoBuilder.lineProgramHeader.lineRange = state->lineRange;
+
+    sysbvm_dwarf_debugInfo_beginLineInformation(&jit->dwarfDebugInfoBuilder);
+
+    // Directories
+    for(int i = 0; i < state->directoryCount; ++i)
+        sysbvm_dwarf_debugInfo_addDirectory(&jit->dwarfDebugInfoBuilder, state->directories[i]);
+    sysbvm_dwarf_debugInfo_endDirectoryList(&jit->dwarfDebugInfoBuilder);
+
+    // Files    
+    for(int i = 0; i < state->fileCount; ++i)
+    {
+        sysbvm_sourceCode_t *sourceCode = (sysbvm_sourceCode_t*)state->files[i];
+        sysbvm_dwarf_debugInfo_addFile(&jit->dwarfDebugInfoBuilder, sysbvm_jit_dwarfLineInfoEmissionState_indexOfDirectory(state, sourceCode->directory), sourceCode->name);
+    }
+    sysbvm_dwarf_debugInfo_endFileList(&jit->dwarfDebugInfoBuilder);
+
+    sysbvm_dwarf_debugInfo_endLineInformationHeader(&jit->dwarfDebugInfoBuilder);
+
+    // Emit the source positions.
+    state->previousLine = 1;
+    state->pc = 0;
+    state->currentFile = SYSBVM_NULL_TUPLE;
+    if(state->fileCount > 0)
+        state->currentFile = state->files[0];
+    sysbvm_dwarf_debugInfo_line_setAddress(&jit->dwarfDebugInfoBuilder, state->pc);
+    for(size_t i = 0; i < jit->sourcePositions.size; ++i)
+    {
+        sysbvm_bytecodeJitSourcePositionRecord_t *record = sourcePositionRecords + i;
+        sysbvm_jit_dwarfLineInfoEmissionState_emitSourcePosition(jit, state, record->sourcePosition, record->pc, record->line, record->column);
+    }
+
+    sysbvm_dwarf_debugInfo_line_endSequence(&jit->dwarfDebugInfoBuilder);
+    sysbvm_dwarf_debugInfo_endLineInformation(&jit->dwarfDebugInfoBuilder);
+
+    return true;
+}
+
 SYSBVM_API void sysbvm_bytecodeJit_addPCRelocation(sysbvm_bytecodeJit_t *jit, sysbvm_bytecodeJitPCRelocation_t relocation)
 {
     sysbvm_dynarray_add(&jit->pcRelocations, &relocation);
@@ -125,6 +329,7 @@ SYSBVM_API void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
     sysbvm_dynarray_destroy(&jit->constants);
     sysbvm_dynarray_destroy(&jit->relocations);
     sysbvm_dynarray_destroy(&jit->pcRelocations);
+    sysbvm_dynarray_destroy(&jit->sourcePositions);
     free(jit->pcDestinations);
 
     sysbvm_dynarray_destroy(&jit->unwindInfo);
@@ -238,6 +443,8 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
     {
         jit.pcDestinations[pc] = jit.instructions.size;
         sysbvm_jit_storePC(&jit, (uint16_t)pc);
+
+        sysbvm_bytecodeJit_addSourcePositionRecord(&jit, functionBytecode, (uint16_t)pc, jit.instructions.size);
 
         uint8_t opcode = instructions[pc++];
 

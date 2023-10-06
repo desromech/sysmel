@@ -54,6 +54,22 @@ SYSBVM_API size_t sysbvm_dwarf_encodeCString(sysbvm_dynarray_t *buffer, const ch
     return offset;
 }
 
+SYSBVM_API size_t sysbvm_dwarf_encodeStringTupleWithDefaultString(sysbvm_dynarray_t *buffer, sysbvm_tuple_t stringTuple, const char *defaultString)
+{
+    size_t offset = buffer->size;
+    if(sysbvm_tuple_isBytes(stringTuple) && sysbvm_tuple_getSizeInBytes(stringTuple) > 0)
+    {
+        sysbvm_dynarray_addAll(buffer, sysbvm_tuple_getSizeInBytes(stringTuple), SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(stringTuple)->bytes);
+        sysbvm_dwarf_encodeByte(buffer, 0);
+    }
+    else
+    {
+        sysbvm_dwarf_encodeCString(buffer, defaultString);
+    }
+
+    return offset;
+}
+
 SYSBVM_API size_t sysbvm_dwarf_encodeULEB128(sysbvm_dynarray_t *buffer, uintptr_t value)
 {
     size_t offset = buffer->size;
@@ -293,6 +309,10 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_create(sysbvm_dwarf_debugInfo_builder_t *
 {
     memset(builder, 0, sizeof(sysbvm_dwarf_debugInfo_builder_t));
     builder->version = 4;
+    builder->lineProgramHeader.minimumInstructionLength = 1;
+    builder->lineProgramHeader.maximumOperationsPerInstruction = 1;
+    builder->lineProgramHeader.opcodeBase = 13;
+    builder->lineProgramHeader.defaultIsStatement = true;
 
     sysbvm_dynarray_initialize(&builder->line, 1, 1024);
     sysbvm_dynarray_initialize(&builder->str, 1, 1024);
@@ -350,6 +370,167 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_patchTextAddressesRelativeTo(sysbvm_dwarf
     }
 }
 
+SYSBVM_API void sysbvm_dwarf_debugInfo_beginLineInformation(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeDWord(&builder->line, 0);
+    sysbvm_dwarf_encodeWord(&builder->line, builder->version);
+    builder->lineHeaderLengthOffset = sysbvm_dwarf_encodeDWord(&builder->line, 0); // Header length
+    sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.minimumInstructionLength);
+    sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.maximumOperationsPerInstruction);
+    sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.defaultIsStatement);
+    sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.lineBase);
+    sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.lineRange);
+    sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.opcodeBase);
+
+    sysbvm_dwarf_encodeByte(&builder->line, 0); // DW_LNS_copy
+    sysbvm_dwarf_encodeByte(&builder->line, 1); // DW_LNS_advance_pc
+    sysbvm_dwarf_encodeByte(&builder->line, 1); // DW_LNS_advance_line
+    sysbvm_dwarf_encodeByte(&builder->line, 1); // DW_LNS_set_file
+    sysbvm_dwarf_encodeByte(&builder->line, 1); // DW_LNS_set_column
+    sysbvm_dwarf_encodeByte(&builder->line, 0); // DW_LNS_negate_stmt
+    sysbvm_dwarf_encodeByte(&builder->line, 0); // DW_LNS_set_basic_block
+    sysbvm_dwarf_encodeByte(&builder->line, 0); // DW_LNS_const_add_pc
+    sysbvm_dwarf_encodeByte(&builder->line, 1); // DW_LNS_fixed_advance_pc
+    sysbvm_dwarf_encodeByte(&builder->line, 0); // DW_LNS_set_prologue_end
+    sysbvm_dwarf_encodeByte(&builder->line, 0); // DW_LNS_set_epilogue_begin
+    sysbvm_dwarf_encodeByte(&builder->line, 1); // DW_LNS_set_isa
+
+    builder->lineProgramState.regAddress = 0;
+    builder->lineProgramState.regOpIndex = 0;
+    builder->lineProgramState.regFile = 1;
+    builder->lineProgramState.regLine = 1;
+    builder->lineProgramState.regColumn = 0;
+    builder->lineProgramState.regIsStatement = builder->lineProgramHeader.defaultIsStatement;
+    builder->lineProgramState.regBasicBlock = false;
+    builder->lineProgramState.regEndSequence = false;
+    builder->lineProgramState.regPrologueEnd = false;
+    builder->lineProgramState.regEpilogueBegin = false;
+    builder->lineProgramState.regISA = 0;
+    builder->lineProgramState.regDiscriminator = false;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_addDirectory(sysbvm_dwarf_debugInfo_builder_t *builder, sysbvm_tuple_t directoryName)
+{
+    sysbvm_dwarf_encodeStringTupleWithDefaultString(&builder->line, directoryName, ".");
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_endDirectoryList(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeByte(&builder->line, 0);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_addFile(sysbvm_dwarf_debugInfo_builder_t *builder, int directoryIndex, sysbvm_tuple_t name)
+{
+    sysbvm_dwarf_encodeStringTupleWithDefaultString(&builder->line, name, "<unknown>");
+    sysbvm_dwarf_encodeULEB128(&builder->line, directoryIndex);
+    sysbvm_dwarf_encodeULEB128(&builder->line, 0); // Last modification time.
+    sysbvm_dwarf_encodeULEB128(&builder->line, 0); // Size in bytes.
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_endFileList(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeByte(&builder->line, 0);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_endLineInformationHeader(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    uint32_t headerSize = builder->line.size - builder->lineHeaderLengthOffset - 4;
+    memcpy(builder->line.data + builder->lineHeaderLengthOffset, &headerSize, 4);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_setAddress(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t value)
+{
+    sysbvm_dwarf_encodeByte(&builder->line, 0);
+    sysbvm_dwarf_encodeULEB128(&builder->line, 1 + sizeof(value));
+    sysbvm_dwarf_encodeByte(&builder->line, DW_LNE_set_address);
+    uint32_t addressOffset = sysbvm_dwarf_encodePointer(&builder->line, value);
+    sysbvm_dynarray_add(&builder->lineTextAddresses, &addressOffset);
+    builder->lineProgramState.regAddress = value;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_setFile(sysbvm_dwarf_debugInfo_builder_t *builder, uint32_t file)
+{
+    if(builder->lineProgramState.regFile == file)
+        return;
+
+    sysbvm_dwarf_encodeByte(&builder->line, DW_LNS_set_file);
+    sysbvm_dwarf_encodeULEB128(&builder->line, file);
+    builder->lineProgramState.regFile = file;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_setColumn(sysbvm_dwarf_debugInfo_builder_t *builder, int column)
+{
+    if(builder->lineProgramState.regColumn == column)
+        return;
+
+    sysbvm_dwarf_encodeByte(&builder->line, DW_LNS_set_column);
+    sysbvm_dwarf_encodeULEB128(&builder->line, column);
+    builder->lineProgramState.regColumn = column;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_advanceLine(sysbvm_dwarf_debugInfo_builder_t *builder, int deltaLine)
+{
+    if(deltaLine == 0)
+        return;
+
+    sysbvm_dwarf_encodeByte(&builder->line, DW_LNS_advance_line);
+    sysbvm_dwarf_encodeSLEB128(&builder->line, deltaLine);
+    builder->lineProgramState.regLine += deltaLine;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_advancePC(sysbvm_dwarf_debugInfo_builder_t *builder, int deltaPC)
+{
+    if(deltaPC == 0)
+        return;
+
+    sysbvm_dwarf_encodeByte(&builder->line, DW_LNS_advance_pc);
+    sysbvm_dwarf_encodeULEB128(&builder->line, deltaPC);
+    builder->lineProgramState.regAddress += deltaPC;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_copyRow(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeByte(&builder->line, DW_LNS_copy);
+    builder->lineProgramState.regDiscriminator = false;
+    builder->lineProgramState.regBasicBlock = false;
+    builder->lineProgramState.regPrologueEnd = false;
+    builder->lineProgramState.regEpilogueBegin = false;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_advanceLineAndPC(sysbvm_dwarf_debugInfo_builder_t *builder, int deltaLine, int deltaPC)
+{
+    int operationAdvance = deltaPC / builder->lineProgramHeader.minimumInstructionLength;
+
+    int opcode = (deltaLine - builder->lineProgramHeader.lineBase) + (builder->lineProgramHeader.lineRange * operationAdvance) + builder->lineProgramHeader.opcodeBase;
+    if( (0 <= opcode) && (opcode <= 255) 
+        && (deltaLine - builder->lineProgramHeader.lineBase < builder->lineProgramHeader.lineRange)
+        && (deltaLine >= builder->lineProgramHeader.lineBase) )
+    {
+        sysbvm_dwarf_encodeByte(&builder->line, opcode);
+        builder->lineProgramState.regLine += deltaLine;
+        builder->lineProgramState.regAddress += deltaPC;
+    }
+    else
+    {
+        sysbvm_dwarf_debugInfo_line_advanceLine(builder, deltaLine);
+        sysbvm_dwarf_debugInfo_line_advancePC(builder, deltaPC);
+        sysbvm_dwarf_debugInfo_line_copyRow(builder);
+    }
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_line_endSequence(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeByte(&builder->line, 0);
+    sysbvm_dwarf_encodeULEB128(&builder->line, 1);
+    sysbvm_dwarf_encodeByte(&builder->line, DW_LNE_end_sequence);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_endLineInformation(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    uint32_t lineInfoSize = builder->line.size - 4;
+    memcpy(builder->line.data, &lineInfoSize, 4);
+}
+
 SYSBVM_API void sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t tag, bool hasChildren)
 {
     int abbreviationCode = ++builder->abbreviationCount;
@@ -363,6 +544,28 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t
 SYSBVM_API void sysbvm_dwarf_debugInfo_endDIE(sysbvm_dwarf_debugInfo_builder_t *builder)
 {
     sysbvm_dwarf_encodeByte(&builder->abbrev, 0);
+    sysbvm_dwarf_encodeByte(&builder->abbrev, 0);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_endDIEChildren(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->info, 0);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_secOffset(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_sec_offset);
+
+    sysbvm_dwarf_encodeDWord(&builder->info, value);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_uleb128(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_udata);
+
+    sysbvm_dwarf_encodeULEB128(&builder->info, value);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, const char *value)

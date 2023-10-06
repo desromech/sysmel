@@ -28,6 +28,9 @@
 #include <windows.h>
 #endif
 
+#define SYSBVM_JIT_DWARF_LINE_INFO_EMISSION_STATE_MAX_DIRECTORIES 8
+#define SYSBVM_JIT_DWARF_LINE_INFO_EMISSION_STATE_MAX_FILES 8
+
 typedef sysbvm_tuple_t (*sysbvm_bytecodeJit_entryPoint) (sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments);
 
 typedef enum sysbvm_bytecodeJitRelocationType_e
@@ -50,6 +53,32 @@ typedef struct sysbvm_bytecodeJitPCRelocation_s
     size_t targetPC;
     intptr_t addend;
 } sysbvm_bytecodeJitPCRelocation_t;
+
+typedef struct sysbvm_bytecodeJitSourcePositionRecord_s
+{
+    size_t pc;
+    sysbvm_tuple_t sourcePosition;
+    uint32_t line;
+    uint32_t column;
+} sysbvm_bytecodeJitSourcePositionRecord_t;
+
+typedef struct sysbvm_jit_dwarfLineInfoEmissionState_s
+{
+    int directoryCount;
+    sysbvm_tuple_t directories[SYSBVM_JIT_DWARF_LINE_INFO_EMISSION_STATE_MAX_DIRECTORIES];
+
+    int fileCount;
+    sysbvm_tuple_t files[SYSBVM_JIT_DWARF_LINE_INFO_EMISSION_STATE_MAX_DIRECTORIES];
+
+    int32_t previousLine;
+    int32_t minLineAdvance;
+    int32_t maxLineAdvance;
+    int32_t lineBase;
+    int32_t lineRange;
+
+    sysbvm_tuple_t currentFile;
+    size_t pc;
+} sysbvm_jit_dwarfLineInfoEmissionState_t;
 
 typedef struct sysbvm_bytecodeJit_s
 {
@@ -80,6 +109,7 @@ typedef struct sysbvm_bytecodeJit_s
     sysbvm_dynarray_t constants;
     sysbvm_dynarray_t relocations;
     sysbvm_dynarray_t pcRelocations;
+    sysbvm_dynarray_t sourcePositions;
     sysbvm_dynarray_t unwindInfo;
     sysbvm_dynarray_t unwindInfoBytecode;
     sysbvm_dwarf_cfi_builder_t dwarfEhBuilder;
@@ -87,6 +117,8 @@ typedef struct sysbvm_bytecodeJit_s
     sysbvm_dynarray_t objectFileContent;
     size_t objectFileContentJittedFunctionNameOffset;
     size_t prologueSize;
+
+    sysbvm_jit_dwarfLineInfoEmissionState_t dwarfLineEmissionState;
 
     intptr_t *pcDestinations;
 
@@ -97,6 +129,9 @@ static inline size_t sysbvm_sizeAlignedTo(size_t pointer, size_t alignment)
 {
     return (pointer + alignment - 1) & (~(alignment - 1));
 }
+
+SYSBVM_API int sysbvm_jit_dwarfLineInfoEmissionState_indexOfDirectory(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t directory);
+SYSBVM_API int sysbvm_jit_dwarfLineInfoEmissionState_indexOfFile(sysbvm_jit_dwarfLineInfoEmissionState_t *state, sysbvm_tuple_t file);
 
 SYSBVM_API void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_context_t *context);
 SYSBVM_API size_t sysbvm_bytecodeJit_addBytes(sysbvm_bytecodeJit_t *jit, size_t byteCount, uint8_t *bytes);
@@ -129,6 +164,7 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
 
 // Backend specific methods.
 SYSBVM_API void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit);
+SYSBVM_API bool sysbvm_jit_emitDebugLineInfo(sysbvm_bytecodeJit_t *jit);
 SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit);
 SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer);
 

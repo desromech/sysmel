@@ -1494,13 +1494,37 @@ static void sysbvm_jit_emitPerfSymbolFor(sysbvm_bytecodeJit_t *jit, uint8_t *ins
 #endif
 }
 
-SYSBVM_API void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
+static void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
 {
-    sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_compile_unit, false);
-    sysbvm_dwarf_debugInfo_attribute_string(&jit->dwarfDebugInfoBuilder, DW_AT_producer, "Sysbvmi");
+    bool hasLineInfo = sysbvm_jit_emitDebugLineInfo(jit);
+
+    sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_compile_unit, true);
+    sysbvm_dwarf_debugInfo_attribute_string(&jit->dwarfDebugInfoBuilder, DW_AT_producer, "Sysbvmi"); // Use the line info.
+    if(hasLineInfo)
+        sysbvm_dwarf_debugInfo_attribute_secOffset(&jit->dwarfDebugInfoBuilder, DW_AT_stmt_list, 0);
     sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_low_pc, 0);
     sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_high_pc, jit->instructions.size);
     sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
+
+    {
+        sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_subprogram, false);
+        if(hasLineInfo && jit->sourcePosition)
+        {
+            sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)jit->sourcePosition;
+            uint32_t line = 0;
+            if(sysbvm_sourcePosition_getStartLineAndColumn(jit->context, jit->sourcePosition, &line, NULL))
+            {
+                sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_decl_file, sysbvm_jit_dwarfLineInfoEmissionState_indexOfFile(&jit->dwarfLineEmissionState, sourcePositionObject->sourceCode));
+                sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_decl_line, line);
+            }
+
+        }
+        sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_low_pc, 0);
+        sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_high_pc, jit->instructions.size);
+        sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_frame_base, sizeof(uintptr_t) == 8 ? DW_X64_REG_RBP : DW_X86_REG_EBP);
+        sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
+    }
+    sysbvm_dwarf_debugInfo_endDIEChildren(&jit->dwarfDebugInfoBuilder);
 
     sysbvm_dwarf_debugInfo_finish(&jit->dwarfDebugInfoBuilder);
 }
