@@ -31,6 +31,7 @@ SYSBVM_API void sysbvm_bytecodeJit_initialize(sysbvm_bytecodeJit_t *jit, sysbvm_
     sysbvm_dynarray_initialize(&jit->unwindInfoBytecode, 1, 64);
 
     sysbvm_dwarf_cfi_create(&jit->dwarfEhBuilder);
+    sysbvm_dwarf_debugInfo_create(&jit->dwarfDebugInfoBuilder);
     sysbvm_dynarray_initialize(&jit->objectFileHeader, 1, sizeof(sysbvm_elf64_header_t));
     sysbvm_dynarray_initialize(&jit->objectFileContent, 1, 1024);
 }
@@ -129,6 +130,7 @@ SYSBVM_API void sysbvm_bytecodeJit_jitFree(sysbvm_bytecodeJit_t *jit)
     sysbvm_dynarray_destroy(&jit->unwindInfo);
     sysbvm_dynarray_destroy(&jit->unwindInfoBytecode);
     sysbvm_dwarf_cfi_destroy(&jit->dwarfEhBuilder);
+    sysbvm_dwarf_debugInfo_destroy(&jit->dwarfDebugInfoBuilder);
     
     sysbvm_dynarray_destroy(&jit->objectFileHeader);
     sysbvm_dynarray_destroy(&jit->objectFileContent);
@@ -431,9 +433,13 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
     size_t textSectionSize = sysbvm_sizeAlignedTo(jit.instructions.size, 16);
     size_t rodataSectionSize = sysbvm_sizeAlignedTo(jit.constants.size, 16);
     size_t unwindInfoSize = sysbvm_sizeAlignedTo(jit.unwindInfo.size, 16)  + sysbvm_sizeAlignedTo(jit.dwarfEhBuilder.buffer.size, 16);
+    size_t debugInfoSize = sysbvm_sizeAlignedTo(jit.dwarfDebugInfoBuilder.line.size, 16)
+        + sysbvm_sizeAlignedTo(jit.dwarfDebugInfoBuilder.str.size, 16)
+        + sysbvm_sizeAlignedTo(jit.dwarfDebugInfoBuilder.abbrev.size, 16)
+        + sysbvm_sizeAlignedTo(jit.dwarfDebugInfoBuilder.info.size, 16);
     size_t objectFileContentSize = sysbvm_sizeAlignedTo(jit.objectFileContent.size, 16);
 
-    size_t requiredCodeSize = objectFileHeaderSize + textSectionSize + rodataSectionSize + unwindInfoSize + objectFileContentSize;
+    size_t requiredCodeSize = objectFileHeaderSize + textSectionSize + rodataSectionSize + unwindInfoSize + debugInfoSize + objectFileContentSize;
     uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&context->heap, requiredCodeSize, 16);
     memset(codeZonePointer, 0xcc, textSectionSize); // int3;
     memset(codeZonePointer + textSectionSize, 0, rodataSectionSize); // int3;

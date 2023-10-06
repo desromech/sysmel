@@ -289,3 +289,96 @@ SYSBVM_API void sysbvm_dwarf_cfi_endPrologue(sysbvm_dwarf_cfi_builder_t *cfi)
     cfi->isInPrologue = false;
 }
 
+SYSBVM_API void sysbvm_dwarf_debugInfo_create(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    memset(builder, 0, sizeof(sysbvm_dwarf_debugInfo_builder_t));
+    builder->version = 4;
+
+    sysbvm_dynarray_initialize(&builder->line, 1, 1024);
+    sysbvm_dynarray_initialize(&builder->str, 1, 1024);
+    sysbvm_dynarray_initialize(&builder->abbrev, 1, 1024);
+    sysbvm_dynarray_initialize(&builder->info, 1, 1024);
+    sysbvm_dynarray_initialize(&builder->lineTextAddresses, sizeof(uint32_t), 1024);
+    sysbvm_dynarray_initialize(&builder->infoTextAddresses, sizeof(uint32_t), 32);
+
+    // Null string.
+    sysbvm_dwarf_encodeByte(&builder->str, 0);
+
+    // Info header
+    sysbvm_dwarf_encodeDwarfPointer(&builder->info, 0);
+    sysbvm_dwarf_encodeWord(&builder->info, builder->version);
+    sysbvm_dwarf_encodeDwarfPointer(&builder->info, 0); // Debug abbrev offset
+    sysbvm_dwarf_encodeByte(&builder->info, sizeof(uintptr_t)); // Address size.
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_destroy(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dynarray_destroy(&builder->line);
+    sysbvm_dynarray_destroy(&builder->str);
+    sysbvm_dynarray_destroy(&builder->abbrev);
+    sysbvm_dynarray_destroy(&builder->info);
+    sysbvm_dynarray_destroy(&builder->lineTextAddresses);
+    sysbvm_dynarray_destroy(&builder->infoTextAddresses);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_finish(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    // End the abbreviations.
+    sysbvm_dwarf_encodeByte(&builder->abbrev, 0);
+
+    // Info initial length.
+    {
+        uint32_t infoInitialLength = builder->info.size - 4;
+        memcpy(builder->info.data, &infoInitialLength, 4);
+    }
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_patchTextAddressesRelativeTo(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t baseAddress)
+{
+    uint32_t *lineOffsets = (uint32_t*)builder->lineTextAddresses.data;
+    for(size_t i = 0; i < builder->lineTextAddresses.size; ++i)
+    {
+        uintptr_t *address = (uintptr_t *)(builder->line.data + lineOffsets[i]);
+        *address += baseAddress;
+    }
+
+    uint32_t *infoOffsets = (uint32_t*)builder->infoTextAddresses.data;
+    for(size_t i = 0; i < builder->infoTextAddresses.size; ++i)
+    {
+        uintptr_t *address = (uintptr_t *)(builder->info.data + infoOffsets[i]);
+        *address += baseAddress;
+    }
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t tag, bool hasChildren)
+{
+    int abbreviationCode = ++builder->abbreviationCount;
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, abbreviationCode);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, tag);
+    sysbvm_dwarf_encodeByte(&builder->abbrev, hasChildren ? DW_CHILDREN_yes : DW_CHILDREN_no);
+
+    sysbvm_dwarf_encodeULEB128(&builder->info, abbreviationCode);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_endDIE(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeByte(&builder->abbrev, 0);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, const char *value)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_strp);
+
+    size_t stringOffset = sysbvm_dwarf_encodeCString(&builder->str, value);
+    sysbvm_dwarf_encodeDWord(&builder->info, stringOffset);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_textAddress(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_addr);
+
+    uint32_t addressOffset = sysbvm_dwarf_encodePointer(&builder->info, value);
+    sysbvm_dynarray_add(&builder->infoTextAddresses, &addressOffset);
+}

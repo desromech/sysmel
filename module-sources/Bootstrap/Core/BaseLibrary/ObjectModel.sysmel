@@ -1006,6 +1006,8 @@ RawTuple::shallowCopy adoptDefinitionOf: {:(Untyped)sourceObject :: Untyped |
 
 RawTuple::firstInstanceWithType adoptDefinitionOf: {:(Type)type :: Untyped | nil}.
 RawTuple::nextInstanceWithSameType adoptDefinitionOf: {:(Untyped)iterator :: Untyped | nil}.
+RawTuple::firstInstance adoptDefinitionOf: {:: Untyped | nil}.
+RawTuple::nextInstance adoptDefinitionOf: {:(Untyped)iterator :: Untyped | nil}.
 
 (RawTuple::typeSlotAt:) adoptDefinitionOf: {:(Untyped)self :(TypeSlot)typeSlot :: Untyped |
     <primitive: #RawTuple::typeSlotAt:>

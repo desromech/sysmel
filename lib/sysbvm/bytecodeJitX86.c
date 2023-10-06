@@ -1203,6 +1203,10 @@ typedef struct sysbvm_jit_x64_elfSectionHeaders_s
     sysbvm_elf64_sectionHeader_t null;
     sysbvm_elf64_sectionHeader_t text;
     sysbvm_elf64_sectionHeader_t eh_frame;
+    sysbvm_elf64_sectionHeader_t debug_line;
+    sysbvm_elf64_sectionHeader_t debug_str;
+    sysbvm_elf64_sectionHeader_t debug_abbrev;
+    sysbvm_elf64_sectionHeader_t debug_info;
     sysbvm_elf64_sectionHeader_t symtab;
     sysbvm_elf64_sectionHeader_t str;
     sysbvm_elf64_sectionHeader_t shstr;
@@ -1329,6 +1333,10 @@ static void sysbvm_jit_emitObjectFile(sysbvm_bytecodeJit_t *jit)
     footer.sections.null.name = sysbvm_jit_emitObjectFileCString(jit, ""); // Null string
     footer.sections.text.name = sysbvm_jit_emitObjectFileCString(jit, ".text");
     footer.sections.eh_frame.name = sysbvm_jit_emitObjectFileCString(jit, ".eh_frame");
+    footer.sections.debug_line.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_line");
+    footer.sections.debug_str.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_str");
+    footer.sections.debug_abbrev.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_abbrev");
+    footer.sections.debug_info.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_info");
     footer.sections.symtab.name = sysbvm_jit_emitObjectFileCString(jit, ".symtab");
     footer.sections.str.name = sysbvm_jit_emitObjectFileCString(jit, ".str");
     footer.sections.shstr.name = sysbvm_jit_emitObjectFileCString(jit, ".shstr");
@@ -1371,6 +1379,18 @@ static void sysbvm_jit_emitObjectFile(sysbvm_bytecodeJit_t *jit)
     footer.sections.eh_frame.flags = SYSBVM_SHF_ALLOC;
     footer.sections.eh_frame.addressAlignment = sizeof(uintptr_t);
 
+    footer.sections.debug_line.type = SYSBVM_SHT_PROGBITS;
+    footer.sections.debug_line.addressAlignment = sizeof(uintptr_t);
+
+    footer.sections.debug_str.type = SYSBVM_SHT_PROGBITS;
+    footer.sections.debug_str.addressAlignment = sizeof(uintptr_t);
+
+    footer.sections.debug_abbrev.type = SYSBVM_SHT_PROGBITS;
+    footer.sections.debug_abbrev.addressAlignment = sizeof(uintptr_t);
+
+    footer.sections.debug_info.type = SYSBVM_SHT_PROGBITS;
+    footer.sections.debug_info.addressAlignment = sizeof(uintptr_t);
+
     footer.sections.str.type = SYSBVM_SHT_STRTAB;
     footer.sections.str.offset = stringTableOffset;
     footer.sections.str.address = stringTableOffset;
@@ -1397,7 +1417,15 @@ static void sysbvm_jit_emitObjectFile(sysbvm_bytecodeJit_t *jit)
     sysbvm_dynarray_addAll(&jit->objectFileContent, sizeof(footer), &footer);
 }
 
-static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit, sysbvm_elf64_header_t *header, uint8_t *instructionsPointer, uint8_t *ehFramePointer, uint8_t *objectFileContentPointer, sysbvm_jit_x64_elfContentFooter_t *footer)
+static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit, sysbvm_elf64_header_t *header,
+    uint8_t *instructionsPointer,
+    uint8_t *ehFramePointer,
+    uint8_t *debugLinePointer,
+    uint8_t *debugStrPointer,
+    uint8_t *debugAbbrevPointer,
+    uint8_t *debugInfoPointer,
+    uint8_t *objectFileContentPointer,
+    sysbvm_jit_x64_elfContentFooter_t *footer)
 {
     if(jit->dwarfEhBuilder.fdeInitialLocationOffset > 0)
     {
@@ -1416,6 +1444,22 @@ static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit, sysbvm_elf64_h
     footer->sections.eh_frame.offset = (uintptr_t)ehFramePointer - (uintptr_t)header;
     footer->sections.eh_frame.address = (sysbvm_elf64_addr_t)ehFramePointer;
     footer->sections.eh_frame.size = jit->dwarfEhBuilder.buffer.size;
+
+    footer->sections.debug_line.offset = (uintptr_t)debugLinePointer - (uintptr_t)header;
+    footer->sections.debug_line.address = (sysbvm_elf64_addr_t)debugLinePointer;
+    footer->sections.debug_line.size = jit->dwarfDebugInfoBuilder.line.size;
+
+    footer->sections.debug_str.offset = (uintptr_t)debugStrPointer - (uintptr_t)header;
+    footer->sections.debug_str.address = (sysbvm_elf64_addr_t)debugStrPointer;
+    footer->sections.debug_str.size = jit->dwarfDebugInfoBuilder.str.size;
+
+    footer->sections.debug_abbrev.offset = (uintptr_t)debugAbbrevPointer - (uintptr_t)header;
+    footer->sections.debug_abbrev.address = (sysbvm_elf64_addr_t)debugAbbrevPointer;
+    footer->sections.debug_abbrev.size = jit->dwarfDebugInfoBuilder.abbrev.size;
+
+    footer->sections.debug_info.offset = (uintptr_t)debugInfoPointer - (uintptr_t)header;
+    footer->sections.debug_info.address = (sysbvm_elf64_addr_t)debugInfoPointer;
+    footer->sections.debug_info.size = jit->dwarfDebugInfoBuilder.info.size;
 
     footer->sections.symtab.offset += contentOffset;
     footer->sections.symtab.address += contentBaseAddress;
@@ -1450,6 +1494,17 @@ static void sysbvm_jit_emitPerfSymbolFor(sysbvm_bytecodeJit_t *jit, uint8_t *ins
 #endif
 }
 
+SYSBVM_API void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_compile_unit, false);
+    sysbvm_dwarf_debugInfo_attribute_string(&jit->dwarfDebugInfoBuilder, DW_AT_producer, "Sysbvmi");
+    sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_low_pc, 0);
+    sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_high_pc, jit->instructions.size);
+    sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
+
+    sysbvm_dwarf_debugInfo_finish(&jit->dwarfDebugInfoBuilder);
+}
+
 SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
 {
     // Apply the PC target relative relocations.
@@ -1460,6 +1515,7 @@ SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
     }
 
     sysbvm_jit_emitUnwindInfo(jit);
+    sysbvm_jit_emitDebugInfo(jit);
     sysbvm_jit_emitObjectFile(jit);
 }
 
@@ -1471,8 +1527,12 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
 
     size_t unwindInfoOffset = constantsOffset + sysbvm_sizeAlignedTo(jit->constants.size, 16);
     size_t ehFrameOffset = unwindInfoOffset + sysbvm_sizeAlignedTo(jit->unwindInfo.size, 16);
+    size_t debugLineOffset = ehFrameOffset + sysbvm_sizeAlignedTo(jit->dwarfEhBuilder.buffer.size, 16);
+    size_t debugStrOffset = debugLineOffset + sysbvm_sizeAlignedTo(jit->dwarfDebugInfoBuilder.line.size, 16);
+    size_t debugAbbrevOffset = debugStrOffset + sysbvm_sizeAlignedTo(jit->dwarfDebugInfoBuilder.str.size, 16);
+    size_t debugInfoOffset = debugAbbrevOffset + sysbvm_sizeAlignedTo(jit->dwarfDebugInfoBuilder.abbrev.size, 16);
 
-    size_t objectFileContentOffset = ehFrameOffset + sysbvm_sizeAlignedTo(jit->dwarfEhBuilder.buffer.size, 16);
+    size_t objectFileContentOffset = debugInfoOffset + sysbvm_sizeAlignedTo(jit->dwarfDebugInfoBuilder.info.size, 16);
 
     uint8_t *objectFileHeaderPointer = codeZonePointer + objectFileHeaderOffset;
     memcpy(objectFileHeaderPointer, jit->objectFileHeader.data, jit->objectFileHeader.size);
@@ -1507,6 +1567,20 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
     uint8_t *ehFrameZonePointer = codeZonePointer + ehFrameOffset;
     memcpy(ehFrameZonePointer, jit->dwarfEhBuilder.buffer.data, jit->dwarfEhBuilder.buffer.size);
 
+    sysbvm_dwarf_debugInfo_patchTextAddressesRelativeTo(&jit->dwarfDebugInfoBuilder, (uintptr_t)instructionsPointers);
+
+    uint8_t *debugLineZonePointer = codeZonePointer + debugLineOffset;
+    memcpy(debugLineZonePointer, jit->dwarfDebugInfoBuilder.line.data, jit->dwarfDebugInfoBuilder.line.size);
+
+    uint8_t *debugStrZonePointer = codeZonePointer + debugStrOffset;
+    memcpy(debugStrZonePointer, jit->dwarfDebugInfoBuilder.str.data, jit->dwarfDebugInfoBuilder.str.size);
+
+    uint8_t *debugAbbrevZonePointer = codeZonePointer + debugAbbrevOffset;
+    memcpy(debugAbbrevZonePointer, jit->dwarfDebugInfoBuilder.abbrev.data, jit->dwarfDebugInfoBuilder.abbrev.size);
+
+    uint8_t *debugInfoZonePointer = codeZonePointer + debugInfoOffset;
+    memcpy(debugInfoZonePointer, jit->dwarfDebugInfoBuilder.info.data, jit->dwarfDebugInfoBuilder.info.size);
+
     uint8_t *objectFileContentPointer = codeZonePointer + objectFileContentOffset;
     memcpy(objectFileContentPointer, jit->objectFileContent.data, jit->objectFileContent.size);
 
@@ -1514,6 +1588,10 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
         (sysbvm_elf64_header_t*)objectFileHeaderPointer,
         instructionsPointers,
         ehFrameZonePointer,
+        debugLineZonePointer,
+        debugStrZonePointer,
+        debugAbbrevZonePointer,
+        debugInfoZonePointer,
         objectFileContentPointer,
         (sysbvm_jit_x64_elfContentFooter_t*) (objectFileContentPointer + jit->objectFileContent.size - sizeof(sysbvm_jit_x64_elfContentFooter_t))
     );

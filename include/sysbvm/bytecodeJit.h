@@ -83,6 +83,7 @@ typedef struct sysbvm_bytecodeJit_s
     sysbvm_dynarray_t unwindInfo;
     sysbvm_dynarray_t unwindInfoBytecode;
     sysbvm_dwarf_cfi_builder_t dwarfEhBuilder;
+    sysbvm_dwarf_debugInfo_builder_t dwarfDebugInfoBuilder;
     sysbvm_dynarray_t objectFileContent;
     size_t objectFileContentJittedFunctionNameOffset;
     size_t prologueSize;

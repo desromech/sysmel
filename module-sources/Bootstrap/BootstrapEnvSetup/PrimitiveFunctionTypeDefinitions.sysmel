@@ -39,6 +39,8 @@ primitiveFailedError __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Unwinds))
     __type__: (SimpleFunctionTypeTemplate((Type, Size, Size, Size, Size, Boolean, Boolean), 0bflgs, Untyped)).
 (RawTuple::firstInstanceWithType) __type__: (SimpleFunctionTypeTemplate((Type,), 0bflgs, Untyped)).
 (RawTuple::nextInstanceWithSameType) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Untyped)).
+(RawTuple::firstInstance) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, Untyped)).
+(RawTuple::nextInstance) __type__: (SimpleFunctionTypeTemplate((Untyped,), 0bflgs, Untyped)).
 
 (OrderedCollection::new) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, OrderedCollection)).
 (MethodDictionary::new) __type__: (SimpleFunctionTypeTemplate((), 0bflgs, MethodDictionary)).

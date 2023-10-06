@@ -78,6 +78,11 @@ enum dwarf_tag_e {
     DW_TAG_hi_user = 15,
 };
 
+enum dwarf_children_e {
+    DW_CHILDREN_no = 0,
+    DW_CHILDREN_yes = 0,
+};
+
 enum dwarf_attribute_e {
     DW_AT_sibling = 1,
     DW_AT_location = 2,
@@ -454,6 +459,19 @@ typedef struct sysbvm_dwarf_cfi_builder_s {
     bool isInPrologue;
 } sysbvm_dwarf_cfi_builder_t;
 
+typedef struct sysbvm_dwarf_debugInfo_builder_s {
+    int version;
+    int abbreviationCount;
+
+    sysbvm_dynarray_t line;
+    sysbvm_dynarray_t str;
+    sysbvm_dynarray_t abbrev;
+    sysbvm_dynarray_t info;
+
+    sysbvm_dynarray_t lineTextAddresses;
+    sysbvm_dynarray_t infoTextAddresses;
+} sysbvm_dwarf_debugInfo_builder_t;
+
 SYSBVM_API size_t sysbvm_dwarf_encodeByte(sysbvm_dynarray_t *buffer, uint8_t value);
 SYSBVM_API size_t sysbvm_dwarf_encodeWord(sysbvm_dynarray_t *buffer, uint16_t value);
 SYSBVM_API size_t sysbvm_dwarf_encodeDWord(sysbvm_dynarray_t *buffer, uint32_t value);
@@ -483,5 +501,15 @@ SYSBVM_API void sysbvm_dwarf_cfi_pushRegister(sysbvm_dwarf_cfi_builder_t *cfi, u
 SYSBVM_API void sysbvm_dwarf_cfi_saveFramePointerInRegister(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, intptr_t offset);
 SYSBVM_API void sysbvm_dwarf_cfi_stackSizeAdvance(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc, size_t increment);
 SYSBVM_API void sysbvm_dwarf_cfi_endPrologue(sysbvm_dwarf_cfi_builder_t *cfi);
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_create(sysbvm_dwarf_debugInfo_builder_t *builder);
+SYSBVM_API void sysbvm_dwarf_debugInfo_finish(sysbvm_dwarf_debugInfo_builder_t *builder);
+SYSBVM_API void sysbvm_dwarf_debugInfo_destroy(sysbvm_dwarf_debugInfo_builder_t *builder);
+SYSBVM_API void sysbvm_dwarf_debugInfo_patchTextAddressesRelativeTo(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t baseAddress);
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t tag, bool hasChildren);
+SYSBVM_API void sysbvm_dwarf_debugInfo_endDIE(sysbvm_dwarf_debugInfo_builder_t *builder);
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, const char *value);
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_textAddress(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value);
 
 #endif //SYSBVM_DWARF_H
