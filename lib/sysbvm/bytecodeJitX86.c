@@ -979,11 +979,12 @@ SYSBVM_API void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
     sysbvm_jit_cfi_storeStackInFramePointer(jit, jit->stackCallReservationSize);
 
 #else
-    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, jit->stackFrameSize);
-    sysbvm_jit_cfi_subtract(jit, jit->stackFrameSize);
-
     sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_RBP, SYSBVM_X86_RSP);
     sysbvm_jit_cfi_storeStackInFramePointer(jit, 0);
+
+    sysbvm_jit_x86_subImmediate32(jit, SYSBVM_X86_RSP, jit->stackFrameSize);
+    sysbvm_jit_cfi_subtract(jit, jit->stackFrameSize);
+    jit->stackFrameRecordOffset = -jit->stackFrameSize;
 #endif
 
     sysbvm_jit_cfi_endPrologue(jit);
@@ -1051,7 +1052,11 @@ SYSBVM_API void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit)
 
 static void sysbvm_jit_epilogue(sysbvm_bytecodeJit_t *jit)
 {
+#ifdef _WIN32
     sysbvm_jit_x86_leaRegisterWithOffset(jit, SYSBVM_X86_RSP, SYSBVM_X86_RBP, jit->stackFrameSize);
+#else
+    sysbvm_jit_x86_mov64Register(jit, SYSBVM_X86_RSP, SYSBVM_X86_RBP);
+#endif
     sysbvm_jit_x86_popRegister(jit, SYSBVM_X86_RBP);
     sysbvm_jit_x86_ret(jit);
 }
