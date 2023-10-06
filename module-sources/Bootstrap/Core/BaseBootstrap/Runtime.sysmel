@@ -1458,9 +1458,9 @@ SequenceableCollection
         let: #size with: self size.
         let: #result with: (self species new: size).
 
-        self doWithIndex: {:each :(Size)index :: Void |
-            result at: index put: aBlock(each)
-        }.
+        while: (i < size) do: (
+            result at: i put: aBlock(self at: i)
+        ) continueWith: (i := i + 1sz).
 
         result
     } makeFinal;
@@ -1469,9 +1469,9 @@ SequenceableCollection
         let: #size with: self size.
         let: #result with: (resultType new: size).
 
-        self doWithIndex: {:each :(Size)index :: Void |
-            result at: index put: aBlock(each)
-        }.
+        while: (i < size) do: (
+            result at: i put: aBlock(self at: i)
+        ) continueWith: (i := i + 1sz).
 
         result
     } makeFinal;
@@ -1480,9 +1480,9 @@ SequenceableCollection
         let: #size with: self size.
         let: #result with: (self species new: size).
 
-        self doWithIndex: {:each :(Size)index :: Void |
-            result at: index put: aBlock(each, index)
-        }.
+        while: (i < size) do: (
+            result at: i put: aBlock(self at: i, i)
+        ) continueWith: (i := i + 1sz).
 
         result
     } makeFinal;
@@ -2177,12 +2177,12 @@ Type
 
         let: #defaultValueSlots with: (slots select: {:(TypeSlot)each :: Boolean | each initialValueBlock == nil}).
         let: #defaultValueSlotInitialization with: (ASTSequenceNode new
-            expressions: (defaultValueSlots collect: makeTypeSlotNode) asArray;
+            expressions: (defaultValueSlots collect: makeTypeSlotNode as: Array);
             pragmas: #();
             yourself).
 
         let: #initialValueSlots with: (slots select: {:(TypeSlot)each :: Boolean | each initialValueBlock ~~ nil}).
-        let: #initialValueSlotInitialization with: (initialValueSlots collect: makeTypeSlotNode) asArray.
+        let: #initialValueSlotInitialization with: (initialValueSlots collect: makeTypeSlotNode as: Array).
 
         let: #methodNode with: (ASTLambdaNode new
             arguments: (Array with: (ASTArgumentNode new

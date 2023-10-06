@@ -531,14 +531,14 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_endLineInformation(sysbvm_dwarf_debugInfo
     memcpy(builder->line.data, &lineInfoSize, 4);
 }
 
-SYSBVM_API void sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t tag, bool hasChildren)
+SYSBVM_API size_t sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t tag, bool hasChildren)
 {
     int abbreviationCode = ++builder->abbreviationCount;
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, abbreviationCode);
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, tag);
     sysbvm_dwarf_encodeByte(&builder->abbrev, hasChildren ? DW_CHILDREN_yes : DW_CHILDREN_no);
 
-    sysbvm_dwarf_encodeULEB128(&builder->info, abbreviationCode);
+    return sysbvm_dwarf_encodeULEB128(&builder->info, abbreviationCode);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_endDIE(sysbvm_dwarf_debugInfo_builder_t *builder)
@@ -552,20 +552,20 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_endDIEChildren(sysbvm_dwarf_debugInfo_bui
     sysbvm_dwarf_encodeULEB128(&builder->info, 0);
 }
 
-SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_secOffset(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value)
-{
-    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
-    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_sec_offset);
-
-    sysbvm_dwarf_encodeDWord(&builder->info, value);
-}
-
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_uleb128(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value)
 {
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_udata);
 
     sysbvm_dwarf_encodeULEB128(&builder->info, value);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_secOffset(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_sec_offset);
+
+    sysbvm_dwarf_encodeDWord(&builder->info, value);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, const char *value)
@@ -575,6 +575,22 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_b
 
     size_t stringOffset = sysbvm_dwarf_encodeCString(&builder->str, value);
     sysbvm_dwarf_encodeDWord(&builder->info, stringOffset);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, sysbvm_tuple_t value, const char *defaultString)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_strp);
+
+    size_t stringOffset = sysbvm_dwarf_encodeStringTupleWithDefaultString(&builder->str, value, defaultString);
+    sysbvm_dwarf_encodeDWord(&builder->info, stringOffset);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_ref1(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uint8_t value)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_ref1);
+    sysbvm_dwarf_encodeByte(&builder->info, value);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_textAddress(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value)

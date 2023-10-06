@@ -838,7 +838,7 @@ let SysmelGrammar::UnarySuffixMessage := (SysmelGrammar::LiteralIdentifier | Sys
 
 let SysmelGrammar::ApplicationArgumentList := SysmelGrammar::CommaExpressionElement -- (Grammar::Token::Comma -- SysmelGrammar::CommaExpressionElement) star   ==> {:(ParsecResult)parserResult :: AnyValue |
         let parseElements => Array := parserResult value.
-        (Array with: parseElements first) -- (parseElements second collect: {:each | each second}) asArray
+        (Array with: parseElements first) -- (parseElements second collect: {:each | each second} as: Array)
     }.
 
 let SysmelGrammar::FunctionApplicationSuffix := Grammar::Token::LeftParent -- SysmelGrammar::ApplicationArgumentList optional --  Grammar::Token::RightParent  ==> {:(ParsecResult)parserResult :: AnyValue |
@@ -949,8 +949,8 @@ SysmelGrammar::BinaryExpression := SysmelGrammar::UnaryExpression -- (SysmelGram
                     arguments: (Array with: operatorsWithOperands first second);
                     yourself
             } ifFalse: {
-                let operands := (Array with: parseElements first) -- (operatorsWithOperands collect: {:each | each second}) asArray.
-                let operators := (operatorsWithOperands collect: {:each | each first}) asArray.
+                let operands := (Array with: parseElements first) -- (operatorsWithOperands collect: {:each | each second} as: Array).
+                let operators := (operatorsWithOperands collect: {:each | each first} as: Array).
                 ASTBinaryExpressionSequenceNode new
                     sourcePosition: parserResult sourcePosition;
                     operands: operands;

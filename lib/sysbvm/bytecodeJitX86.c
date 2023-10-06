@@ -3,6 +3,7 @@
 #include "sysbvm/assert.h"
 #include "sysbvm/dictionary.h"
 #include "sysbvm/function.h"
+#include "sysbvm/environment.h"
 #include "sysbvm/programEntity.h"
 #include "sysbvm/elf.h"
 #include "sysbvm/stackFrame.h"
@@ -1494,6 +1495,28 @@ static void sysbvm_jit_emitPerfSymbolFor(sysbvm_bytecodeJit_t *jit, uint8_t *ins
 #endif
 }
 
+static void sysbvm_jit_emitArgumentDebugInfo(sysbvm_bytecodeJit_t *jit, size_t oopTypeDie, size_t index, sysbvm_tuple_t binding)
+{
+    char nameBuffer[32];
+    snprintf(nameBuffer, sizeof(nameBuffer), "arg%d", (int)index);
+
+    sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_formal_parameter, false);
+    sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(&jit->dwarfDebugInfoBuilder, DW_AT_name, sysbvm_symbolBinding_getName(binding), nameBuffer);
+    sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
+    sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
+}
+
+static void sysbvm_jit_emitCaptureDebugInfo(sysbvm_bytecodeJit_t *jit, size_t oopTypeDie, size_t index, sysbvm_tuple_t binding)
+{
+    char nameBuffer[32];
+    snprintf(nameBuffer, sizeof(nameBuffer), "capture%d", (int)index);
+
+    sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_variable, false);
+    sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(&jit->dwarfDebugInfoBuilder, DW_AT_name, sysbvm_symbolBinding_getName(binding), nameBuffer);
+    sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
+    sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
+}
+
 static void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
 {
     bool hasLineInfo = sysbvm_jit_emitDebugLineInfo(jit);
@@ -1506,8 +1529,20 @@ static void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
     sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_high_pc, jit->instructions.size);
     sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
 
+    size_t oopTypeDie = sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_base_type, false);
     {
-        sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_subprogram, false);
+        sysbvm_dwarf_debugInfo_attribute_string(&jit->dwarfDebugInfoBuilder, DW_AT_name, "Oop");
+        sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_byte_size, sizeof(sysbvm_tuple_t));
+    }
+    sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
+
+    {
+        sysbvm_functionBytecode_t* bytecode = (sysbvm_functionBytecode_t*)((sysbvm_functionDefinition_t*)jit->compiledProgramEntity)->bytecode;
+        size_t argumentCount = sysbvm_array_getSize(bytecode->arguments);
+        size_t captureCount = sysbvm_array_getSize(bytecode->captures);
+        bool hasVariables = argumentCount != 0 || captureCount != 0;
+
+        sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_subprogram, hasVariables);
         if(hasLineInfo && jit->sourcePosition)
         {
             sysbvm_sourcePosition_t *sourcePositionObject = (sysbvm_sourcePosition_t*)jit->sourcePosition;
@@ -1521,9 +1556,22 @@ static void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
         }
         sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_low_pc, 0);
         sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_high_pc, jit->instructions.size);
+        sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
         sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_frame_base, sizeof(uintptr_t) == 8 ? DW_X64_REG_RBP : DW_X86_REG_EBP);
         sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
+
+        // Emit the arguments.
+        for(size_t i = 0; i < argumentCount; ++i)
+            sysbvm_jit_emitArgumentDebugInfo(jit, oopTypeDie, i, sysbvm_array_at(bytecode->arguments, i));
+
+        // Emit the captures.
+        for(size_t i = 0; i < captureCount; ++i)
+            sysbvm_jit_emitCaptureDebugInfo(jit, oopTypeDie, i, sysbvm_array_at(bytecode->captures, i));
+
+        if(hasVariables)
+            sysbvm_dwarf_debugInfo_endDIEChildren(&jit->dwarfDebugInfoBuilder);
     }
+
     sysbvm_dwarf_debugInfo_endDIEChildren(&jit->dwarfDebugInfoBuilder);
 
     sysbvm_dwarf_debugInfo_finish(&jit->dwarfDebugInfoBuilder);

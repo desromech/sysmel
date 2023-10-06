@@ -557,12 +557,14 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_line_endSequence(sysbvm_dwarf_debugInfo_b
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_endLineInformation(sysbvm_dwarf_debugInfo_builder_t *builder);
 
-SYSBVM_API void sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t tag, bool hasChildren);
+SYSBVM_API size_t sysbvm_dwarf_debugInfo_beginDIE(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t tag, bool hasChildren);
 SYSBVM_API void sysbvm_dwarf_debugInfo_endDIE(sysbvm_dwarf_debugInfo_builder_t *builder);
 SYSBVM_API void sysbvm_dwarf_debugInfo_endDIEChildren(sysbvm_dwarf_debugInfo_builder_t *builder);
-SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_secOffset(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value);
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_uleb128(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value);
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_ref1(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uint8_t value);
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_secOffset(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value);
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, const char *value);
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, sysbvm_tuple_t value, const char *defaultString);
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_textAddress(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value);
 
 #endif //SYSBVM_DWARF_H

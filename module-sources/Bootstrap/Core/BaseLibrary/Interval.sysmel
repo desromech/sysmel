@@ -8,6 +8,9 @@ public final class Interval superclass: SequenceableCollection; definition: {
     public override method size => Size
         := ((stop - start) // increment) asSize.
 
+    public override method at: (index: Size)
+        := start + (increment * index).
+
     public inline override method do: aBlock ::=> Void := {
         let i mutable := start.
         while: (i <= stop) do: (
@@ -35,6 +38,9 @@ public final class ExclusiveInterval superclass: SequenceableCollection; definit
 
     public override method size => Size
         := ((stop - start) // increment) asSize.
+
+    public override method at: (index: Size)
+        := start + (increment * index).
 
     public inline override method do: aBlock ::=> Void := {
         let i mutable := start.

@@ -353,7 +353,7 @@ ASTFunctionApplicationNode extend: {
         }) ifNil: {
             let functionExpression := self functionExpression generateHIRValueWith: context.
             let callInstruction := context builder call: functionExpression
-                arguments: (self arguments collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }) asArray
+                arguments: (self arguments collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context } as: Array)
                 resultType: self analyzedType.
             
             callInstruction isUnchecked: self isNoTypechecked.
@@ -711,7 +711,7 @@ ASTMessageSendNode extend: {
         let sendInstruction := context builder send: (self receiver generateHIRValueWith: context)
             receiverLookupType: (self receiverLookupType ifNotNil: {:(ASTNode)lookupTypeExpression :: HIRValue | lookupTypeExpression generateHIRValueWith: context })
             selector: (self selector generateHIRValueWith: context)
-            arguments: (self arguments collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context }) asArray
+            arguments: (self arguments collect: {:(ASTNode)each :: HIRValue | each generateHIRValueWith: context } as: Array)
             resultType: self analyzedType.
 
         self boundMethodOwner isNotNil && self selector isLiteralNode ifTrue: {
