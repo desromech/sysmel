@@ -273,6 +273,7 @@ enum dwarf_operation_e {
     DW_OP_pick = 21,
     DW_OP_swap = 22,
     DW_OP_plus = 0x22,
+    DW_OP_lit0 = 0x30,
     DW_OP_reg0 = 0x50,
     DW_OP_breg0 = 0x70,
     DW_OP_regx = 0x90,
@@ -491,6 +492,8 @@ typedef struct sysbvm_dwarf_debugInfo_builder_s {
     uint32_t lineHeaderLengthOffset;
     sysbvm_dwarf_lineProgramState_t lineProgramState;
 
+    sysbvm_dynarray_t locationExpression;
+
     sysbvm_dynarray_t line;
     sysbvm_dynarray_t str;
     sysbvm_dynarray_t abbrev;
@@ -503,6 +506,7 @@ typedef struct sysbvm_dwarf_debugInfo_builder_s {
 SYSBVM_API size_t sysbvm_dwarf_encodeByte(sysbvm_dynarray_t *buffer, uint8_t value);
 SYSBVM_API size_t sysbvm_dwarf_encodeWord(sysbvm_dynarray_t *buffer, uint16_t value);
 SYSBVM_API size_t sysbvm_dwarf_encodeDWord(sysbvm_dynarray_t *buffer, uint32_t value);
+SYSBVM_API size_t sysbvm_dwarf_encodeQWord(sysbvm_dynarray_t *buffer, uint64_t value);
 SYSBVM_API size_t sysbvm_dwarf_encodeDwarfPointer(sysbvm_dynarray_t *buffer, uint32_t value);
 SYSBVM_API size_t sysbvm_dwarf_encodeDwarfPointerPCRelative(sysbvm_dynarray_t *buffer, uint32_t value);
 SYSBVM_API size_t sysbvm_dwarf_encodePointer(sysbvm_dynarray_t *buffer, uintptr_t value);
@@ -566,5 +570,13 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_secOffset(sysbvm_dwarf_debugInf
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, const char *value);
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, sysbvm_tuple_t value, const char *defaultString);
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_textAddress(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uintptr_t value);
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_beginLocationExpression(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute);
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_endLocationExpression(sysbvm_dwarf_debugInfo_builder_t *builder);
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_constUnsigned(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t constant);
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_deref(sysbvm_dwarf_debugInfo_builder_t *builder);
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_frameBaseOffset(sysbvm_dwarf_debugInfo_builder_t *builder, intptr_t offset);
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_plus(sysbvm_dwarf_debugInfo_builder_t *builder);
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_register(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t reg);
 
 #endif //SYSBVM_DWARF_H

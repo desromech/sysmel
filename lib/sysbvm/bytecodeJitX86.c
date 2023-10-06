@@ -1508,6 +1508,19 @@ static void sysbvm_jit_emitArgumentDebugInfo(sysbvm_bytecodeJit_t *jit, size_t o
     sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_formal_parameter, false);
     sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(&jit->dwarfDebugInfoBuilder, DW_AT_name, sysbvm_symbolBinding_getName(binding), nameBuffer);
     sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
+
+    sysbvm_dwarf_debugInfo_attribute_beginLocationExpression(&jit->dwarfDebugInfoBuilder, DW_AT_location);
+
+    sysbvm_dwarf_debugInfo_location_frameBaseOffset(&jit->dwarfDebugInfoBuilder, jit->argumentVectorOffset);
+    sysbvm_dwarf_debugInfo_location_deref(&jit->dwarfDebugInfoBuilder);
+
+    if(index > 0)
+    {
+        sysbvm_dwarf_debugInfo_location_constUnsigned(&jit->dwarfDebugInfoBuilder, index * sizeof(sysbvm_tuple_t));
+        sysbvm_dwarf_debugInfo_location_plus(&jit->dwarfDebugInfoBuilder);
+    }
+    sysbvm_dwarf_debugInfo_attribute_endLocationExpression(&jit->dwarfDebugInfoBuilder);
+
     sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
 }
 
@@ -1519,6 +1532,16 @@ static void sysbvm_jit_emitCaptureDebugInfo(sysbvm_bytecodeJit_t *jit, size_t oo
     sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_variable, false);
     sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(&jit->dwarfDebugInfoBuilder, DW_AT_name, sysbvm_symbolBinding_getName(binding), nameBuffer);
     sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
+
+    sysbvm_dwarf_debugInfo_attribute_beginLocationExpression(&jit->dwarfDebugInfoBuilder, DW_AT_location);
+
+    sysbvm_dwarf_debugInfo_location_frameBaseOffset(&jit->dwarfDebugInfoBuilder, jit->captureVectorOffset);
+    sysbvm_dwarf_debugInfo_location_deref(&jit->dwarfDebugInfoBuilder);
+
+    sysbvm_dwarf_debugInfo_location_constUnsigned(&jit->dwarfDebugInfoBuilder, sizeof(sysbvm_tuple_header_t) + index * sizeof(sysbvm_tuple_t));
+    sysbvm_dwarf_debugInfo_location_plus(&jit->dwarfDebugInfoBuilder);
+    sysbvm_dwarf_debugInfo_attribute_endLocationExpression(&jit->dwarfDebugInfoBuilder);
+
     sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
 }
 
@@ -1537,6 +1560,7 @@ static void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
     size_t oopTypeDie = sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_base_type, false);
     {
         sysbvm_dwarf_debugInfo_attribute_string(&jit->dwarfDebugInfoBuilder, DW_AT_name, "Oop");
+        sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_encoding, DW_ATE_signed);
         sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_byte_size, sizeof(sysbvm_tuple_t));
     }
     sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
@@ -1562,7 +1586,9 @@ static void sysbvm_jit_emitDebugInfo(sysbvm_bytecodeJit_t *jit)
         sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_low_pc, 0);
         sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_high_pc, jit->instructions.size);
         sysbvm_dwarf_debugInfo_attribute_textAddress(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
-        sysbvm_dwarf_debugInfo_attribute_uleb128(&jit->dwarfDebugInfoBuilder, DW_AT_frame_base, sizeof(uintptr_t) == 8 ? DW_X64_REG_RBP : DW_X86_REG_EBP);
+        sysbvm_dwarf_debugInfo_attribute_beginLocationExpression(&jit->dwarfDebugInfoBuilder, DW_AT_frame_base);
+        sysbvm_dwarf_debugInfo_location_register(&jit->dwarfDebugInfoBuilder, sizeof(uintptr_t) == 8 ? DW_X64_REG_RBP : DW_X86_REG_EBP);
+        sysbvm_dwarf_debugInfo_attribute_endLocationExpression(&jit->dwarfDebugInfoBuilder);
         sysbvm_dwarf_debugInfo_endDIE(&jit->dwarfDebugInfoBuilder);
 
         // Emit the arguments.

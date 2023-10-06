@@ -47,6 +47,13 @@ SYSBVM_API size_t sysbvm_dwarf_encodeDWord(sysbvm_dynarray_t *buffer, uint32_t v
     return offset;
 }
 
+SYSBVM_API size_t sysbvm_dwarf_encodeQWord(sysbvm_dynarray_t *buffer, uint64_t value)
+{
+    size_t offset = buffer->size;
+    sysbvm_dynarray_addAll(buffer, sizeof(value), &value);
+    return offset;
+}
+
 SYSBVM_API size_t sysbvm_dwarf_encodeCString(sysbvm_dynarray_t *buffer, const char *cstring)
 {
     size_t offset = buffer->size;
@@ -314,6 +321,8 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_create(sysbvm_dwarf_debugInfo_builder_t *
     builder->lineProgramHeader.opcodeBase = 13;
     builder->lineProgramHeader.defaultIsStatement = true;
 
+    sysbvm_dynarray_initialize(&builder->locationExpression, 1, 256);
+
     sysbvm_dynarray_initialize(&builder->line, 1, 1024);
     sysbvm_dynarray_initialize(&builder->str, 1, 1024);
     sysbvm_dynarray_initialize(&builder->abbrev, 1, 1024);
@@ -333,6 +342,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_create(sysbvm_dwarf_debugInfo_builder_t *
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_destroy(sysbvm_dwarf_debugInfo_builder_t *builder)
 {
+    sysbvm_dynarray_destroy(&builder->locationExpression);
     sysbvm_dynarray_destroy(&builder->line);
     sysbvm_dynarray_destroy(&builder->str);
     sysbvm_dynarray_destroy(&builder->abbrev);
@@ -600,4 +610,79 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_textAddress(sysbvm_dwarf_debugI
 
     uint32_t addressOffset = sysbvm_dwarf_encodePointer(&builder->info, value);
     sysbvm_dynarray_add(&builder->infoTextAddresses, &addressOffset);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_beginLocationExpression(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
+    sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_exprloc);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_endLocationExpression(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeULEB128(&builder->info, builder->locationExpression.size);
+    sysbvm_dynarray_addAll(&builder->info, builder->locationExpression.size, builder->locationExpression.data);
+    builder->locationExpression.size = 0;
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_constUnsigned(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t constant)
+{
+    if(constant <= 31)
+    {
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_lit0 + constant);
+        return;
+    }
+
+    if(constant <= 0xFF)
+    {
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const1u);
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, constant);
+        return;
+    }
+
+    if(constant <= 0xFFFF)
+    {
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const2u);
+        sysbvm_dwarf_encodeWord(&builder->locationExpression, constant);
+        return;
+    }
+
+    if(constant <= 0xFFFFFFFF)
+    {
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const4u);
+        sysbvm_dwarf_encodeDWord(&builder->locationExpression, constant);
+        return;
+    }
+
+    sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const8u);
+    sysbvm_dwarf_encodeQWord(&builder->locationExpression, constant);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_deref(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_deref);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_frameBaseOffset(sysbvm_dwarf_debugInfo_builder_t *builder, intptr_t offset)
+{
+    sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_fbreg);
+    sysbvm_dwarf_encodeSLEB128(&builder->locationExpression, offset);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_plus(sysbvm_dwarf_debugInfo_builder_t *builder)
+{
+    sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_plus);
+}
+
+SYSBVM_API void sysbvm_dwarf_debugInfo_location_register(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t reg)
+{
+    if(reg <= 31)
+    {
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_reg0 + reg);
+    }
+    else
+    {
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_regx);
+        sysbvm_dwarf_encodeULEB128(&builder->locationExpression, reg);
+    }
 }
