@@ -26,7 +26,8 @@ public: #FunctionBytecode::OpcodeExtraImplicitOperandCountDictionary with: opcod
 
 let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::Nop : #nop.
-    FunctionBytecode::Opcode::Trap : #trap.
+    FunctionBytecode::Opcode::Breakpoint : #breakpoint.
+    FunctionBytecode::Opcode::Unreachable : #unreachable.
 
     FunctionBytecode::Opcode::Return : #return.
     FunctionBytecode::Opcode::Jump : #jump.
@@ -69,7 +70,8 @@ public: #FunctionBytecode::OpcodeNameDictionary with: opcodeNameDictionary.
 
 let opcodeDestinationOperandCount := #{
     FunctionBytecode::Opcode::Nop : 0sz.
-    FunctionBytecode::Opcode::Trap : 0sz.
+    FunctionBytecode::Opcode::Breakpoint : 0sz.
+    FunctionBytecode::Opcode::Unreachable : 0sz.
 
     FunctionBytecode::Opcode::Return : 0sz.
     FunctionBytecode::Opcode::Jump : 0sz.

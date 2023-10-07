@@ -158,6 +158,21 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t type);
 
 /**
+ * Nop instruction
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_nop(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler);
+
+/**
+ * Breakpoint instruction
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_breakpoint(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler);
+
+/**
+ * Unreachable instruction
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_unreachable(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler);
+
+/**
  * Alloca with value.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_allocaWithValue(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t pointerLikeType, sysbvm_tuple_t value);

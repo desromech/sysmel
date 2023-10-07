@@ -521,9 +521,13 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
         case SYSBVM_OPCODE_NOP:
             // Nothing is required here.
             break;
-        case SYSBVM_OPCODE_TRAP:
+        case SYSBVM_OPCODE_BREAKPOINT:
             // Nothing is required here.
-            sysbvm_jit_callNoResult0(&jit, &sysbvm_error_trap);
+            sysbvm_jit_breakpoint(&jit);
+            break;
+        case SYSBVM_OPCODE_UNREACHABLE:
+            // Nothing is required here.
+            sysbvm_jit_unreachable(&jit);
             break;
         
         // One operands

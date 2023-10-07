@@ -26,7 +26,7 @@
 static bool sysbvm_bytecodeInterpreter_tablesAreFilled;
 uint8_t sysbvm_implicitVariableBytecodeOperandCountTable[16];
 
-void sysbvm_bytecodeInterpreter_ensureTablesAreFilled()
+void sysbvm_bytecodeInterpreter_ensureTablesAreFilled(void)
 {
     if(sysbvm_bytecodeInterpreter_tablesAreFilled)
         return;
@@ -272,10 +272,13 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
         case SYSBVM_OPCODE_NOP:
             // Nothing is required here.
             break;
-        case SYSBVM_OPCODE_TRAP:
+        case SYSBVM_OPCODE_BREAKPOINT:
             // Nothing is required here.
             break;
-        
+        case SYSBVM_OPCODE_UNREACHABLE:
+            sysbvm_error("Unreachable bytecode executed");
+            break;
+
         // One operands
         case SYSBVM_OPCODE_RETURN:
             activationRecord->result = operandRegisterFile[0];
@@ -567,7 +570,8 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
 
     // Zero operands.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Nop", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_NOP));
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Trap", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_TRAP));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Breakpoint", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_BREAKPOINT));
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Unreachable", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_UNREACHABLE));
 
     // One operands.
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::Return", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_RETURN));

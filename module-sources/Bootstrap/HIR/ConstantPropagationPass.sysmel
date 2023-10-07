@@ -63,7 +63,7 @@ public class HIRConstantPropagationPass superclass: HIRFunctionDefinitionPass; d
                 (basicBlock successors size = 1sz) && basicBlock lastInstruction isBranchInstruction ifTrue: {
                     let mergedBlock => HIRBasicBlock := basicBlock successors first.
 
-                    mergedBlock parent isNotNil && mergedBlock predecessors size = 1sz ifTrue: {
+                    mergedBlock parent isNotNil && (mergedBlock predecessors size = 1sz) ifTrue: {
                         self assert: mergedBlock predecessors first == basicBlock.
 
                         ## Avoid introducing a new critical edge.

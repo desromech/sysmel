@@ -478,9 +478,14 @@ FunctionBytecodeAssembler definition: {
             operands: (Array with: pointer with: value);
             yourself).
 
-    public method trap => FunctionBytecodeAssemblerInstruction
+    public method breakpoint => FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
-            standardOpcode: FunctionBytecode::Opcode::Trap;
+            standardOpcode: FunctionBytecode::Opcode::Breakpoint;
+            yourself).
+
+    public method unreachable => FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::Unreachable;
             yourself).
 
     public method optimizeTemporaries => Void := {

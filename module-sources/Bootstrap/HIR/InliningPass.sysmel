@@ -50,45 +50,49 @@ public final class HIRInlinerState definition: {
     }.
 
     public method inlineFunctionContent: (functionDefinition: HIRFunctionDefinition) ::=> Void := {
-        (functionDefinition calledFunctions anySatisfy: {:(HIRValue)calledFunction :: Boolean | calledFunction shouldBeInlinedIn: functionDefinition }) ifFalse: {
-            return: void
-        }.
-
-        functionDefinition computeControlFlowAndNormalizeBasicBlocks.
-        let hasInlinedAnyCall mutable := false.
-
-        let eachBasicBlock mutable := functionDefinition firstBasicBlock.
-        while: eachBasicBlock isNotNil do: {
-            let position mutable := eachBasicBlock firstInstruction.
-            while: position isNotNil do: {
-                position isCallInstruction ifTrue: {
-                    let replacement := self inlineCallInstruction: (position downCastTo: HIRCallInstruction) in: functionDefinition.
-                    replacement == position ifTrue: {
-                        position := position nextInstruction
-                    } ifFalse: {
-                        hasInlinedAnyCall := true.
-                        position := replacement.
-                        eachBasicBlock := replacement parent.
-                    }
-                } ifFalse: {
-                    position := position nextInstruction
-                }
+        let shouldRunPass mutable := true.
+        while: shouldRunPass do: {
+            shouldRunPass := false.
+            (functionDefinition calledFunctions anySatisfy: {:(HIRValue)calledFunction :: Boolean | calledFunction shouldBeInlinedIn: functionDefinition }) ifFalse: {
+                return: void
             }.
 
-            eachBasicBlock := eachBasicBlock nextBlock
-        }.
+            functionDefinition computeControlFlowAndNormalizeBasicBlocks.
+            let hasInlinedAnyCall mutable := false.
 
-        hasInlinedAnyCall ifTrue: {
-            functionDefinition
-                postTransformValidation: "Inlining";
-                computeControlFlowAndNormalizeBasicBlocks;
-                computeNewCalledFunctionDefinitions.
+            let eachBasicBlock mutable := functionDefinition firstBasicBlock.
+            while: eachBasicBlock isNotNil do: {
+                let position mutable := eachBasicBlock firstInstruction.
+                while: position isNotNil do: {
+                    position isCallInstruction ifTrue: {
+                        let replacement := self inlineCallInstruction: (position downCastTo: HIRCallInstruction) in: functionDefinition.
+                        replacement == position ifTrue: {
+                            position := position nextInstruction
+                        } ifFalse: {
+                            hasInlinedAnyCall := true.
+                            position := replacement.
+                            eachBasicBlock := replacement parent.
+                        }
+                    } ifFalse: {
+                        position := position nextInstruction
+                    }
+                }.
 
-            functionPasses isNotEmpty ifTrue: {
-                functionDefinition runPasses: functionPasses.
-                self inlineFunctionContent: functionDefinition.
-            }
-        }.
+                eachBasicBlock := eachBasicBlock nextBlock
+            }.
+
+            hasInlinedAnyCall ifTrue: {
+                functionDefinition
+                    postTransformValidation: "Inlining";
+                    computeControlFlowAndNormalizeBasicBlocks;
+                    computeNewCalledFunctionDefinitions.
+
+                functionPasses isNotEmpty ifTrue: {
+                    functionDefinition runPasses: functionPasses.
+                    shouldRunPass := true
+                }
+            }.
+        }
     }.
 
     public method inlineCallInstruction: (call: HIRCallInstruction) in: (functionDefinition: HIRFunctionDefinition)::=> HIRInstruction := {

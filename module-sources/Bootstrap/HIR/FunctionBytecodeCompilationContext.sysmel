@@ -441,30 +441,26 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
                 yourself
         }.
 
-        (actualResultType isSubtypeOf: ControlFlowEscapeType) ifTrue: {
-            builder unreachable
-        } ifFalse: {
-            self storeInTemporary: resultTemporary value: result
-        }.
+        self storeInTemporary: resultTemporary value: result
     }.
 
     public method compileSend: (receiver: HIRValue) receiverLookupType: (receiverLookupType: HIRValue) selector: (selector: HIRValue) arguments: (arguments: Array) resultType: (resultType: Type) resultTemporary: (resultTemporary: Int16) ::=> Void := {
         let result := builder send: receiver receiverLookupType: receiverLookupType selector: selector arguments: arguments resultType: resultType.
         result optimizeLookup.
 
-        (resultType isSubtypeOf: ControlFlowEscapeType) ifTrue: {
-            builder unreachable
-        } ifFalse: {
-            self storeInTemporary: resultTemporary value: result
-        }
+        self storeInTemporary: resultTemporary value: result
     }.
 
     public method compileNop: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         ## Nothing is required here.
     }.
 
-    public method compileTrap: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+    public method compileBreakpoint: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
         builder trap
+    }.
+
+    public method compileUnreachable: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        builder unreachable
     }.
 
     public method compileJump: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
@@ -653,7 +649,8 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
     let OpcodeCompilationFunction := (HIRFunctionBytecodeCompilationContext, UInt8, Array, Size, Size) => Void.
     let OpcodeDispatchTable := (Array new: 256)
         at: FunctionBytecode::Opcode::Nop put: HIRFunctionBytecodeCompilationContext >> #compileNop:operands:pc:nextPC:;
-        at: FunctionBytecode::Opcode::Trap put: HIRFunctionBytecodeCompilationContext >> #compileTrap:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Breakpoint put: HIRFunctionBytecodeCompilationContext >> #compileBreakpoint:operands:pc:nextPC:;
+        at: FunctionBytecode::Opcode::Unreachable put: HIRFunctionBytecodeCompilationContext >> #compileUnreachable:operands:pc:nextPC:;
 
         at: FunctionBytecode::Opcode::Jump put: HIRFunctionBytecodeCompilationContext >> #compileJump:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::Return put: HIRFunctionBytecodeCompilationContext >> #compileReturn:operands:pc:nextPC:;

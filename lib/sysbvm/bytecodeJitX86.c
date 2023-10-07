@@ -116,6 +116,24 @@ static uint8_t sysbvm_jit_x86_rex(bool W, bool R, bool X, bool B)
     return 0x40 | ((W ? 1 : 0) << 3) | ((R ? 1 : 0) << 2) | ((X ? 1 : 0) << 1) | (B ? 1 : 0);
 }
 
+static void sysbvm_jit_x86_int3(sysbvm_bytecodeJit_t *jit)
+{
+    uint8_t instruction[] = {
+        0xCC,
+    };
+
+    sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
+}
+
+static void sysbvm_jit_x86_ud2(sysbvm_bytecodeJit_t *jit)
+{
+    uint8_t instruction[] = {
+        0x0F, 0x0B,
+    };
+
+    sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction);
+}
+
 #if 0
 static void sysbvm_jit_x86_callRelative32(sysbvm_bytecodeJit_t *jit, void *functionPointer)
 {
@@ -511,6 +529,16 @@ static void sysbvm_jit_x86_xorRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x86_reg
 static void sysbvm_jit_x86_jitLoadContextInRegister(sysbvm_bytecodeJit_t *jit, sysbvm_x86_register_t reg)
 {
     sysbvm_jit_x86_mov64FromMemoryWithOffset(jit, reg, SYSBVM_X86_RBP, jit->contextPointerOffset);
+}
+
+SYSBVM_API void sysbvm_jit_breakpoint(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_jit_x86_int3(jit);
+}
+
+SYSBVM_API void sysbvm_jit_unreachable(sysbvm_bytecodeJit_t *jit)
+{
+    sysbvm_jit_x86_ud2(jit);
 }
 
 SYSBVM_API void sysbvm_jit_callNoResult0(sysbvm_bytecodeJit_t *jit, void *functionPointer)

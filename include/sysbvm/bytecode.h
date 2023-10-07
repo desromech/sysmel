@@ -11,7 +11,8 @@ typedef enum sysbvm_opcode_e
 {
     // Zero operand instructions
     SYSBVM_OPCODE_NOP,
-    SYSBVM_OPCODE_TRAP,
+    SYSBVM_OPCODE_BREAKPOINT,
+    SYSBVM_OPCODE_UNREACHABLE,
 
     // One operand instructions
     SYSBVM_OPCODE_RETURN = 0x10, /// return <Result>
