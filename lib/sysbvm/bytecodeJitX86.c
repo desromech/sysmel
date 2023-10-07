@@ -931,7 +931,7 @@ SYSBVM_API void sysbvm_jit_jumpRelativeIfFalse(sysbvm_bytecodeJit_t *jit, int16_
 
 static void sysbvm_jit_cfi_beginPrologue(sysbvm_bytecodeJit_t *jit)
 {
-    sysbvm_dwarf_cie_t ehCie = {};
+    sysbvm_dwarf_cie_t ehCie = {0};
     ehCie.codeAlignmentFactor = 1;
     ehCie.dataAlignmentFactor = -sizeof(uintptr_t);
     ehCie.pointerSize = sizeof(uintptr_t);
@@ -1360,28 +1360,28 @@ static size_t sysbvm_jit_emitObjectFileJittedFunctionName(sysbvm_bytecodeJit_t *
 
 static void sysbvm_jit_emitObjectFile(sysbvm_bytecodeJit_t *jit)
 {
-    sysbvm_elf64_header_t header = {};
-    sysbvm_jit_x64_elfContentFooter_t footer = {};
+    sysbvm_elf64_header_t header = {0};
+    sysbvm_jit_x64_elfContentFooter_t footer = {0};
 
     size_t stringTableOffset = jit->objectFileContent.size;
-    footer.sections.null.name = sysbvm_jit_emitObjectFileCString(jit, ""); // Null string
-    footer.sections.text.name = sysbvm_jit_emitObjectFileCString(jit, ".text");
-    footer.sections.eh_frame.name = sysbvm_jit_emitObjectFileCString(jit, ".eh_frame");
-    footer.sections.debug_line.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_line");
-    footer.sections.debug_str.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_str");
-    footer.sections.debug_abbrev.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_abbrev");
-    footer.sections.debug_info.name = sysbvm_jit_emitObjectFileCString(jit, ".debug_info");
-    footer.sections.symtab.name = sysbvm_jit_emitObjectFileCString(jit, ".symtab");
-    footer.sections.str.name = sysbvm_jit_emitObjectFileCString(jit, ".str");
-    footer.sections.shstr.name = sysbvm_jit_emitObjectFileCString(jit, ".shstr");
+    footer.sections.null.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ""); // Null string
+    footer.sections.text.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".text");
+    footer.sections.eh_frame.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".eh_frame");
+    footer.sections.debug_line.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".debug_line");
+    footer.sections.debug_str.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".debug_str");
+    footer.sections.debug_abbrev.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".debug_abbrev");
+    footer.sections.debug_info.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".debug_info");
+    footer.sections.symtab.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".symtab");
+    footer.sections.str.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".str");
+    footer.sections.shstr.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileCString(jit, ".shstr");
 
-    footer.symbols.sourceFile.name = sysbvm_jit_emitObjectFileSourceFileName(jit);
+    footer.symbols.sourceFile.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileSourceFileName(jit);
     footer.symbols.sourceFile.info = SYSBVM_ELF64_SYM_INFO(SYSBVM_STT_FILE, SYSBVM_STB_LOCAL);
 
     footer.symbols.text.sectionHeaderIndex = 1;
     footer.symbols.text.info = SYSBVM_ELF64_SYM_INFO(SYSBVM_STT_SECTION, SYSBVM_STB_LOCAL);
 
-    footer.symbols.jittedFunction.name = sysbvm_jit_emitObjectFileJittedFunctionName(jit);
+    footer.symbols.jittedFunction.name = (sysbvm_elf64_word_t)sysbvm_jit_emitObjectFileJittedFunctionName(jit);
     footer.symbols.jittedFunction.info = SYSBVM_ELF64_SYM_INFO(SYSBVM_STT_FUNC, SYSBVM_STB_LOCAL);
     footer.symbols.jittedFunction.sectionHeaderIndex = 1;
     footer.symbols.jittedFunction.value = 0;
@@ -1535,7 +1535,7 @@ static void sysbvm_jit_emitArgumentDebugInfo(sysbvm_bytecodeJit_t *jit, size_t o
 
     sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_formal_parameter, false);
     sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(&jit->dwarfDebugInfoBuilder, DW_AT_name, sysbvm_symbolBinding_getName(binding), nameBuffer);
-    sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
+    sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, (uint8_t)oopTypeDie);
 
     sysbvm_dwarf_debugInfo_attribute_beginLocationExpression(&jit->dwarfDebugInfoBuilder, DW_AT_location);
 
@@ -1559,7 +1559,7 @@ static void sysbvm_jit_emitCaptureDebugInfo(sysbvm_bytecodeJit_t *jit, size_t oo
 
     sysbvm_dwarf_debugInfo_beginDIE(&jit->dwarfDebugInfoBuilder, DW_TAG_variable, false);
     sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(&jit->dwarfDebugInfoBuilder, DW_AT_name, sysbvm_symbolBinding_getName(binding), nameBuffer);
-    sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, oopTypeDie);
+    sysbvm_dwarf_debugInfo_attribute_ref1(&jit->dwarfDebugInfoBuilder, DW_AT_type, (uint8_t)oopTypeDie);
 
     sysbvm_dwarf_debugInfo_attribute_beginLocationExpression(&jit->dwarfDebugInfoBuilder, DW_AT_location);
 

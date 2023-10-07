@@ -13,7 +13,7 @@ SYSBVM_API size_t sysbvm_dwarf_encodeDwarfPointer(sysbvm_dynarray_t *buffer, uin
 
 SYSBVM_API size_t sysbvm_dwarf_encodeDwarfPointerPCRelative(sysbvm_dynarray_t *buffer, uint32_t value)
 {
-    int32_t pcRelativeValue = buffer->size - value;
+    int32_t pcRelativeValue = (int32_t)(buffer->size - value);
     size_t offset = buffer->size;
     sysbvm_dynarray_addAll(buffer, sizeof(pcRelativeValue), &pcRelativeValue);
     return offset;
@@ -153,7 +153,7 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginCIE(sysbvm_dwarf_cfi_builder_t *cfi, sysbv
     sysbvm_dwarf_encodeULEB128(&cfi->buffer, cie->codeAlignmentFactor);
     sysbvm_dwarf_encodeSLEB128(&cfi->buffer, cie->dataAlignmentFactor);
     if(cfi->version <= 2 && !cfi->isEhFrame)
-        sysbvm_dwarf_encodeByte(&cfi->buffer, cie->returnAddressRegister);
+        sysbvm_dwarf_encodeByte(&cfi->buffer, (uint8_t)cie->returnAddressRegister);
     else
         sysbvm_dwarf_encodeULEB128(&cfi->buffer, cie->returnAddressRegister);
     if(cfi->isEhFrame)
@@ -166,14 +166,14 @@ SYSBVM_API void sysbvm_dwarf_cfi_beginCIE(sysbvm_dwarf_cfi_builder_t *cfi, sysbv
 SYSBVM_API void sysbvm_dwarf_cfi_endCIE(sysbvm_dwarf_cfi_builder_t *cfi)
 {
     sysbvm_dwarf_encodeAlignment(&cfi->buffer, sizeof(uintptr_t));
-    uint32_t cieSize = cfi->buffer.size - cfi->cieContentOffset;
+    uint32_t cieSize = (uint32_t)(cfi->buffer.size - cfi->cieContentOffset);
     memcpy(cfi->buffer.data + cfi->cieOffset, &cieSize, 4);
 }
 
 SYSBVM_API void sysbvm_dwarf_cfi_beginFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_t pc)
 {
     cfi->fdeOffset = sysbvm_dwarf_encodeDWord(&cfi->buffer, 0);
-    cfi->fdeContentOffset = sysbvm_dwarf_encodeDwarfPointerPCRelative(&cfi->buffer, cfi->cieOffset);
+    cfi->fdeContentOffset = sysbvm_dwarf_encodeDwarfPointerPCRelative(&cfi->buffer, (uint32_t)cfi->cieOffset);
     cfi->fdeInitialPC = pc;
     if(cfi->isEhFrame)
     {
@@ -198,7 +198,7 @@ SYSBVM_API void sysbvm_dwarf_cfi_endFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_t 
     sysbvm_dwarf_encodeAlignment(&cfi->buffer, sizeof(uintptr_t));
     if(cfi->isEhFrame)
     {
-        uint32_t pcRange = pc - cfi->fdeInitialPC;
+        uint32_t pcRange = (uint32_t)(pc - cfi->fdeInitialPC);
         memcpy(cfi->buffer.data + cfi->fdeAddressingRangeOffset, &pcRange, sizeof(uint32_t));
     }
     else
@@ -207,7 +207,7 @@ SYSBVM_API void sysbvm_dwarf_cfi_endFDE(sysbvm_dwarf_cfi_builder_t *cfi, size_t 
         memcpy(cfi->buffer.data + cfi->fdeAddressingRangeOffset, &pcRange, sizeof(uintptr_t));
     }
 
-    uint32_t fdeSize = cfi->buffer.size - cfi->fdeContentOffset;
+    uint32_t fdeSize = (uint32_t)(cfi->buffer.size - cfi->fdeContentOffset);
     memcpy(cfi->buffer.data + cfi->fdeOffset, &fdeSize, 4);
 }
 
@@ -224,25 +224,25 @@ SYSBVM_API void sysbvm_dwarf_cfi_setPC(sysbvm_dwarf_cfi_builder_t *cfi, size_t p
         size_t advanceFactor = advance / cfi->cie.codeAlignmentFactor;
         if(advanceFactor <= 63)
         {
-            sysbvm_dwarf_encodeByte(&cfi->buffer, (DW_OP_CFA_advance_loc << 6) | advanceFactor);
+            sysbvm_dwarf_encodeByte(&cfi->buffer, (DW_OP_CFA_advance_loc << 6) | (uint8_t)advanceFactor);
         }
         else
         {
             if(advanceFactor <= 0xFF)
             {
                 sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_advance_loc1);
-                sysbvm_dwarf_encodeByte(&cfi->buffer, advanceFactor);
+                sysbvm_dwarf_encodeByte(&cfi->buffer, (uint8_t)advanceFactor);
             }
             else if(advanceFactor <= 0xFFFF)
             {
                 sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_advance_loc2);
-                sysbvm_dwarf_encodeWord(&cfi->buffer, advanceFactor);
+                sysbvm_dwarf_encodeWord(&cfi->buffer, (uint16_t)advanceFactor);
             }
             else
             {
                 SYSBVM_ASSERT(advanceFactor <= 0xFFFFFFFF);
                 sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_advance_loc4);
-                sysbvm_dwarf_encodeDWord(&cfi->buffer, advanceFactor);
+                sysbvm_dwarf_encodeDWord(&cfi->buffer, (uint32_t)advanceFactor);
             }
         }
     }
@@ -265,7 +265,7 @@ SYSBVM_API void sysbvm_dwarf_cfi_cfaInRegisterWithFactoredOffset(sysbvm_dwarf_cf
 SYSBVM_API void sysbvm_dwarf_cfi_registerValueAtFactoredOffset(sysbvm_dwarf_cfi_builder_t *cfi, uintptr_t reg, size_t offset)
 {
     if(reg <= 63) {
-        sysbvm_dwarf_encodeByte(&cfi->buffer, (DW_OP_CFA_offset << 6) | reg);
+        sysbvm_dwarf_encodeByte(&cfi->buffer, (DW_OP_CFA_offset << 6) | (uint8_t)reg);
         sysbvm_dwarf_encodeULEB128(&cfi->buffer, offset);
     } else {
         sysbvm_dwarf_encodeByte(&cfi->buffer, DW_OP_CFA_offset_extended);
@@ -358,7 +358,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_finish(sysbvm_dwarf_debugInfo_builder_t *
 
     // Info initial length.
     {
-        uint32_t infoInitialLength = builder->info.size - 4;
+        uint32_t infoInitialLength = (uint32_t)(builder->info.size - 4);
         memcpy(builder->info.data, &infoInitialLength, 4);
     }
 }
@@ -384,7 +384,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_beginLineInformation(sysbvm_dwarf_debugIn
 {
     sysbvm_dwarf_encodeDWord(&builder->line, 0);
     sysbvm_dwarf_encodeWord(&builder->line, builder->version);
-    builder->lineHeaderLengthOffset = sysbvm_dwarf_encodeDWord(&builder->line, 0); // Header length
+    builder->lineHeaderLengthOffset = (uint32_t)sysbvm_dwarf_encodeDWord(&builder->line, 0); // Header length
     sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.minimumInstructionLength);
     sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.maximumOperationsPerInstruction);
     sysbvm_dwarf_encodeByte(&builder->line, builder->lineProgramHeader.defaultIsStatement);
@@ -444,7 +444,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_endFileList(sysbvm_dwarf_debugInfo_builde
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_endLineInformationHeader(sysbvm_dwarf_debugInfo_builder_t *builder)
 {
-    uint32_t headerSize = builder->line.size - builder->lineHeaderLengthOffset - 4;
+    uint32_t headerSize = (uint32_t)(builder->line.size - builder->lineHeaderLengthOffset - 4);
     memcpy(builder->line.data + builder->lineHeaderLengthOffset, &headerSize, 4);
 }
 
@@ -453,9 +453,9 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_line_setAddress(sysbvm_dwarf_debugInfo_bu
     sysbvm_dwarf_encodeByte(&builder->line, 0);
     sysbvm_dwarf_encodeULEB128(&builder->line, 1 + sizeof(value));
     sysbvm_dwarf_encodeByte(&builder->line, DW_LNE_set_address);
-    uint32_t addressOffset = sysbvm_dwarf_encodePointer(&builder->line, value);
+    uint32_t addressOffset = (uint32_t)sysbvm_dwarf_encodePointer(&builder->line, value);
     sysbvm_dynarray_add(&builder->lineTextAddresses, &addressOffset);
-    builder->lineProgramState.regAddress = value;
+    builder->lineProgramState.regAddress = (uint32_t)value;
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_line_setFile(sysbvm_dwarf_debugInfo_builder_t *builder, uint32_t file)
@@ -537,7 +537,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_line_endSequence(sysbvm_dwarf_debugInfo_b
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_endLineInformation(sysbvm_dwarf_debugInfo_builder_t *builder)
 {
-    uint32_t lineInfoSize = builder->line.size - 4;
+    uint32_t lineInfoSize = (uint32_t)(builder->line.size - 4);
     memcpy(builder->line.data, &lineInfoSize, 4);
 }
 
@@ -575,7 +575,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_secOffset(sysbvm_dwarf_debugInf
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_sec_offset);
 
-    sysbvm_dwarf_encodeDWord(&builder->info, value);
+    sysbvm_dwarf_encodeDWord(&builder->info, (uint32_t)value);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, const char *value)
@@ -584,7 +584,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_string(sysbvm_dwarf_debugInfo_b
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_strp);
 
     size_t stringOffset = sysbvm_dwarf_encodeCString(&builder->str, value);
-    sysbvm_dwarf_encodeDWord(&builder->info, stringOffset);
+    sysbvm_dwarf_encodeDWord(&builder->info, (uint32_t)stringOffset);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, sysbvm_tuple_t value, const char *defaultString)
@@ -593,7 +593,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_stringTupleWithDefaultString(sy
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_strp);
 
     size_t stringOffset = sysbvm_dwarf_encodeStringTupleWithDefaultString(&builder->str, value, defaultString);
-    sysbvm_dwarf_encodeDWord(&builder->info, stringOffset);
+    sysbvm_dwarf_encodeDWord(&builder->info, (uint32_t)stringOffset);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_ref1(sysbvm_dwarf_debugInfo_builder_t *builder, uintptr_t attribute, uint8_t value)
@@ -608,7 +608,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_attribute_textAddress(sysbvm_dwarf_debugI
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, attribute);
     sysbvm_dwarf_encodeULEB128(&builder->abbrev, DW_FORM_addr);
 
-    uint32_t addressOffset = sysbvm_dwarf_encodePointer(&builder->info, value);
+    uint32_t addressOffset = (uint32_t)sysbvm_dwarf_encodePointer(&builder->info, value);
     sysbvm_dynarray_add(&builder->infoTextAddresses, &addressOffset);
 }
 
@@ -629,33 +629,33 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_location_constUnsigned(sysbvm_dwarf_debug
 {
     if(constant <= 31)
     {
-        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_lit0 + constant);
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_lit0 + (uint8_t)constant);
         return;
     }
 
     if(constant <= 0xFF)
     {
         sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const1u);
-        sysbvm_dwarf_encodeByte(&builder->locationExpression, constant);
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, (uint8_t)constant);
         return;
     }
 
     if(constant <= 0xFFFF)
     {
         sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const2u);
-        sysbvm_dwarf_encodeWord(&builder->locationExpression, constant);
+        sysbvm_dwarf_encodeWord(&builder->locationExpression, (uint16_t)constant);
         return;
     }
 
     if(constant <= 0xFFFFFFFF)
     {
         sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const4u);
-        sysbvm_dwarf_encodeDWord(&builder->locationExpression, constant);
+        sysbvm_dwarf_encodeDWord(&builder->locationExpression, (uint32_t)constant);
         return;
     }
 
     sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_const8u);
-    sysbvm_dwarf_encodeQWord(&builder->locationExpression, constant);
+    sysbvm_dwarf_encodeQWord(&builder->locationExpression, (uint64_t)constant);
 }
 
 SYSBVM_API void sysbvm_dwarf_debugInfo_location_deref(sysbvm_dwarf_debugInfo_builder_t *builder)
@@ -678,7 +678,7 @@ SYSBVM_API void sysbvm_dwarf_debugInfo_location_register(sysbvm_dwarf_debugInfo_
 {
     if(reg <= 31)
     {
-        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_reg0 + reg);
+        sysbvm_dwarf_encodeByte(&builder->locationExpression, DW_OP_reg0 + (uint8_t)reg);
     }
     else
     {

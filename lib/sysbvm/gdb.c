@@ -9,7 +9,9 @@
 #endif
 
 void SYSBVM_NOINLINE __jit_debug_register_code() {
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+    __nop();
+#else
     asm volatile("" ::: "memory");
 #endif
 };

@@ -7,6 +7,8 @@
 #include <execinfo.h>
 #endif
 
+#define SYSBVM_BACKTRACE_PRINT_MAX_SIZE 100
+
 SYSBVM_API int sysbvm_backtrace_obtain(void **returnAddresses, int maxNumberOfReturnAddress)
 {
 #ifdef _WIN32
@@ -26,11 +28,10 @@ SYSBVM_API char **sysbvm_backtrace_symbols(void **returnAddresses, int addressCo
 }
 
 SYSBVM_API void sysbvm_backtrace_print(void)
-{
-    const int MaxBacktraceSize = 100;
-    void *backtraceAddresses[MaxBacktraceSize];
+{    
+    void *backtraceAddresses[SYSBVM_BACKTRACE_PRINT_MAX_SIZE];
 
-    int backtraceSize = sysbvm_backtrace_obtain(backtraceAddresses, MaxBacktraceSize);
+    int backtraceSize = sysbvm_backtrace_obtain(backtraceAddresses, SYSBVM_BACKTRACE_PRINT_MAX_SIZE);
     if(backtraceSize < 0)
     {
         fprintf(stderr, "Failed to obtain a backtrace.");

@@ -123,7 +123,7 @@ SYSBVM_API void sysbvm_bytecodeJit_addSourcePositionRecordWith(sysbvm_bytecodeJi
             return;
     }
 
-    sysbvm_bytecodeJitSourcePositionRecord_t newRecord = {};
+    sysbvm_bytecodeJitSourcePositionRecord_t newRecord = {0};
     newRecord.sourcePosition = sourcePosition;
     newRecord.pc = nativePC;
     if(!sysbvm_sourcePosition_getStartLineAndColumn(jit->context, sourcePosition, &newRecord.line, &newRecord.column))
@@ -239,7 +239,7 @@ void sysbvm_jit_dwarfLineInfoEmissionState_emitSourcePosition(sysbvm_bytecodeJit
     // Set the column.
     sysbvm_dwarf_debugInfo_line_setColumn(&jit->dwarfDebugInfoBuilder, column);
 
-    int pcAdvance = pc - state->pc;
+    int pcAdvance = (int)(pc - state->pc);
     int lineAdvance = line - state->previousLine;
     sysbvm_dwarf_debugInfo_line_advanceLineAndPC(&jit->dwarfDebugInfoBuilder, lineAdvance, pcAdvance);
     state->pc = pc;
@@ -402,7 +402,12 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeJit_symbolValueBinding_getValue(sysbvm_
 
 SYSBVM_API void sysbvm_jit_dumpCodeToFileNamed(const void *code, size_t codeSize, const char *fileName)
 {
+#ifdef _WIN32
+    FILE *file = NULL;
+    fopen_s(&file, fileName, "wb");
+#else
     FILE *file = fopen(fileName, "wb");
+#endif
     if(!file)
         return;
 

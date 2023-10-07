@@ -483,7 +483,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_countExtension(sysbvm
         return SYSBVM_NULL_TUPLE;
 
     sysbvm_tuple_t operands = sysbvm_array_create(context, 1);
-    sysbvm_array_atPut(operands, 0, sysbvm_tuple_int16_encode(count));
+    sysbvm_array_atPut(operands, 0, sysbvm_tuple_int16_encode((int16_t)count));
 
     sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_COUNT_EXTENSION, operands);
     sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
@@ -732,7 +732,7 @@ static size_t sysbvm_functionBytecodeAssemblerInstruction_assembleInto(sysbvm_co
         size_t implicitOperandCount = sysbvm_implicitVariableBytecodeOperandCountTable[standardOpcode >> 4];
         SYSBVM_ASSERT(operandCount >= implicitOperandCount);
         size_t variableOperandCount = (operandCount - implicitOperandCount) & 0xF;
-        opcode += variableOperandCount;
+        opcode += (uint8_t)variableOperandCount;
     }
     destination[offset++] = opcode;
 
@@ -1075,10 +1075,9 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
         instructionsOffset += sysbvm_functionBytecodeAssemblerInstruction_computeAssembledSize(context, gcFrame.instruction);
         gcFrame.instruction->endPC = sysbvm_tuple_size_encode(context, instructionsOffset);
 
-
         // Add the debug annotations.
-        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourcePositions, pc, gcFrame.instruction->sourcePosition);
-        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourceEnvironments, pc, gcFrame.instruction->sourceEnvironment);
+        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourcePositions, (uint32_t)pc, gcFrame.instruction->sourcePosition);
+        sysbvm_orderedOffsetTableBuilder_withOffsetAddValue(context, gcFrame.debugSourceEnvironments, (uint32_t)pc, gcFrame.instruction->sourceEnvironment);
     }
 
     gcFrame.bytecode->instructions = sysbvm_byteArray_create(context, instructionsOffset);
