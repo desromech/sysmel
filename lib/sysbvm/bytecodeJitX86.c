@@ -1731,8 +1731,8 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
 
 #ifdef _WIN32
     RUNTIME_FUNCTION *runtimeFunction = (RUNTIME_FUNCTION*)unwindInfoZonePointer;
-    runtimeFunction->UnwindInfoAddress = (DWORD)(sizeof(RUNTIME_FUNCTION) + unwindInfoZonePointer - codeZonePointer);
-    if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)codeZonePointer))
+    runtimeFunction->UnwindInfoAddress = (DWORD)(sizeof(RUNTIME_FUNCTION) + unwindInfoZonePointer - instructionsPointers);
+    if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)instructionsPointers))
     {
         // Store the handle in the context for cleanup.
     }
