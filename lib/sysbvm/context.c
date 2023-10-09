@@ -1720,6 +1720,19 @@ sysbvm_object_tuple_t *sysbvm_context_allocatePointerTuple(sysbvm_context_t *con
     return result;
 }
 
+/**
+ * Print memory usage statistics.
+ */
+SYSBVM_API void sysbvm_context_printMemoryUsageStats(sysbvm_context_t *context)
+{
+    if(!context)
+        return;
+
+    printf("Heap Size: %lld\n", (long long)context->heap.totalSize);
+    printf("Code Zone Size: %lld\n", (long long)context->heap.codeZoneSize);
+    printf("Code Zone Capacity: %lld\n", (long long)context->heap.codeZoneCapacity);
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_context_shallowCopy(sysbvm_context_t *context, sysbvm_tuple_t tuple)
 {
     if(!sysbvm_tuple_isNonNullPointer(tuple))

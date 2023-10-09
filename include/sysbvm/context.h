@@ -122,6 +122,10 @@ SYSBVM_API sysbvm_tuple_t sysbvm_context_setIntrinsicSymbolBindingValueWithPrimi
 SYSBVM_API sysbvm_tuple_t sysbvm_context_setIntrinsicPrimitiveMethod(sysbvm_context_t *context, sysbvm_tuple_t ownerClass, const char *selectorString, size_t argumentCount, sysbvm_bitflags_t flags, void *userdata, sysbvm_functionEntryPoint_t entryPoint);
 
 /**
+ * Print memory usage statistics.
+ */
+SYSBVM_API void sysbvm_context_printMemoryUsageStats(sysbvm_context_t *context);
+/**
  * Registers a function in the global primitive table.
  */
 SYSBVM_API void sysbvm_primitiveTable_registerFunction(sysbvm_functionEntryPoint_t primitiveEntryPoint, const char *primitiveName);

@@ -54,6 +54,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_analyzeAndEvaluateStringWithEnviron
 SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_applyClosureASTFunction(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags);
 
 /**
+ * Loads the specified source with the given name without scanning, parsing or evaluating.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceCodeWithSolvedPath(sysbvm_context_t *context, sysbvm_tuple_t filename);
+
+/**
  * Loads the specified file with the given name.
  */ 
 SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceNamedWithSolvedPath(sysbvm_context_t *context, sysbvm_tuple_t filename);

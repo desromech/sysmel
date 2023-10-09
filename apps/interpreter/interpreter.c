@@ -5,6 +5,8 @@
 #include <sysbvm/environment.h>
 #include <sysbvm/filesystem.h>
 #include <sysbvm/sourceCode.h>
+#include <sysbvm/scanner.h>
+#include <sysbvm/sysmelParser.h>
 #include <sysbvm/interpreter.h>
 #include <sysbvm/stackFrame.h>
 #include <sysbvm/string.h>
@@ -25,12 +27,19 @@ static void printVersion()
 
 int doMain(int startArgumentIndex, int argc, const char *argv[])
 {
+    bool scanOnly = false;
+    bool parseOnly = false;
+    bool printStats = false;
     struct {
         sysbvm_tuple_t filesToProcess;
         sysbvm_tuple_t remainingArgs;
         sysbvm_tuple_t inputFileName;
         sysbvm_tuple_t inlineScriptToRun;
         sysbvm_tuple_t inlineScriptsToRun;
+        sysbvm_tuple_t sourceCode;
+        sysbvm_tuple_t scanResult;
+        sysbvm_tuple_t parseResult;
+        sysbvm_tuple_t parseScanResults;
     } gcFrame = {0};
     SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
 
@@ -65,6 +74,18 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
                 arg = argv[++i];
                 destinationImageFilename = arg;
             }
+            else if(!strcmp(arg, "-scan-only"))
+            {
+                scanOnly = true;
+            }
+            else if(!strcmp(arg, "-parse-only"))
+            {
+                parseOnly = true;
+            }
+            else if(!strcmp(arg, "-print-stats"))
+            {
+                printStats = true;
+            }
             else if(!strcmp(arg, "-e"))
             {
                 arg = argv[++i];
@@ -91,28 +112,57 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
         }
     }
 
+    if(scanOnly || parseOnly)
     {
-        size_t inputFileSize = sysbvm_orderedCollection_getSize(gcFrame.filesToProcess);
-        for(size_t i = 0; i < inputFileSize; ++i)
+        gcFrame.parseScanResults = sysbvm_orderedCollection_create(context);
         {
-            gcFrame.inputFileName = sysbvm_orderedCollection_at(gcFrame.filesToProcess, i);
-            gcFrame.inputFileName = sysbvm_filesystem_absolute(context, gcFrame.inputFileName);
-            sysbvm_interpreter_loadSourceNamedWithSolvedPath(context, gcFrame.inputFileName);
+            size_t inputFileSize = sysbvm_orderedCollection_getSize(gcFrame.filesToProcess);
+            for(size_t i = 0; i < inputFileSize; ++i)
+            {
+                gcFrame.inputFileName = sysbvm_orderedCollection_at(gcFrame.filesToProcess, i);
+                gcFrame.inputFileName = sysbvm_filesystem_absolute(context, gcFrame.inputFileName);
+                gcFrame.sourceCode = sysbvm_interpreter_loadSourceCodeWithSolvedPath(context, gcFrame.inputFileName);
+                gcFrame.scanResult = sysbvm_scanner_scan(context, gcFrame.sourceCode);
+                if(scanOnly)
+                    sysbvm_orderedCollection_add(context, gcFrame.parseScanResults, gcFrame.scanResult);
+
+                if(parseOnly)
+                {
+                    gcFrame.parseResult = sysbvm_sysmelParser_parseTokens(context, gcFrame.sourceCode, gcFrame.scanResult);
+                    sysbvm_orderedCollection_add(context, gcFrame.parseScanResults, gcFrame.parseResult);
+                }
+            }
+
+        }
+    }
+    else
+    {
+        {
+            size_t inputFileSize = sysbvm_orderedCollection_getSize(gcFrame.filesToProcess);
+            for(size_t i = 0; i < inputFileSize; ++i)
+            {
+                gcFrame.inputFileName = sysbvm_orderedCollection_at(gcFrame.filesToProcess, i);
+                gcFrame.inputFileName = sysbvm_filesystem_absolute(context, gcFrame.inputFileName);
+                sysbvm_interpreter_loadSourceNamedWithSolvedPath(context, gcFrame.inputFileName);
+            }
+
+            sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
         }
 
-        sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
-    }
-
-    {
-        size_t inlineScriptToRunCount = sysbvm_orderedCollection_getSize(gcFrame.inlineScriptsToRun);
-        for(size_t i = 0; i < inlineScriptToRunCount; ++i)
         {
-            gcFrame.inlineScriptsToRun = sysbvm_orderedCollection_at(gcFrame.inlineScriptsToRun, i);
-            sysbvm_interpreter_evaluateScript(context, gcFrame.inlineScriptsToRun, sysbvm_string_createWithCString(context, "commandLine"), sysbvm_symbol_internWithCString(context, "sysmel"));
-        }
+            size_t inlineScriptToRunCount = sysbvm_orderedCollection_getSize(gcFrame.inlineScriptsToRun);
+            for(size_t i = 0; i < inlineScriptToRunCount; ++i)
+            {
+                gcFrame.inlineScriptsToRun = sysbvm_orderedCollection_at(gcFrame.inlineScriptsToRun, i);
+                sysbvm_interpreter_evaluateScript(context, gcFrame.inlineScriptsToRun, sysbvm_string_createWithCString(context, "commandLine"), sysbvm_symbol_internWithCString(context, "sysmel"));
+            }
 
-        sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
+            sysbvm_analysisQueue_waitPendingAnalysis(context, sysbvm_analysisQueue_getDefault(context));
+        }
     }
+
+    if(printStats)
+        sysbvm_context_printMemoryUsageStats(context);
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return 0;

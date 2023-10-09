@@ -5829,7 +5829,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_evaluateScript(sysbvm_context_t *co
     return gcFrame.result;
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceNamedWithSolvedPath(sysbvm_context_t *context, sysbvm_tuple_t filename)
+SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceCodeWithSolvedPath(sysbvm_context_t *context, sysbvm_tuple_t filename)
 {
     struct {
         sysbvm_tuple_t filename;
@@ -5838,8 +5838,6 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceNamedWithSolvedPath(sysbv
         sysbvm_tuple_t sourceName;
         sysbvm_tuple_t sourceLanguage;
         sysbvm_tuple_t sourceCode;
-        sysbvm_tuple_t sourceEnvironment;
-        sysbvm_tuple_t result;
     } gcFrame = {
         .filename = filename,
     };
@@ -5855,6 +5853,20 @@ SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceNamedWithSolvedPath(sysbv
     gcFrame.sourceName = sysbvm_filesystem_basename(context, gcFrame.filename);
     gcFrame.sourceLanguage = sysbvm_sourceCode_inferLanguageFromSourceName(context, gcFrame.sourceName);
     gcFrame.sourceCode = sysbvm_sourceCode_create(context, gcFrame.sourceString, gcFrame.sourceDirectory, gcFrame.sourceName, gcFrame.sourceLanguage);
+    SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
+    return gcFrame.sourceCode;
+}
+
+SYSBVM_API sysbvm_tuple_t sysbvm_interpreter_loadSourceNamedWithSolvedPath(sysbvm_context_t *context, sysbvm_tuple_t filename)
+{
+    struct {
+        sysbvm_tuple_t sourceCode;
+        sysbvm_tuple_t sourceEnvironment;
+        sysbvm_tuple_t result;
+    } gcFrame = {0};
+
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+    gcFrame.sourceCode = sysbvm_interpreter_loadSourceCodeWithSolvedPath(context, filename);
     gcFrame.sourceEnvironment = sysbvm_environment_createDefaultForSourceCodeEvaluation(context, gcFrame.sourceCode);
     gcFrame.result = sysbvm_interpreter_validateThenAnalyzeAndEvaluateSourceCodeWithEnvironment(context, gcFrame.sourceEnvironment, gcFrame.sourceCode);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
