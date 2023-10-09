@@ -8,6 +8,71 @@ AsmProgramEntity definition: {
         := self assembleWithoutGeneratingTargetInformation asNativeCode.
 }.
 
+AsmCallFrameInformationInstruction definition: {
+    public abstract method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void
+        := self subclassResponsibility.
+}.
+
+AsmCallFrameInformationEndPrologueInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; endPrologue
+    }.
+}.
+
+AsmCallFrameInformationBeginEpilogueInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; beginEpilogue
+    }.
+}.
+
+AsmCallFrameInformationEndEpilogueInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; endEpilogue
+    }.
+}.
+
+AsmCallFrameInformationPushRegisterInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; pushRegister: register nativeCodeDebugRegisterValue asUInt8
+    }.
+}.
+
+AsmCallFrameInformationPopRegisterInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; popRegister: register nativeCodeDebugRegisterValue asUInt8
+    }.
+}.
+
+AsmCallFrameInformationRestoreFramePointerInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; restoreFramePointer: register nativeCodeDebugRegisterValue asUInt8 offset: offset asInt32
+    }.
+}.
+
+AsmCallFrameInformationSaveFramePointerInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; saveFramePointer: register nativeCodeDebugRegisterValue asUInt8 offset: offset asInt32
+    }.
+}.
+
+AsmCallFrameInformationStackSizeAdvanceInstruction definition: {
+    public override method encodeNativeCFIWith: (encoder: NativeCodeCallFrameInformationEncoder) ::=> Void := {
+        encoder setAddress: address asUInt32; stackSizeAdvance: increment asInt32
+    }.
+}.
+
+AsmFrameDescriptionInformation definition: {
+    public method asNativeCodeCallFrameInformation => NativeCodeCallFrameInformation := {
+        let encoder := NativeCodeCallFrameInformationEncoder new.
+        encoder startAddress: startOffset asUInt32 range: (endOffset - startOffset) asUInt32.
+        instructions do: {:(AsmCallFrameInformationInstruction)each :: Void |
+            each encodeNativeCFIWith: encoder
+        }.
+
+        encoder finish
+    }.
+}.
+
 AsmStackMapLocation definition: {
     public method encodeLiveIntervalForNativeCodeWith: (encoder: NativeCodeLocationListEncoder) ::=> Void := {
         self hasValidLiveInterval ifTrue: {
@@ -95,6 +160,7 @@ AsmObjectCode definition: {
                 alignment: eachSection alignment;
                 data: eachSection data;
                 flags: eachSection convertFlagsForNativeCodeSection;
+                callFrameInformations: (eachSection frameDescriptions collect: {:(AsmFrameDescriptionInformation)frameInfo :: NativeCodeCallFrameInformation | frameInfo asNativeCodeCallFrameInformation});
                 debugSourcePositions: eachSection debugSourcePositions;
                 debugSourceNodes: eachSection debugSourceNodes;
                 debugSourceEnvironments: eachSection debugSourceEnvironments;
@@ -192,6 +258,80 @@ AsmObjectCode definition: {
             functionDefinitionsEntryPoints: convertedFunctionDefinitionsEntryPoints;
             yourself
     }.
+}.
+
+public global NativeCodeCallFrameInformation::AsmFrameDescriptionConversionFunction := (AsmFrameDescriptionInformation, UInt32, UInt8, UInt8, Int32, AsmCompilationTarget) => Void.
+public global NativeCodeCallFrameInformation::AsmFrameDescriptionConversionMap := #{
+    NativeCodeCallFrameInformation::Opcode::EndPrologue : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationEndPrologueInstruction new
+            address: address asUInt64;
+            yourself)
+    }.
+    NativeCodeCallFrameInformation::Opcode::BeginEpilogue : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationBeginEpilogueInstruction new
+            address: address asUInt64;
+            yourself)
+    }.
+    NativeCodeCallFrameInformation::Opcode::EndEpilogue : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationEndEpilogueInstruction new
+            address: address asUInt64;
+            yourself)
+    }.
+    NativeCodeCallFrameInformation::Opcode::PushRegister : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationPushRegisterInstruction new
+            address: address asUInt64;
+            register: (target registerFromNativeCodeDebugValue: register asInt32);
+            yourself)
+    }.
+    NativeCodeCallFrameInformation::Opcode::PopRegister : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationPopRegisterInstruction new
+            address: address asUInt64;
+            register: (target registerFromNativeCodeDebugValue: register asInt32);
+            yourself)
+    }.
+    NativeCodeCallFrameInformation::Opcode::RestoreFramePointer : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationRestoreFramePointerInstruction new
+            address: address asUInt64;
+            register: (target registerFromNativeCodeDebugValue: register asInt32);
+            offset: operand asInt64;
+            yourself)
+    }.
+    NativeCodeCallFrameInformation::Opcode::SaveFramePointer : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationSaveFramePointerInstruction new
+            address: address asUInt64;
+            register: (target registerFromNativeCodeDebugValue: register asInt32);
+            offset: operand asInt64;
+            yourself)
+    }.
+    NativeCodeCallFrameInformation::Opcode::StackSizeAdvance : {:(AsmFrameDescriptionInformation)cfi :(UInt32)address :(UInt8)opcode :(UInt8)register :(Int32)operand :(AsmCompilationTarget)target :: Void |
+        cfi instructions add: (AsmCallFrameInformationStackSizeAdvanceInstruction new
+            address: address asUInt64;
+            increment: operand asInt64;
+            yourself)
+    }.
+}.
+
+NativeCodeCallFrameInformation extend: {
+    public method asAsmFrameDescriptionInformationFor: (target: AsmCompilationTarget) ::=> AsmFrameDescriptionInformation := {
+        let address mutable := self startAddress.
+
+        let result := AsmFrameDescriptionInformation new
+            startOffset: address asUInt64;
+            endOffset: (address + self addressRange) asUInt64;
+            yourself.
+
+        self decodedInstructionsDo: {:(UInt8)opcode :(UInt8)register :(Int32)operand :: Void |
+            opcode = NativeCodeCallFrameInformation::Opcode::AdvancePC ifTrue: {
+                address := address + operand asUInt32.
+                return: void
+            }.
+
+            let conversionFunction => NativeCodeCallFrameInformation::AsmFrameDescriptionConversionFunction := NativeCodeCallFrameInformation::AsmFrameDescriptionConversionMap at: opcode.
+            conversionFunction(result, address, opcode, register, operand, target)
+        }.
+
+        result
+    }
 }.
 
 public global NativeCodeRelocation::AsmRelocationConversionFunction := (AsmSymbol, UInt32, Int64) => AsmObjectCodeRelocation.
@@ -405,7 +545,11 @@ NativeCode definition: {
                 }.
 
                 asmSection relocations: asmRelocations asArray
-            }
+            }.
+
+            eachSection callFrameInformations ifNotNil: {
+                asmSection frameDescriptions: (eachSection callFrameInformations collect: {:(NativeCodeCallFrameInformation)each :: AsmFrameDescriptionInformation | each asAsmFrameDescriptionInformationFor: compilationTarget })
+            }.
         }.
 
         let convertSymbolBlock := {:(NativeCodeSymbol)symbol :: AsmSymbol |

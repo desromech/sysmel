@@ -469,6 +469,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.gcLayoutBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.gcLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.arrayedCollectionType);
+    context->roots.nativeCodeCallFrameInformation = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.byteArrayType);
     context->roots.nativeCodeLocationListType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.byteArrayType);
     context->roots.nativeCodeRelocationTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.byteArrayType);
     context->roots.virtualTableLayoutType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
@@ -949,6 +950,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "machoSectionName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "machoSegmentName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
         "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolTableType,
+        "callFrameInformations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "relocations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeRelocationTableType,
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "alignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
@@ -964,6 +966,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "isMutable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "location", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeLocationListType,
         NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeCallFrameInformation, "NativeCodeCallFrameInformation", SYSBVM_NULL_TUPLE,
+        NULL);
+    sysbvm_typeAndMetatype_setFlags(context, context->roots.nativeCodeCallFrameInformation, SYSBVM_TYPE_FLAGS_NULLABLE | SYSBVM_TYPE_FLAGS_BYTES | SYSBVM_TYPE_FLAGS_FINAL, SYSBVM_TYPE_FLAGS_FINAL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeStackMapType, "NativeCodeStackMap", SYSBVM_NULL_TUPLE,
         "frameBase", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeLocationListType,
         "captureBase", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeLocationListType,

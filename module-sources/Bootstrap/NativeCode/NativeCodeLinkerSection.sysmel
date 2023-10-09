@@ -39,6 +39,7 @@ public class NativeCodeLinkerSection superclass: Object; definition: {
         
         let writePosition mutable := 0sz.
         let encoder := NativeCodeRelocationEncoder new.
+        let cfi := OrderedCollection new.
         sourceSections do: {:(NativeCodeSection)sourceSection :: Void |
             writePosition := writePosition alignedTo: sourceSection alignment.
             sourceSection isNoBits ifFalse: {
@@ -68,11 +69,19 @@ public class NativeCodeLinkerSection superclass: Object; definition: {
                 }.
             }.
 
+            ## Convert the CFIs
+            sourceSection callFrameInformations do: {:(NativeCodeCallFrameInformation)each :: Void |
+                cfi add: (each copy
+                    incrementAddressBy: writePosition asInt32;
+                    yourself)
+            }.
+
             writePosition := writePosition + sourceSection size
         }.
 
         linkedSection
             relocations: encoder finish;
+            callFrameInformations: cfi asArray;
             debugSourceNodes: debugSourceNodes finish;
             debugSourcePositions: debugSourcePositions finish;
             debugSourceEnvironments: debugSourceEnvironments finish;

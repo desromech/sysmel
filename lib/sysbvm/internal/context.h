@@ -166,6 +166,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t namespaceType;
     sysbvm_tuple_t nativeCodeType;
     sysbvm_tuple_t nativeCodeBindingLocationType;
+    sysbvm_tuple_t nativeCodeCallFrameInformation;
     sysbvm_tuple_t nativeCodeLocationListType;
     sysbvm_tuple_t nativeCodeProgramEntityType;
     sysbvm_tuple_t nativeCodeSectionType;
