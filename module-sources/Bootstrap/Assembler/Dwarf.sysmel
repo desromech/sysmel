@@ -674,7 +674,7 @@ public final class Dwarf::DebugInfoSectionOffsetAttribute superclass: Dwarf::Deb
     }.
 
     public override method writeAttributeWith: (writer: Dwarf::AsmWriter) ::=> Void := {
-        writer writeAddress: value
+        writer writeSectionRelativeOffset: value
     }.
 }.
 
@@ -889,7 +889,7 @@ Dwarf::DebugInfoEntry definition: {
         self shouldEmitSiblingAttribute ifTrue: {
             writer activeStream
                 uleb128Expression: Dwarf::DW_AT_sibling;
-                uleb128Expression: Dwarf::DW_FORM_addr
+                uleb128Expression: Dwarf::DW_FORM_ref_addr
         }.
 
         writer activeStream byte: 0u8; byte: 0u8.
@@ -1134,6 +1134,7 @@ AsmStreamBuilder extend: {
 Dwarf::AsmWriter definition: {
     public field compilationUnit => Dwarf::DebugInfoEntry.
     public field debugInfoProgramEntity => AsmProgramEntity.
+    public field dwarfSize => Size.
     public field pointerSize => Size.
 
     public field sourceObjectCode => AsmObjectCode.
@@ -1161,6 +1162,7 @@ Dwarf::AsmWriter definition: {
     public override method initialize => Void := {
         super initialize.
         version := 4u8.
+        dwarfSize := 4sz.
         stringTable := OrderedCollection new.
         stringTableDictionary := Dictionary new.
         debugInformationEntrySymbolDictionary := ObjectPointerDictionary new.
@@ -1206,7 +1208,7 @@ Dwarf::AsmWriter definition: {
             dwarf::debugFrameSection;
             yourself.
 
-        compilationUnit stmtList: (debugLineStart immediateSectionRelative: pointerSize) asConstantExpression.
+        compilationUnit stmtList: (debugLineStart immediateSectionRelative: dwarfSize) asConstantExpression.
 
         sourceObjectCode ifNotNil: {
             ## Generate the line information.
@@ -1218,6 +1220,7 @@ Dwarf::AsmWriter definition: {
             ## Generate the CFI.
             generateCFI ifTrue: {
                 Dwarf::CallFrameInformationWriter new
+                    dwarfSize: dwarfSize;
                     compilationTarget: debugInfoProgramEntity compilationTarget;
                     writeCallFrameInformationForSections: sourceObjectCode sections ontoStreamBuilder: debugFrameStream pointerSize: pointerSize
             }
@@ -1243,7 +1246,11 @@ Dwarf::AsmWriter definition: {
 
     public method writeString: (string: String) ::=> Void := {
         let stringSymbol => AsmSymbol := stringTableDictionary at: string.
-        activeStream expression: (stringSymbol immediateSectionRelative: pointerSize) asConstantExpression size: pointerSize
+        activeStream expression: (stringSymbol immediateSectionRelative: dwarfSize) asConstantExpression size: dwarfSize
+    }.
+
+    public method writeSectionRelativeOffset: (address: AsmConstantExpression) ::=> Void := {
+        activeStream expression: address size: dwarfSize
     }.
 
     public method writeAddress: (address: AsmConstantExpression) ::=> Void := {
@@ -1252,7 +1259,7 @@ Dwarf::AsmWriter definition: {
 
     public method writeReferenceToDIE: (die: Dwarf::DebugInfoEntry) ::=> Void := {
         let symbol => AsmSymbol := debugInformationEntrySymbolDictionary at: die.
-        activeStream expression: (symbol immediateSectionRelative: pointerSize) asConstantExpression size: pointerSize
+        activeStream expression: (symbol immediateSectionRelative: dwarfSize) asConstantExpression size: dwarfSize
     }.
 
     public method recordAbbreviation: (die: Dwarf::DebugInfoEntry) ::=> Void := {
@@ -1309,7 +1316,7 @@ Dwarf::AsmWriter definition: {
             yourself.
         activeStream := debugInfoStream.
 
-        pointerSize = 4sz ifTrue: {
+        dwarfSize = 4sz ifTrue: {
             activeStream dwordExpression: debugInfoEnd dword asConstantExpression - debugInfoStart dword asConstantExpression.
         } ifFalse: {
             activeStream dword: 16rFFFFFFFF u32.
@@ -1321,7 +1328,7 @@ Dwarf::AsmWriter definition: {
         version = 4u8 ifTrue: {
             activeStream
                 word: 4u16;
-                expression: (abbreviationsStart immediateSectionRelative: pointerSize) asConstantExpression size: pointerSize;
+                expression: (abbreviationsStart immediateSectionRelative: dwarfSize) asConstantExpression size: dwarfSize;
                 byte: pointerSize asUInt8.
         }.
 
@@ -1330,7 +1337,7 @@ Dwarf::AsmWriter definition: {
                 word: 4u16;
                 byteExpression: Dwarf::DW_UT_compile;
                 byte: pointerSize asUInt8;
-                expression: (abbreviationsStart immediateSectionRelative: pointerSize) asConstantExpression size: pointerSize.
+                expression: (abbreviationsStart immediateSectionRelative: dwarfSize) asConstantExpression size: dwarfSize.
         }.
 
         self writeDebugInfoEntry: compilationUnit.
@@ -1408,12 +1415,16 @@ AsmProgramEntity extend: {
 }.
 
 Dwarf::SectionWriter definition: {
+    public field dwarfSize => Size.
     public field pointerSize => Size.
+    public field dwarfVersion => UInt16.
     private field programRelocations => OrderedCollection.
     public field out => ByteStream.
 
     public override method initialize => Void := {
         programRelocations := OrderedCollection new.
+        dwarfSize := 4sz.
+        dwarfVersion := 4u16.
     }.
 
     public method alignTo: (alignment: Size) extraSize: (extraSize: Size) paddingWith: (padding: UInt8) ::=> Void := {
@@ -1449,6 +1460,12 @@ Dwarf::SectionWriter definition: {
         out nextPutUInt64: value
     }.
 
+    public method dwarfPointerWord: (value: UInt64) ::=> Void := {
+        dwarfSize = 4sz
+            ifTrue: (self dword: value asUInt32)
+            ifFalse: (self qword: value)
+    }.
+
     public method pointerWord: (value: UInt64) ::=> Void := {
         pointerSize = 4sz
             ifTrue: (self dword: value asUInt32)
@@ -1460,7 +1477,7 @@ Dwarf::SectionWriter definition: {
     }.
 
     public method initialLength: (length: UInt64) ::=> Void := {
-        pointerSize = 4sz ifTrue: {
+        dwarfSize = 4sz ifTrue: {
             self dword: length asUInt32.
         } ifFalse: {
             self
@@ -1470,7 +1487,7 @@ Dwarf::SectionWriter definition: {
     }.
 
     public method initialLengthSize ::=> Size
-        := pointerSize = 4sz ifTrue: 4sz ifFalse: 12sz.
+        := dwarfSize = 4sz ifTrue: 4sz ifFalse: 12sz.
 
     public method uleb128: (value: UInt64) ::=> Void := {
         let currentValue mutable := value.
@@ -1607,16 +1624,16 @@ Dwarf::DebugLineWriter definition: {
         let program := self generateProgramForSections: sections.
 
         out := ByteStream new.
-        pointerSize = 4sz ifTrue: {
-            self dword: (programHeader size + program size + pointerSize + 2sz) asUInt32.
+        dwarfSize = 4sz ifTrue: {
+            self dword: (programHeader size + program size + dwarfSize + 2sz) asUInt32.
         } ifFalse: {
             self
                 dword: 16rFFFFFFFF u32;
-                qword: (programHeader size + program size + pointerSize + 2sz) asUInt64.
+                qword: (programHeader size + program size + dwarfSize + 2sz) asUInt64.
         }.
 
-        self word: 4u16.
-        pointerSize = 4sz ifTrue: {
+        self word: dwarfVersion.
+        dwarfSize = 4sz ifTrue: {
             self dword: programHeader size asUInt32.
         } ifFalse: {
             self qword: programHeader size asUInt64.
@@ -1641,16 +1658,16 @@ Dwarf::DebugLineWriter definition: {
         let program := self generateProgramForSections: sections.
 
         out := ByteStream new.
-        pointerSize = 4sz ifTrue: {
-            self dword: (programHeader size + program size + pointerSize + 2sz) asUInt32.
+        dwarfSize = 4sz ifTrue: {
+            self dword: (programHeader size + program size + dwarfSize + 2sz) asUInt32.
         } ifFalse: {
             self
                 dword: 16rFFFFFFFF u32;
-                qword: (programHeader size + program size + pointerSize + 2sz) asUInt64.
+                qword: (programHeader size + program size + dwarfSize + 2sz) asUInt64.
         }.
 
-        self word: 4u16.
-        pointerSize = 4sz ifTrue: {
+        self word: dwarfVersion.
+        dwarfSize = 4sz ifTrue: {
             self dword: programHeader size asUInt32.
         } ifFalse: {
             self qword: programHeader size asUInt64.
@@ -1843,12 +1860,11 @@ Dwarf::DebugLineWriter definition: {
     public method endSequence => Void := {
         self byte: 0u8; uleb128: 1u64; byte: Dwarf::DW_LNE_end_sequence value asUInt8
     }.
-
-
 }.
 
 public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionWriter; definition: {
     public field compilationTarget => AsmCompilationTarget.
+    public field isEHFrame => Boolean.
     public field cieVersion => UInt8.
     public field codeAlignmentFactor => UInt64.
     public field dataAlignmentFactor => Int64.
@@ -1935,7 +1951,7 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
         relocationBaseOffset := out size + self initialLengthSize.
         let cieBytes := self makeBytesDuring: {:: Void |
             self
-                pointerWord: -1u64; ## CIE_id
+                dwarfPointerWord: -1u64; ## CIE_id
                 byte: cieVersion; ## CIE version;
                 cstring: ""; ## Augmentation;
                 byte: self pointerSize asUInt8; ## addressSize
@@ -1961,7 +1977,7 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
         relocationBaseOffset := out size + self initialLengthSize.
         let fdeBytes := self makeBytesDuring: {:: Void |
             self
-                sectionRelativePointer: targetSectionSymbol offset: 0i64; ## CIE
+                sectionRelativeDwarfPointer: targetSectionSymbol offset: 0i64; ## CIE
                 pointer: sectionSymbol offset: frameDescription startOffset asInt64;
                 pointerWord: (frameDescription endOffset - frameDescription startOffset) asUInt64.
 
@@ -1974,8 +1990,8 @@ public final class Dwarf::CallFrameInformationWriter superclass: Dwarf::SectionW
         out nextPutAll: fdeBytes.
     }.
 
-    public method sectionRelativePointer: (address: AsmSymbol) offset: (offset: Int64) ::=> Void := {
-        pointerSize = 4sz ifTrue: {
+    public method sectionRelativeDwarfPointer: (address: AsmSymbol) offset: (offset: Int64) ::=> Void := {
+        dwarfSize = 4sz ifTrue: {
             cfiRelocations add: (AsmObjectCodeRelocationSectionRelativeInt32 new
                 symbol: address;
                 offset: relocationBaseOffset + out size;

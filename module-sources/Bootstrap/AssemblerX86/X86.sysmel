@@ -1635,6 +1635,13 @@ AsmObjectCodeRelocationAbsoluteInt32 extend: {
 }.
 
 AsmObjectCodeRelocationSectionRelativeInt32 extend: {
+    public override method convertIntoX86_64RelaWithSymbolTable: (symbolTable: Elf64::SymbolTable) ::=> Elf64::Rela
+        := Elf64::Rela new
+            offset: offset asUInt64;
+            symbol: (symbolTable indexOfSymbol: symbol) type: Elf::X86_64::Rel::A32;
+            addend: addend asInt64 + symbol privateAddend;
+            yourself.
+
     public override method x86::coffRelocationType => UInt16
         := Coff::RelocationType::I386::Secrel.
 
