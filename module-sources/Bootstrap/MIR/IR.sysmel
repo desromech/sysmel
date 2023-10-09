@@ -295,7 +295,6 @@ MIRValue definition: {
     }.
 
     public virtual method debugSourcePosition => SourcePosition := nil.
-    public virtual method debugSourceNode => ASTNode := nil.
     public virtual method debugSourceEnvironment => Environment := nil.
 
     public virtual method type => Type
@@ -446,7 +445,6 @@ public final class MIRBasicBlock superclass: MIRLocalValue.
 
 public abstract class MIRProgramEntity superclass: MIRValue; definition: {
     public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
     public field name => Symbol.
@@ -525,7 +523,6 @@ public final class MIRImportedFunction superclass: MIRImportedProgramEntity; def
 
 MIRLocalValue definition: {
     public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
     public field name => Symbol.
@@ -2052,7 +2049,6 @@ MIRFunction definition: {
                 operands: (Array with: incomingValue);
                 targetPhi: instruction;
                 debugSourcePosition: instruction debugSourcePosition;
-                debugSourceNode: instruction debugSourceNode;
                 debugSourceEnvironment: instruction debugSourceEnvironment;
                 yourself.
             incomingValue replaceUser: instruction with: moveInstruction.
@@ -2104,7 +2100,6 @@ public final class MIRBlockBuilder superclass: Object; definition: {
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
     __Meta__ definition: {
@@ -2116,7 +2111,6 @@ public final class MIRBlockBuilder superclass: Object; definition: {
         block addInstruction: instruction before: insertionPoint.
         instruction
             debugSourcePosition: debugSourcePosition;
-            debugSourceNode: debugSourceNode;
             debugSourceEnvironment: debugSourceEnvironment.
         instruction
     }.
@@ -2631,7 +2625,6 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
     MIRFunction extend: {
@@ -2658,7 +2651,6 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
     public method setValueDebugInfo: (value: MIRLocalValue) ::=> Void := {
         value
             debugSourcePosition: debugSourcePosition;
-            debugSourceNode: debugSourceNode;
             debugSourceEnvironment: debugSourceEnvironment
     }.
 

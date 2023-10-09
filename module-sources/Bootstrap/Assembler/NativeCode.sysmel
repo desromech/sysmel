@@ -162,7 +162,6 @@ AsmObjectCode definition: {
                 flags: eachSection convertFlagsForNativeCodeSection;
                 callFrameInformations: (eachSection frameDescriptions collect: {:(AsmFrameDescriptionInformation)frameInfo :: NativeCodeCallFrameInformation | frameInfo asNativeCodeCallFrameInformation});
                 debugSourcePositions: eachSection debugSourcePositions;
-                debugSourceNodes: eachSection debugSourceNodes;
                 debugSourceEnvironments: eachSection debugSourceEnvironments;
                 yourself.
 
@@ -211,7 +210,6 @@ AsmObjectCode definition: {
                 stackMap: (each stackMap ifNotNil: each stackMap asNativeCodeStackMap);
 
                 debugSourcePosition: each debugSourcePosition;
-                debugSourceNode: each debugSourceNode;
                 debugSourceEnvironment: each debugSourceEnvironment;
                 yourself
         }.
@@ -503,7 +501,6 @@ NativeCode definition: {
                 nobits: eachSection isNoBits;
                 tls: eachSection isTLS;
                 debugSourcePositions: eachSection debugSourcePositions;
-                debugSourceNodes: eachSection debugSourceNodes;
                 debugSourceEnvironments: eachSection debugSourceEnvironments;
                 yourself.
             sectionTable at: eachSection put: asmSection.
@@ -577,7 +574,6 @@ NativeCode definition: {
                     stackMap: (each stackMap ifNotNil: (each stackMap asAsmStackMapWithTextSection: textSection target: compilationTarget));
 
                     debugSourcePosition: each debugSourcePosition;
-                    debugSourceNode: each debugSourceNode;
                     debugSourceEnvironment: each debugSourceEnvironment;
                     yourself
             });

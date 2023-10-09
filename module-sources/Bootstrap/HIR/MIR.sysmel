@@ -166,7 +166,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 name: functionDefinition name asCapturelessUncheckedEntryPointNameSymbol;
                 debugSourcePosition: functionDefinition sourcePosition;
-                debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
                 sourceProgramEntity: functionDefinition sourceObject;
                 isNoGC: functionDefinition isNoGC;
@@ -185,7 +184,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                     ifTrue: functionDefinition name asCapturelessUncheckedEntryPointNameSymbol
                     ifFalse: importedSymbols first);
                 debugSourcePosition: functionDefinition sourcePosition;
-                debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
                 compilationTarget: compilationTarget;
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
@@ -205,7 +203,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 name: functionDefinition name asUncheckedEntryPointNameSymbol;
                 debugSourcePosition: functionDefinition sourcePosition;
-                debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
                 sourceProgramEntity: functionDefinition sourceObject;
                 isNoGC: functionDefinition isNoGC;
@@ -232,7 +229,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 compilationTarget: compilationTarget;
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 debugSourcePosition: functionDefinition sourcePosition;
-                debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
                 sourceProgramEntity: functionDefinition sourceObject;
                 yourself.
@@ -246,7 +242,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 callingConvention: compilationTarget defaultCallingConvention;
                 name: functionDefinition name asCheckedEntryPointNameSymbol;
                 debugSourcePosition: functionDefinition sourcePosition;
-                debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
                 sourceProgramEntity: functionDefinition sourceObject;
                 isNoGC: functionDefinition isNoGC;
@@ -269,7 +264,6 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
                 compilationTarget: compilationTarget;
                 callingConvention: (compilationTarget callingConventionNamed: functionDefinition callingConvention);
                 debugSourcePosition: functionDefinition sourcePosition;
-                debugSourceNode: functionDefinition sourceASTNode;
                 debugSourceEnvironment: functionDefinition sourceEnvironment;
                 sourceProgramEntity: functionDefinition sourceObject;
                 yourself.
@@ -753,7 +747,6 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
             let mirBlock := (MIRBasicBlock forContext: self mirContext)
                 name: eachBlock name;
                 debugSourcePosition: eachBlock sourcePosition;
-                debugSourceNode: eachBlock sourceASTNode;
                 debugSourceEnvironment: eachBlock sourceEnvironment;
                 yourself.
 
@@ -792,7 +785,6 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
                 function: mirFunction;
                 insertionPoint: incomingMirBlock lastInstruction;
                 debugSourcePosition: hirPhi sourcePosition;
-                debugSourceNode: hirPhi sourceASTNode;
                 debugSourceEnvironment: hirPhi sourceEnvironment;
                 yourself.
 
@@ -933,7 +925,6 @@ public final class HIRFunctionDefinitionMIRCodeGenerator superclass: HIRMIRCodeG
 MIRFunctionBuilder extend: {
     public method useDebugInfoOfHIRValue: (value: HIRValue) ::=> Void := {
         debugSourcePosition := value sourcePosition.
-        debugSourceNode := value sourceASTNode.
         debugSourceEnvironment := value sourceEnvironment.
     }
 }.
@@ -941,7 +932,6 @@ MIRFunctionBuilder extend: {
 MIRBlockBuilder extend: {
     public method useDebugInfoOfHIRValue: (value: HIRValue) ::=> Void := {
         debugSourcePosition := value sourcePosition.
-        debugSourceNode := value sourceASTNode.
         debugSourceEnvironment := value sourceEnvironment.
     }
 }.

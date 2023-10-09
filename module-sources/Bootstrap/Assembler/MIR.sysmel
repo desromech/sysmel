@@ -1,7 +1,6 @@
 AsmStreamBuilder extend: {
     public method useDebugInfoOfMIRValue: (value: MIRValue) ::=> Void := {
         debugSourcePosition := value debugSourcePosition.
-        debugSourceNode := value debugSourceNode.
         debugSourceEnvironment := value debugSourceEnvironment.
     }
 }.
@@ -391,7 +390,6 @@ public final class MIRFunctionAsmCodeGenerator superclass: MIRAsmCodeGenerator; 
         stackMapLocationDictionary := ObjectPointerDictionary new.
         asmFunction
             debugSourcePosition: functionToGenerate debugSourcePosition;
-            debugSourceNode: functionToGenerate debugSourceNode;
             debugSourceEnvironment: functionToGenerate debugSourceEnvironment;
             stackMap: stackMap;
             sourceProgramEntity: functionToGenerate sourceProgramEntity;
@@ -1086,7 +1084,6 @@ public final class MIRGlobalDataAsmCodeGenerator superclass: MIRAsmCodeGenerator
         asmVariable := moduleGenerator targetModule newProgramEntity.
         asmVariable
             debugSourcePosition: globalToGenerate debugSourcePosition;
-            debugSourceNode: globalToGenerate debugSourceNode;
             debugSourceEnvironment: globalToGenerate debugSourceEnvironment;
             sourceProgramEntity: globalToGenerate sourceProgramEntity;
             contentSymbol: symbol. 

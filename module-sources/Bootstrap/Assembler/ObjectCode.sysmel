@@ -1,5 +1,3 @@
-let TrackingFullDebugInfoTuple := false.
-
 public final class AsmObjectCodeSection superclass: Object.
 public abstract class AsmObjectCodeStream superclass: Object.
 public final class AsmObjectCodeSizeStream superclass: AsmObjectCodeStream.
@@ -139,11 +137,9 @@ AsmObjectCodeSection definition: {
     public field currentFrameDescription => AsmFrameDescriptionInformation.
 
     public field debugSourcePositions => OrderedOffsetTable.
-    public field debugSourceNodes => OrderedOffsetTable.
     public field debugSourceEnvironments => OrderedOffsetTable.
 
     public field newDebugSourcePositions => OrderedOffsetTableBuilder.
-    public field newDebugSourceNodes => OrderedOffsetTableBuilder.
     public field newDebugSourceEnvironments => OrderedOffsetTableBuilder.
 
     public override method initialize => Void := {
@@ -338,16 +334,11 @@ AsmObjectCodeSection definition: {
         destination replaceBytesFrom: destinationOffset count: data size with: data
     }.
 
-    public method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
+    public method recordDebugSourcePosition: (sourcePosition: SourcePosition) environment: (environment: Environment) ::=> Void := {
         let pc := writeOffset asUInt32.
 
-        TrackingFullDebugInfoTuple ifTrue: {
-            newDebugSourceNodes ifNil: (newDebugSourceNodes := OrderedOffsetTableBuilder new).
-            newDebugSourceNodes withOffset: pc addValue: node.
-
-            newDebugSourceEnvironments ifNil: (newDebugSourceEnvironments := OrderedOffsetTableBuilder new).
-            newDebugSourceEnvironments withOffset: pc addValue: environment.
-        }.
+        newDebugSourceEnvironments ifNil: (newDebugSourceEnvironments := OrderedOffsetTableBuilder new).
+        newDebugSourceEnvironments withOffset: pc addValue: environment.
 
         newDebugSourcePositions ifNil: (newDebugSourcePositions := OrderedOffsetTableBuilder new).
         newDebugSourcePositions withOffset: pc addValue: sourcePosition.
@@ -357,15 +348,9 @@ AsmObjectCodeSection definition: {
         frameDescriptions := newFrameDescriptions asArray.
         newFrameDescriptions := nil.
 
-        TrackingFullDebugInfoTuple ifTrue: {
-            newDebugSourceNodes ifNotNil: {
-                debugSourceNodes := newDebugSourceNodes finish.
-                newDebugSourceNodes := nil.
-            }.
-            newDebugSourceEnvironments ifNotNil: {
-                debugSourceEnvironments := newDebugSourceEnvironments finish.
-                newDebugSourceEnvironments := nil.
-            }.
+        newDebugSourceEnvironments ifNotNil: {
+            debugSourceEnvironments := newDebugSourceEnvironments finish.
+            newDebugSourceEnvironments := nil.
         }.
 
         newDebugSourcePositions ifNotNil: {
@@ -450,7 +435,6 @@ public class AsmObjectCodeProgramEntity superclass: Object; definition: {
     public field stackMap => AsmStackMap.
 
     public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 }.
 
@@ -910,7 +894,7 @@ AsmObjectCodeStream definition: {
         activeSection := objectCodeBuilder getOrCreateSectionNamed: name machoSectionName: machoSectionName machoSegmentName: machoSegmentName
     }.
 
-    public virtual method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
+    public virtual method recordDebugSourcePosition: (sourcePosition: SourcePosition) environment: (environment: Environment) ::=> Void := {
         ## By default do nothing.
     }.
 
@@ -1180,8 +1164,8 @@ AsmObjectCodeSizeStream definition: {
 }.
 
 AsmObjectCodeWriteStream definition: {
-    public override method recordDebugSourcePosition: (sourcePosition: SourcePosition) node: (node: ASTNode) environment: (environment: Environment) ::=> Void := {
-        activeSection recordDebugSourcePosition: sourcePosition node: node environment: environment
+    public override method recordDebugSourcePosition: (sourcePosition: SourcePosition) environment: (environment: Environment) ::=> Void := {
+        activeSection recordDebugSourcePosition: sourcePosition environment: environment
     }.
 
     public override method recordProgramEntity: (programEntity: AsmObjectCodeProgramEntity) ::=> Void := {

@@ -931,7 +931,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "trampolineTarget", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeSymbolType,
         "stackMap", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeStackMapType,
         "debugSourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
-        "debugSourceNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "debugSourceEnvironment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSymbolType, "NativeCodeSymbol", SYSBVM_NULL_TUPLE,
@@ -959,7 +958,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "data", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
 
-        "debugSourceNodes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.orderedOffsetTableType,
         "debugSourcePositions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC| SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         NULL);

@@ -2,7 +2,6 @@ public class NativeCodeLinkerSection superclass: Object; definition: {
     public field sourceSections => OrderedCollection.
     public field linkedSection => NativeCodeSection.
 
-    public field debugSourceNodes => OrderedOffsetTableBuilder.
     public field debugSourcePositions => OrderedOffsetTableBuilder.
     public field debugSourceEnvironments => OrderedOffsetTableBuilder.
 
@@ -11,7 +10,6 @@ public class NativeCodeLinkerSection superclass: Object; definition: {
         linkedSection := NativeCodeSection new.
         linkedSection alignment: 1sz.
 
-        debugSourceNodes := OrderedOffsetTableBuilder new.
         debugSourcePositions := OrderedOffsetTableBuilder new.
         debugSourceEnvironments := OrderedOffsetTableBuilder new.
     }.
@@ -48,9 +46,6 @@ public class NativeCodeLinkerSection superclass: Object; definition: {
                 }
             }.
 
-            sourceSection debugSourceNodes ifNotNil: {
-                debugSourceNodes addOffsetTable: sourceSection debugSourceNodes withOffset: writePosition asUInt32
-            }.
             sourceSection debugSourcePositions ifNotNil: {
                 debugSourcePositions addOffsetTable: sourceSection debugSourcePositions withOffset: writePosition asUInt32
             }.
@@ -82,7 +77,6 @@ public class NativeCodeLinkerSection superclass: Object; definition: {
         linkedSection
             relocations: encoder finish;
             callFrameInformations: cfi asArray;
-            debugSourceNodes: debugSourceNodes finish;
             debugSourcePositions: debugSourcePositions finish;
             debugSourceEnvironments: debugSourceEnvironments finish;
             yourself

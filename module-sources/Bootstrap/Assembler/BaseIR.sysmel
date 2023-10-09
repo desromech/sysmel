@@ -14,7 +14,6 @@ public class AsmStreamElement superclass: Object; definition: {
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
     public virtual method isLabel => Boolean := false.
@@ -33,7 +32,7 @@ public class AsmStreamElement superclass: Object; definition: {
     public virtual method isFormattedWithIndentation => Boolean := true.
 
     public virtual method recordDebugInfoOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void := {
-        stream recordDebugSourcePosition: debugSourcePosition node: debugSourceNode environment: debugSourceEnvironment
+        stream recordDebugSourcePosition: debugSourcePosition environment: debugSourceEnvironment
     }.
 
     public abstract method writeOnObjectCodeStream: (stream: AsmObjectCodeStream) ::=> Void
@@ -1587,7 +1586,6 @@ public final class AsmStreamBuilder superclass: Object; definition: {
 
     ## Debugging information
     public field debugSourcePosition => SourcePosition.
-    public field debugSourceNode => ASTNode.
     public field debugSourceEnvironment => Environment.
 
     public method addElement: (element: AsmStreamElement) ::=> element __type__ := {
@@ -1595,7 +1593,6 @@ public final class AsmStreamBuilder superclass: Object; definition: {
 
         element
             debugSourcePosition: debugSourcePosition;
-            debugSourceNode: debugSourceNode;
             debugSourceEnvironment: debugSourceEnvironment;
             yourself
     }.
@@ -2031,7 +2028,6 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
                 trampolineTarget: trampolineTarget;
                 stackMap: stackMap;
                 debugSourcePosition: debugSourcePosition;
-                debugSourceNode: debugSourceNode;
                 debugSourceEnvironment: debugSourceEnvironment;
                 yourself)
         }.

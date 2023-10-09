@@ -301,15 +301,10 @@ FunctionBytecodeAssembler definition: {
     }.
 
     public method withASTNode: (node: ASTNode) do: aBlock := {
-        let oldSourceNode := self sourceASTNode.
         let oldSourcePosition := self sourcePosition.
-
-        self sourceASTNode: node.
         self sourcePosition: node sourcePosition.
 
         let result := aBlock().
-
-        self sourceASTNode: oldSourceNode.
         self sourcePosition: oldSourcePosition.
 
         result
