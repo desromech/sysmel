@@ -536,6 +536,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.applyWithArgumentsSelector = sysbvm_symbol_internWithCString(context, "():");
 
     context->roots.primitiveNamedSelector = sysbvm_symbol_internWithCString(context, "primitive:");
+    context->roots.keepSourceDefinitionSelector = sysbvm_symbol_internWithCString(context, "keepSourceDefinition");
 
     context->roots.coerceValueSelector = sysbvm_symbol_internWithCString(context, "coerceValue:");
     context->roots.defaultValueSelector = sysbvm_symbol_internWithCString(context, "defaultValue");
@@ -786,6 +787,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "pragmaList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "innerFunctionList", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.orderedCollectionType,
         "primitiveName", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolType,
+        "keepSourceDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "returnTypeExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.localAnalysisEnvironmentType = sysbvm_context_createIntrinsicClass(context, "LocalAnalysisEnvironment", context->roots.analysisEnvironmentType,

@@ -2,12 +2,14 @@ TypeSlot
     withSelector: #generateGetterWithPointerLikeReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
         let: #SlotType with: (self __slotNamedAt__: #type).
         ownerType withSelector: self getterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :: SlotType |
+            <keepSourceDefinition>
             (RawTuple::refTypeSlotAt:)(receiver, self)
         } makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging recompileAndOptimize)
     };
     withSelector: #generateSetterWithPointerLikeReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
         let: #SlotType with: (self __slotNamedAt__: #type).
         ownerType withSelector: self setterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :(SlotType)value :: Void |
+            <keepSourceDefinition>
             (RawTuple::refTypeSlotAt:put:)(receiver, self, value)
         } makeFinal makeAlwaysInline makeWithoutSourceDebugging recompileAndOptimize)
     }.

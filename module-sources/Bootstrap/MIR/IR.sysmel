@@ -2709,6 +2709,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
 
     MIRBlockBuilder
         withSelector: (lowerOperationNameString -- ":type:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)operand :(Type)type :: MIRInstruction |
+            <keepSourceDefinition>
             self operation: operation with: operand type: type.
         } makeFinal recompileAndOptimize.
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
@@ -2754,6 +2755,7 @@ public final class MIRFunctionBuilder superclass: Object; definition: {
 
     MIRBlockBuilder
         withSelector: (lowerOperationNameString -- ":with:type:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)left :(MIRValue)right :(Type)type :: MIRInstruction |
+            <keepSourceDefinition>
             self operation: operation with: left with: right type: type.
         } makeFinal recompileAndOptimize.
     __OwnerProgramEntity__ setPublicSymbol: globalName value: operation
@@ -2801,9 +2803,11 @@ public global MIR::ComparisonOperationToBranchMap := Dictionary new.
 
     MIRBlockBuilder
         withSelector: (lowerOperationNameString -- ":with:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)left :(MIRValue)right :: MIRInstruction |
+            <keepSourceDefinition>
             self operation: operation with: left with: right type: Boolean.
         } makeFinal recompileAndOptimize;
         withSelector: (lowerOperationNameString -- ":with:branchIfTrue:branchIfFalse:") asSymbol addMethod: {:(MIRBlockBuilder)self :(MIRValue)left :(MIRValue)right :(MIRValue)trueDestination :(MIRValue)falseDestination :: MIRInstruction |
+            <keepSourceDefinition>
             self operation: branchOperation with: left with: right with: trueDestination with: falseDestination.
         } makeFinal recompileAndOptimize.
 

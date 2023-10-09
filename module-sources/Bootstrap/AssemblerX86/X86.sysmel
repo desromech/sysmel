@@ -935,6 +935,7 @@ AsmX86InstructionDefinition definition: {
         ## Zero operand case.
         if: operandCount = 0sz then: {
             let method := {:(AsmStreamBuilder)builder :: AsmX86InstructionWithoutOperands |
+                <keepSourceDefinition>
                 builder addElement: (AsmX86InstructionWithoutOperands new
                     definition: self;
                     yourself)
@@ -948,6 +949,7 @@ AsmX86InstructionDefinition definition: {
         ## Single operand case.
         if: operandCount = 1sz then: {
             let method := {:(AsmStreamBuilder)builder :(AsmInstructionOperand)operand :: AsmX86InstructionWithSingleOperand |
+                <keepSourceDefinition>
                 builder addElement: (AsmX86InstructionWithSingleOperand new
                     definition: self;
                     firstOperand: operand;
@@ -962,6 +964,7 @@ AsmX86InstructionDefinition definition: {
         ## Two operand case.
         if: operandCount = 2sz then: {
             let method := {:(AsmStreamBuilder)builder :(AsmInstructionOperand)firstOperand :(AsmInstructionOperand)secondOperand :: AsmX86InstructionWithTwoOperands |
+                <keepSourceDefinition>
                 builder addElement: (AsmX86InstructionWithTwoOperands new
                     definition: self;
                     firstOperand: firstOperand;

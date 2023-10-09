@@ -1265,6 +1265,9 @@ static void sysbvm_functionDefinition_analyze(sysbvm_context_t *context, sysbvm_
 
     (*functionDefinition)->bytecode = SYSBVM_NULL_TUPLE;
     (*functionDefinition)->nativeCodeDefinition = SYSBVM_NULL_TUPLE;
+    if(!sysbvm_tuple_boolean_decode(gcFrame.analysisEnvironmentObject->keepSourceDefinition))
+        (*functionDefinition)->sourceDefinition = SYSBVM_NULL_TUPLE;
+
     sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(context, (*functionDefinition));
 
     SYSBVM_STACKFRAME_POP_SOURCE_POSITION(sourcePositionRecord);
@@ -1277,13 +1280,13 @@ SYSBVM_API void sysbvm_functionDefinition_ensureAnalysis(sysbvm_context_t *conte
     if(!sysbvm_tuple_isKindOf(context, (sysbvm_tuple_t)*functionDefinition, context->roots.functionDefinitionType))
         return;
 
-    sysbvm_functionSourceDefinition_t *sourceDefinition = (sysbvm_functionSourceDefinition_t *)(*functionDefinition)->sourceDefinition;
-    if(!sourceDefinition->argumentNodes || !sourceDefinition->bodyNode)
-        return;
-
     // Is it already analyzed?
     if( ((*functionDefinition)->bytecode && ((sysbvm_functionBytecode_t*)(*functionDefinition)->bytecode)->captures) ||
         ((*functionDefinition)->sourceAnalyzedDefinition && ((sysbvm_functionSourceAnalyzedDefinition_t*)(*functionDefinition)->sourceAnalyzedDefinition)->captures) )
+        return;
+
+    sysbvm_functionSourceDefinition_t *sourceDefinition = (sysbvm_functionSourceDefinition_t *)(*functionDefinition)->sourceDefinition;
+    if(!sourceDefinition->argumentNodes || !sourceDefinition->bodyNode)
         return;
 
     sysbvm_functionDefinition_analyze(context, functionDefinition);

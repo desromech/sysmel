@@ -2667,6 +2667,7 @@ SimpleFunctionType
 
     SelfType
         withSelector: #printOn: addMethod: {:(SelfType)self :(Stream)stream :: Void |
+            <keepSourceDefinition>
             stream nextPutAll: self printString
         } makeOverride makeFinal recompileAndOptimize.
 

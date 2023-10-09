@@ -71,6 +71,7 @@ typedef struct sysbvm_functionAnalysisEnvironment_s
     sysbvm_tuple_t pragmaList;
     sysbvm_tuple_t innerFunctionList;
     sysbvm_tuple_t primitiveName;
+    sysbvm_tuple_t keepSourceDefinition;
     sysbvm_tuple_t returnTypeExpression;
 } sysbvm_functionAnalysisEnvironment_t;
 

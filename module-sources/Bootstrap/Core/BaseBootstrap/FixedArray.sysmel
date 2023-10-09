@@ -24,17 +24,20 @@ public class FixedArrayType superclass: ValueType; definition: {
 
         self
             withSelector: #at: addMethod: {:(ReceiverType)self :(Size)index :: elementType |
+                <keepSourceDefinition>
                 <primitive: #FixedArray::at:>
                 if: index >= size then: error("Index is out of bounds.").
 
                 (RawTuple::refSlotAt:)(self, index)
             } makeFinal recompileAndOptimize;
             withSelector: #"[]:" addMethod: {:(ReceiverType)self :(Size)index :: elementReferenceType |
+                <keepSourceDefinition>
                 <primitive: #FixedArray::refAt:>
                 if: index >= size then: error("Index is out of bounds.").
                 error("TODO: Implement reference at").
             } makeFinal recompileAndOptimize;
             withSelector: #at:put: addMethod: {:(ReceiverType)self :(Size)index :(elementType)value :: Void |
+                <keepSourceDefinition>
                 <primitive: #FixedArray::at:put:>
                 if: index >= size then: error("Index is out of bounds.").
 
@@ -57,6 +60,7 @@ public class FixedArrayType superclass: ValueType; definition: {
         let defaultValue := elementType defaultValue.
         let ReceiverType := self asReceiverType.
         basicInitializeMethod := {:(ReceiverType)self :: Void |
+            <keepSourceDefinition>
             <primitive: #zeroInitialization>
             if: ObjectModel::isLogical() then: {
                 let i mutable := 0sz.

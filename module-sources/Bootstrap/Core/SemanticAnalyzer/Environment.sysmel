@@ -283,8 +283,11 @@ FunctionAnalysisEnvironment definition: {
     public eager virtual final method addPragma: (pragma: Pragma) ::=> Void := {
         pragmaList add: pragma.
         (pragma selector = #primitive:) && self primitiveName isNil ifTrue: {
-            self primitiveName: pragma arguments first
-        }
+            self primitiveName: pragma arguments first.
+        }.
+        pragma selector = #keepSourceDefinition ifTrue: {
+            keepSourceDefinition := true
+        }.
     }.
 
     public eager virtual final method addInnerFunction: (innerFunction: FunctionDefinition) ::=> Void := {

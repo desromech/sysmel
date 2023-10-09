@@ -302,6 +302,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionAnalysisEnvironment_create(sysbvm_conte
     result->localBindingList = sysbvm_orderedCollection_create(context);
     result->innerFunctionList = sysbvm_orderedCollection_create(context);
     result->pragmaList = sysbvm_orderedCollection_create(context);
+    result->keepSourceDefinition = SYSBVM_FALSE_TUPLE;
     result->super.hasBreakTarget = SYSBVM_FALSE_TUPLE;
     result->super.hasContinueTarget = SYSBVM_FALSE_TUPLE;
     return (sysbvm_tuple_t)result;
@@ -736,6 +737,8 @@ SYSBVM_API void sysbvm_analysisEnvironment_addPragma(sysbvm_context_t *context, 
 
     if(pragmaObject->selector == context->roots.primitiveNamedSelector && !functionAnalysisEnvironmentObject->primitiveName)
         functionAnalysisEnvironmentObject->primitiveName = sysbvm_array_at(pragmaObject->arguments, 0);
+    else if(pragmaObject->selector == context->roots.keepSourceDefinitionSelector)
+        functionAnalysisEnvironmentObject->keepSourceDefinition = SYSBVM_TRUE_TUPLE;
 }
 
 SYSBVM_API void sysbvm_analysisEnvironment_addInnerFunction(sysbvm_context_t *context, sysbvm_tuple_t environment, sysbvm_tuple_t innerFunction)

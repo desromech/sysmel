@@ -13,12 +13,14 @@ TypeSlot
     withSelector: #generateGetterWithReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
         let: #SlotType with: (self __slotNamedAt__: #type).
         ownerType withSelector: self getterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :: SlotType |
+            <keepSourceDefinition>
             (RawTuple::typeSlotAt:)(receiver, self)
         } makePure makeFinal makeAlwaysInline makeWithoutSourceDebugging recompileAndOptimize)
     };
     withSelector: #generateSetterWithReceiver:on: addMethod: {:(TypeSlot)self :(Type)ReceiverType :(Type)ownerType :: Void |
         let: #SlotType with: (self __slotNamedAt__: #type).
         ownerType withSelector: self setterSelector addMaybeVirtualMethod: ({:(ReceiverType)receiver :(SlotType)value :: Void |
+            <keepSourceDefinition>
             (RawTuple::typeSlotAt:put:)(receiver, self, value)
         } makeFinal makeAlwaysInline makeWithoutSourceDebugging recompileAndOptimize)
     };

@@ -139,6 +139,7 @@ AsmRiscVRInstructionDefinition definition: {
 
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :(AsmRiscVRegister)rd :(AsmRiscVRegister)rs1 :(AsmRiscVRegister)rs2 :: AsmRiscVRInstruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVRInstruction new
                 definition: self;
                 rd: rd;
@@ -187,6 +188,7 @@ AsmRiscVRiInstructionDefinition definition: {
 
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :(AsmRiscVRegister)rd :(AsmRiscVRegister)rs1 :(AsmImmediate)rimmediate :: AsmRiscVRiInstruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVRiInstruction new
                 definition: self;
                 rd: rd;
@@ -234,6 +236,7 @@ AsmRiscVIInstructionDefinition definition: {
 
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :(AsmRiscVRegister)rd :(AsmRiscVRegister)rs1 :(AsmImmediate)immediate :: AsmRiscVIInstruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVIInstruction new
                 definition: self;
                 rd: rd;
@@ -281,6 +284,7 @@ AsmRiscVSInstructionDefinition definition: {
 
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :(AsmRiscVRegister)rs1 :(AsmRiscVRegister)rs2 :(AsmImmediate)immediate :: AsmRiscVSInstruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVSInstruction new
                 definition: self;
                 rs1: rs1;
@@ -328,6 +332,7 @@ AsmRiscVBInstructionDefinition definition: {
 
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :(AsmRiscVRegister)rs1 :(AsmRiscVRegister)rs2 :(AsmImmediate)immediate :: AsmRiscVBInstruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVBInstruction new
                 definition: self;
                 rs1: rs1;
@@ -364,6 +369,7 @@ AsmRiscVUInstructionDefinition definition: {
 
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :(AsmRiscVRegister)rd :(AsmImmediate)immediate :: AsmRiscVUInstruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVUInstruction new
                 definition: self;
                 rd: rd;
@@ -399,6 +405,7 @@ AsmRiscVJInstructionDefinition definition: {
 
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :(AsmRiscVRegister)rd :(AsmImmediate)immediate :: AsmRiscVJInstruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVJInstruction new
                 definition: self;
                 rd: rd;
@@ -424,6 +431,7 @@ AsmRiscVOp32Instruction definition: {
 AsmRiscVOp32InstructionDefinition definition: {
     public method makeBuilderMethod
         := {:(AsmStreamBuilder)builder :: AsmRiscVOp32Instruction |
+            <keepSourceDefinition>
             builder addElement: (AsmRiscVOp32Instruction new
                 definition: self;
                 yourself)

@@ -81,6 +81,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t applyWithArgumentsSelector;
 
     sysbvm_tuple_t primitiveNamedSelector;
+    sysbvm_tuple_t keepSourceDefinitionSelector;
 
     sysbvm_tuple_t astNodeAnalysisSelector;
     sysbvm_tuple_t astNodeEvaluationSelector;
