@@ -4,7 +4,6 @@
 #include <sysbvm/context.h>
 #include <sysbvm/environment.h>
 #include <sysbvm/filesystem.h>
-#include <sysbvm/gc.h>
 #include <sysbvm/sourceCode.h>
 #include <sysbvm/scanner.h>
 #include <sysbvm/sysmelParser.h>
@@ -132,8 +131,6 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
                     gcFrame.parseResult = sysbvm_sysmelParser_parseTokens(context, gcFrame.sourceCode, gcFrame.scanResult);
                     sysbvm_orderedCollection_add(context, gcFrame.parseScanResults, gcFrame.parseResult);
                 }
-
-                gcFrame.parseResult = gcFrame.scanResult = SYSBVM_NULL_TUPLE;
             }
 
         }
@@ -165,10 +162,7 @@ int doMain(int startArgumentIndex, int argc, const char *argv[])
     }
 
     if(printStats)
-    {
-        sysbvm_gc_collect(context);
         sysbvm_context_printMemoryUsageStats(context);
-    }
 
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return 0;

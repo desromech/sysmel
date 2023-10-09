@@ -2668,7 +2668,7 @@ SimpleFunctionType
     SelfType
         withSelector: #printOn: addMethod: {:(SelfType)self :(Stream)stream :: Void |
             stream nextPutAll: self printString
-        } makeOverride makeFinal.
+        } makeOverride makeFinal recompileAndOptimize.
 
     let: #setConversionTypeFunction with: {:method :targetType :: Void |
         if: method ~~ nil then: (method __type__: (SelfType => targetType))
