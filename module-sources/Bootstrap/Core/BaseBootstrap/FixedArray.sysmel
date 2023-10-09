@@ -28,18 +28,18 @@ public class FixedArrayType superclass: ValueType; definition: {
                 if: index >= size then: error("Index is out of bounds.").
 
                 (RawTuple::refSlotAt:)(self, index)
-            } makeFinal recompileAndOptimize;
+            } recompileAndOptimize makeFinal;
             withSelector: #"[]:" addMethod: {:(ReceiverType)self :(Size)index :: elementReferenceType |
                 <primitive: #FixedArray::refAt:>
                 if: index >= size then: error("Index is out of bounds.").
                 error("TODO: Implement reference at").
-            } makeFinal recompileAndOptimize;
+            } recompileAndOptimize makeFinal;
             withSelector: #at:put: addMethod: {:(ReceiverType)self :(Size)index :(elementType)value :: Void |
                 <primitive: #FixedArray::at:put:>
                 if: index >= size then: error("Index is out of bounds.").
 
                 (RawTuple::refSlotAt:put:)(self, index, value)
-            } makeFinal recompileAndOptimize.
+            } recompileAndOptimize makeFinal.
     }.
 
     public override method printOn: (stream: Stream) ::=> Void := {
