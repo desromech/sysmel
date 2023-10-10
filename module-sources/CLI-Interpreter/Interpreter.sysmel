@@ -1,5 +1,9 @@
 public class CLISysmelInterpreter definition: {
     public field programName => String.
+    public field scanOnly => Boolean.
+    public field parseOnly => Boolean.
+    public field printStats => Boolean.
+    public field evaluationTimeToRun => Int64.
 
     public method main: (arguments: Array) ::=> Int32 := {
         programName := arguments first.
@@ -20,6 +24,18 @@ public class CLISysmelInterpreter definition: {
                     self evaluateString: (arguments at: i).
                     continue()
                 }.
+                argument = "-scan-only" ifTrue: {
+                    scanOnly := true.
+                    continue()
+                }.
+                argument = "-parse-only" ifTrue: {
+                    scanOnly := true.
+                    continue()
+                }.
+                argument = "-print-stats" ifTrue: {
+                    printStats := true.
+                    continue()
+                }.
                 argument = "-p" ifTrue: {
                     i := i + 1sz.
                     printLine(self evaluateString: (arguments at: i)).
@@ -30,6 +46,10 @@ public class CLISysmelInterpreter definition: {
             }
         } continueWith: (i := i + 1sz).
 
+        printStats ifTrue: {
+            printLine("Evaluation time to run: ", evaluationTimeToRun asFloat32 * 0.001f32)
+        }.
+
         0i32
     }.
 
@@ -39,11 +59,29 @@ public class CLISysmelInterpreter definition: {
         let basename := FileSystem::basename(fileName).
 
         let sourceCode := SourceCode text: sourceCodeText directory: directory name: basename language: #sysmel.
-        SysmelLanguage analyzeAndEvaluateSourceCode: sourceCode
+        self evaluteSourceCode: sourceCode
     }.
 
     public method evaluateString: (sourceString: String) ::=> AnyValue := {
-        SysmelLanguage analyzeAndEvaluateSourceCode: (SourceCode text: sourceString directory: "" name: "<cli>" language: #sysmel)
+        let sourceCode := SourceCode text: sourceString directory: "" name: "<cli>" language: #sysmel.
+        self evaluteSourceCode: sourceCode
+    }.
+
+    public method evaluteSourceCode: (sourceCode: SourceCode) ::=> AnyValue := {
+        let result mutable => AnyValue := nil.
+        evaluationTimeToRun := evaluationTimeToRun + { :: Void |
+            scanOnly ifTrue: {
+                result := (SysmelLanguage scanSourceCode: sourceCode).
+                return: void
+            }.
+
+            parseOnly ifTrue: {
+                result := (SysmelLanguage parseSourceCode: sourceCode).
+                return: void
+            }.
+            result := SysmelLanguage analyzeAndEvaluateSourceCode: sourceCode.
+        } timeToRunInMicroseconds.
+        result
     }.
 
     public method printHelp => Void := {
