@@ -1472,6 +1472,9 @@ SYSBVM_API sysbvm_context_t *sysbvm_context_createWithOptions(sysbvm_contextCrea
     sysbvm_dynarray_initialize(&context->markingStack, sizeof(sysbvm_tuple_t), 1<<20);
 
     sysbvm_heap_initialize(&context->heap);
+    context->analyzeASTWithEnvironmentPIC = (sysbvm_pic_t*)sysbvm_chunkedAllocator_allocate(&context->heap.picTableAllocator, sizeof(sysbvm_pic_t), sizeof(uintptr_t));
+    context->evaluateASTWithEnvironment = (sysbvm_pic_t*)sysbvm_chunkedAllocator_allocate(&context->heap.picTableAllocator, sizeof(sysbvm_pic_t), sizeof(uintptr_t));
+    context->evaluateAndAnalyzeASTWithEnvironment = (sysbvm_pic_t*)sysbvm_chunkedAllocator_allocate(&context->heap.picTableAllocator, sizeof(sysbvm_pic_t), sizeof(uintptr_t));
     sysbvm_gc_lock(context);
 
     sysbvm_context_createBasicTypes(context);

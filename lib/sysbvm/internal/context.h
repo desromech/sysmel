@@ -4,6 +4,7 @@
 #pragma once
 
 #include "sysbvm/context.h"
+#include "sysbvm/pic.h"
 #include "heap.h"
 #include "sysbvm/dynarray.h"
 
@@ -16,17 +17,6 @@ typedef struct sysbvm_globalLookupCacheEntry_s
     sysbvm_tuple_t selector;
     sysbvm_tuple_t method;
 }sysbvm_globalLookupCacheEntry_t;
-
-typedef struct sysbvm_inlineLookupCacheEntry_s
-{
-    sysbvm_tuple_t receiverType;
-    sysbvm_tuple_t method;
-} sysbvm_inlineLookupCacheEntry_t;
-
-typedef struct sysbvm_polymorphicInlineLookupCache_s
-{
-    sysbvm_inlineLookupCacheEntry_t entries[PIC_ENTRY_COUNT];
-} sysbvm_polymorphicInlineLookupCache_t;
 
 typedef struct sysbvm_context_roots_s
 {
@@ -335,13 +325,6 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t globalNamespace;
     sysbvm_tuple_t defaultAnalysisQueueValueBox;
     sysbvm_tuple_t intrinsicTypes;
-
-    struct
-    {
-        sysbvm_polymorphicInlineLookupCache_t analyzeASTWithEnvironment;
-        sysbvm_polymorphicInlineLookupCache_t evaluateASTWithEnvironment;
-        sysbvm_polymorphicInlineLookupCache_t evaluateAndAnalyzeASTWithEnvironment;
-    } inlineCaches;
     
     sysbvm_globalLookupCacheEntry_t globalMethodLookupCache[GLOBAL_LOOKUP_CACHE_ENTRY_COUNT];
 } sysbvm_context_roots_t;
@@ -357,6 +340,10 @@ struct sysbvm_context_s
     sysbvm_dynarray_t markingStack;
     sysbvm_dynarray_t jittedObjectFileEntries;
     sysbvm_dynarray_t jittedRegisteredFrames;
+
+    sysbvm_pic_t *analyzeASTWithEnvironmentPIC;
+    sysbvm_pic_t *evaluateASTWithEnvironment;
+    sysbvm_pic_t *evaluateAndAnalyzeASTWithEnvironment;
 };
 
 #endif //SYSBVM_INTERNAL_CONTEXT_H

@@ -155,8 +155,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTy
     if(!sysbvm_pic_lookupTypeAndSelector(pic, selector, receiverType, &method))
     {
         method = sysbvm_type_lookupSelector(context, receiverType, selector);
-        if(method)
-            sysbvm_pic_addSelectorTypeAndMethod(pic, selector, receiverType, method);
+        sysbvm_pic_addSelectorTypeAndMethod(pic, selector, receiverType, method);
     }
 
     if(method)

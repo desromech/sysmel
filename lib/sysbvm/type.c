@@ -8,6 +8,7 @@
 #include "sysbvm/environment.h"
 #include "sysbvm/function.h"
 #include "sysbvm/orderedCollection.h"
+#include "sysbvm/pic.h"
 #include "sysbvm/stackFrame.h"
 #include "sysbvm/string.h"
 #include "sysbvm/type.h"
@@ -851,25 +852,15 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelector(sysbvm_context_t *context, 
     }
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelectorWithInlineCache(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector, sysbvm_inlineLookupCacheEntry_t *inlineCache)
+SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelectorWithPIC(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector, sysbvm_pic_t *pic)
 {
-    // FIXME: Make this thread safe
-    if(inlineCache->receiverType == type)
-        return inlineCache->method;
-    
-    inlineCache->receiverType = type;
-    return inlineCache->method = sysbvm_type_lookupSelector(context, type, selector);
-}
-
-SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelectorWithPIC(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector, sysbvm_polymorphicInlineLookupCache_t *pic)
-{
-    size_t expectedEntryIndex = sysbvm_tuple_identityHash(type) % PIC_ENTRY_COUNT;
-    sysbvm_inlineLookupCacheEntry_t *entry = pic->entries + expectedEntryIndex;
-    if(entry->receiverType == type)
-        return entry->method;
-    
-    entry->receiverType = type;
-    return entry->method = sysbvm_type_lookupSelector(context, type, selector);
+    sysbvm_tuple_t method = SYSBVM_NULL_TUPLE;
+    if(!sysbvm_pic_lookupTypeAndSelector(pic, selector, type, &method))
+    {
+        method = sysbvm_type_lookupSelector(context, type, selector);
+        sysbvm_pic_addSelectorTypeAndMethod(pic, selector, type, method);
+    }
+    return method;
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupFallbackSelector(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector)
@@ -977,7 +968,7 @@ SYSBVM_API void sysbvm_type_setPrintStringFunction(sysbvm_context_t *context, sy
 
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getAstNodeAnalysisFunction(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
-    return sysbvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeAnalysisSelector, &context->roots.inlineCaches.analyzeASTWithEnvironment);
+    return sysbvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeAnalysisSelector, context->analyzeASTWithEnvironmentPIC);
 }
 
 SYSBVM_API void sysbvm_type_setAstNodeAnalysisFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t astNodeAnalysisFunction)
@@ -987,7 +978,7 @@ SYSBVM_API void sysbvm_type_setAstNodeAnalysisFunction(sysbvm_context_t *context
 
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getAstNodeEvaluationFunction(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
-    return sysbvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeEvaluationSelector, &context->roots.inlineCaches.evaluateASTWithEnvironment);
+    return sysbvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeEvaluationSelector, context->evaluateASTWithEnvironment);
 }
 
 SYSBVM_API void sysbvm_type_setAstNodeEvaluationFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t astNodeEvaluationFunction)
@@ -997,7 +988,7 @@ SYSBVM_API void sysbvm_type_setAstNodeEvaluationFunction(sysbvm_context_t *conte
 
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getAstNodeAnalysisAndEvaluationFunction(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
-    return sysbvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeAnalysisAndEvaluationSelector, &context->roots.inlineCaches.evaluateAndAnalyzeASTWithEnvironment);
+    return sysbvm_type_lookupSelectorWithPIC(context, type, context->roots.astNodeAnalysisAndEvaluationSelector, context->evaluateAndAnalyzeASTWithEnvironment);
 }
 
 SYSBVM_API void sysbvm_type_setAstNodeAnalysisAndEvaluationFunction(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t astNodeAnalysisAndEvaluationFunction)
@@ -1381,7 +1372,19 @@ static sysbvm_tuple_t sysbvm_type_primitive_flushLookupSelector(sysbvm_context_t
         if(cacheEntry->selector == *selector)
             memset(cacheEntry, 0, sizeof(sysbvm_globalLookupCacheEntry_t));
     }
-    memset(&context->roots.inlineCaches, 0, sizeof(context->roots.inlineCaches));
+
+    {
+        sysbvm_chunkedAllocatorIterator_t iterator;
+        for(sysbvm_chunkedAllocatorIterator_begin(&context->heap.picTableAllocator, &iterator);
+            sysbvm_chunkedAllocatorIterator_isValid(&iterator);
+            sysbvm_chunkedAllocatorIterator_advance(&iterator))
+        {
+            size_t picCount = iterator.size / sizeof(sysbvm_pic_t);
+            sysbvm_pic_t *pics = (sysbvm_pic_t*)iterator.data;
+            for(size_t i = 0; i < picCount; ++i)
+                sysbvm_pic_flushSelector(pics + i, *selector);
+        }
+    }
 
     return SYSBVM_VOID_TUPLE;
 }

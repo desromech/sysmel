@@ -208,8 +208,7 @@ typedef enum sysbvm_typeSlotFlags_e
     SYSBVM_TYPE_SLOT_FLAG_CACHE = 1<<9,
 } sysbvm_typeSlotFlags_t;
 
-typedef struct sysbvm_inlineLookupCacheEntry_s sysbvm_inlineLookupCacheEntry_t;
-typedef struct sysbvm_polymorphicInlineLookupCache_s sysbvm_polymorphicInlineLookupCache_t;
+typedef struct sysbvm_pic_s sysbvm_pic_t;
 
 /**
  * Creates a type slot
@@ -431,14 +430,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSlot(sysbvm_context_t *context, sysb
 SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelector(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector);
 
 /**
- * Performs the lookup of the given selector accelerated with the given inline cache.
- */
-SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelectorWithInlineCache(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector, sysbvm_inlineLookupCacheEntry_t *inlineCache);
-
-/**
  * Performs the lookup of the given selector accelerated with the given polymorphic inline cache.
  */
-SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelectorWithPIC(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector, sysbvm_polymorphicInlineLookupCache_t *inlineCache);
+SYSBVM_API sysbvm_tuple_t sysbvm_type_lookupSelectorWithPIC(sysbvm_context_t *context, sysbvm_tuple_t type, sysbvm_tuple_t selector, sysbvm_pic_t *inlineCache);
 
 /**
  * Performs the lookup of the given macro fallback selector.
