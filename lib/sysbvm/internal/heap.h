@@ -4,6 +4,7 @@
 #pragma once
 
 #include "sysbvm/heap.h"
+#include "sysbvm/chunkedAllocator.h"
 #include <stdio.h>
 
 typedef struct sysbvm_heap_mallocObjectHeader_s
@@ -34,10 +35,9 @@ struct sysbvm_heap_s
     uint32_t gcWhiteColor;
     uint32_t gcGrayColor;
     uint32_t gcBlackColor;
-
-    size_t gcRootTableCapacity;
-    size_t gcRootTableSize;
-    sysbvm_tuple_t *gcRootTable;
+    
+    sysbvm_chunkedAllocator_t gcRootTableAllocator;
+    sysbvm_chunkedAllocator_t picTableAllocator;
 
     size_t codeZoneCapacity;
     size_t codeZoneSize;

@@ -80,19 +80,8 @@ SYSBVM_API sysbvm_object_tuple_t *sysbvm_heap_allocatePointerTuple(sysbvm_heap_t
 
 sysbvm_tuple_t *sysbvm_heap_allocateGCRootTableEntry(sysbvm_heap_t *heap)
 {
-    if(!heap->gcRootTable)
-    {
-        heap->gcRootTable = (sysbvm_tuple_t*)sysbvm_virtualMemory_allocateSystemMemory(SYSBVM_HEAP_CODE_ZONE_SIZE);
-        heap->gcRootTableCapacity = SYSBVM_HEAP_CODE_ZONE_SIZE / sizeof(sysbvm_tuple_t);
-        heap->gcRootTableSize = 0;
-    }
-
-    if(heap->gcRootTableSize >= heap->gcRootTableCapacity)
-        abort();
-    
-    sysbvm_tuple_t *result = heap->gcRootTable + heap->gcRootTableSize;
+    sysbvm_tuple_t *result = sysbvm_chunkedAllocator_allocate(&heap->gcRootTableAllocator, sizeof(sysbvm_tuple_t), sizeof(sysbvm_tuple_t));
     *result = SYSBVM_NULL_TUPLE;
-    ++heap->gcRootTableSize;
     return result;
 }
 
@@ -149,6 +138,9 @@ void sysbvm_heap_initialize(sysbvm_heap_t *heap)
     heap->gcWhiteColor = 0;
     heap->gcGrayColor = 1;
     heap->gcBlackColor = 2;
+
+    sysbvm_chunkedAllocator_initialize(&heap->gcRootTableAllocator, SYSBVM_CHUNKED_ALLOCATOR_DEFAULT_CHUNK_SIZE, false);
+    sysbvm_chunkedAllocator_initialize(&heap->picTableAllocator, SYSBVM_CHUNKED_ALLOCATOR_DEFAULT_CHUNK_SIZE, false);
 }
 
 void sysbvm_heap_destroy(sysbvm_heap_t *heap)
@@ -163,6 +155,8 @@ void sysbvm_heap_destroy(sysbvm_heap_t *heap)
         }
     }
 
+    sysbvm_chunkedAllocator_destroy(&heap->gcRootTableAllocator);
+    sysbvm_chunkedAllocator_destroy(&heap->picTableAllocator);
     if(heap->codeZone)
         sysbvm_virtualMemory_freeSystemMemory(heap->codeZone, heap->codeZoneCapacity);
 }

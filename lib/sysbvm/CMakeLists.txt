@@ -34,6 +34,7 @@ set(sysbvm_sources
     orderedCollection.c
     orderedOffsetTable.c
     parser.c
+    pic.c
     pragma.c
     programEntity.c
     primitiveIntegers.c

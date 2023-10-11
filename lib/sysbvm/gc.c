@@ -1,4 +1,5 @@
 #include "sysbvm/gc.h"
+#include "sysbvm/pic.h"
 #include "sysbvm/type.h"
 #include "internal/context.h"
 #include <stdio.h>
@@ -130,9 +131,43 @@ SYSBVM_API void sysbvm_gc_iterateRoots(sysbvm_context_t *context, void *userdata
         size_t contextRootCount = sizeof(context->roots) / sizeof(sysbvm_tuple_t);
         for(size_t i = 0; i < contextRootCount; ++i)
             iterationFunction(userdata, &contextRoots[i]);
+    }
 
-        for(size_t i = 0; i < context->heap.gcRootTableSize; ++i)
-            iterationFunction(userdata, context->heap.gcRootTable + i);
+    // GC Root table
+    {
+        sysbvm_chunkedAllocatorIterator_t iterator;
+        for(sysbvm_chunkedAllocatorIterator_begin(&context->heap.gcRootTableAllocator, &iterator);
+            sysbvm_chunkedAllocatorIterator_isValid(&iterator);
+            sysbvm_chunkedAllocatorIterator_advance(&iterator))
+        {
+            size_t entryCount = iterator.size / sizeof(sysbvm_tuple_t);
+            sysbvm_tuple_t *entries = (sysbvm_tuple_t*)iterator.data;
+            for(size_t i = 0; i < entryCount; ++i)
+                iterationFunction(userdata, entries + i);
+        }
+    }
+
+    // PIC table
+    {
+        sysbvm_chunkedAllocatorIterator_t iterator;
+        for(sysbvm_chunkedAllocatorIterator_begin(&context->heap.picTableAllocator, &iterator);
+            sysbvm_chunkedAllocatorIterator_isValid(&iterator);
+            sysbvm_chunkedAllocatorIterator_advance(&iterator))
+        {
+            size_t picCount = iterator.size / sizeof(sysbvm_pic_t);
+            sysbvm_pic_t *pics = (sysbvm_pic_t*)iterator.data;
+            for(size_t i = 0; i < picCount; ++i)
+            {
+                sysbvm_pic_t *pic = pics + i;
+                for(size_t j = 0; j < SYSBVM_PIC_ENTRY_COUNT; ++j)
+                {
+                    sysbvm_picEntry_t *picEntry = pic->entries + j;
+                    iterationFunction(userdata, &picEntry->selector);
+                    iterationFunction(userdata, &picEntry->type);
+                    iterationFunction(userdata, &picEntry->method);
+                }
+            }
+        }
     }
 
     // Stack roots.

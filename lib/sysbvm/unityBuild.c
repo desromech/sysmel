@@ -44,6 +44,7 @@
 #include "orderedCollection.c"
 #include "orderedOffsetTable.c"
 #include "parser.c"
+#include "pic.c"
 #include "pragma.c"
 #include "primitiveIntegers.c"
 #include "programEntity.c"
