@@ -8,6 +8,7 @@
 #include "sysbvm/function.h"
 #include "sysbvm/environment.h"
 #include "sysbvm/message.h"
+#include "sysbvm/pic.h"
 #include "sysbvm/gc.h"
 #include "sysbvm/orderedOffsetTable.h"
 #include "sysbvm/type.h"
@@ -147,9 +148,17 @@ static sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSend(sysbvm_context_t 
     return sysbvm_function_apply2(context, method, receiverAndArguments[0], message);
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t receiverType, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(sysbvm_context_t *context, sysbvm_pic_t *pic, sysbvm_tuple_t receiverType, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
 {
-    sysbvm_tuple_t method = sysbvm_type_lookupSelector(context, receiverType, selector);
+    SYSBVM_ASSERT(pic);
+    sysbvm_tuple_t method = SYSBVM_NULL_TUPLE;
+    if(!sysbvm_pic_lookupTypeAndSelector(pic, selector, receiverType, &method))
+    {
+        method = sysbvm_type_lookupSelector(context, receiverType, selector);
+        if(method)
+            sysbvm_pic_addSelectorTypeAndMethod(pic, selector, receiverType, method);
+    }
+
     if(method)
         return sysbvm_bytecodeInterpreter_functionApplyNoCopyArguments(context, method, argumentCount + 1, receiverAndArguments, applicationFlags);
 
@@ -168,9 +177,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTy
     return sysbvm_function_apply2(context, method, receiverAndArguments[0], message);
 }
 
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendNoCopyArguments(sysbvm_context_t *context, sysbvm_pic_t *pic, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags)
 {
-    return sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(context, sysbvm_tuple_getType(context, receiverAndArguments[0]), selector, argumentCount, receiverAndArguments, applicationFlags);
+    return sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(context, pic, sysbvm_tuple_getType(context, receiverAndArguments[0]), selector, argumentCount, receiverAndArguments, applicationFlags);
 }
 
 SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_context_t *context, sysbvm_stackFrameBytecodeFunctionActivationRecord_t *activationRecord)

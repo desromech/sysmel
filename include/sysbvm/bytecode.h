@@ -6,6 +6,7 @@
 #include "tuple.h"
 
 typedef struct sysbvm_context_s sysbvm_context_t;
+typedef struct sysbvm_pic_s sysbvm_pic_t;
 
 typedef enum sysbvm_opcode_e
 {
@@ -106,7 +107,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_getSourcePositionForActivat
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_getSourcePositionForJitActivationRecord(sysbvm_context_t *context, sysbvm_stackFrameBytecodeFunctionJitActivationRecord_t *activationRecord);
 
 SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_functionApplyNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t function, size_t argumentCount, sysbvm_tuple_t *arguments, sysbvm_bitflags_t applicationFlags);
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags);
-SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(sysbvm_context_t *context, sysbvm_tuple_t receiverType, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags);
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendNoCopyArguments(sysbvm_context_t *context, sysbvm_pic_t *pic, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags);
+SYSBVM_API sysbvm_tuple_t sysbvm_bytecodeInterpreter_interpretSendWithReceiverTypeNoCopyArguments(sysbvm_context_t *context, sysbvm_pic_t *pic, sysbvm_tuple_t receiverType, sysbvm_tuple_t selector, size_t argumentCount, sysbvm_tuple_t *receiverAndArguments, sysbvm_bitflags_t applicationFlags);
 
 #endif //SYSBVM_BYTECODE_H
