@@ -11,6 +11,7 @@ set(sysbvm_sources
     bytecodeJitCommon.c
     bytecodeJitX86.c
     byteStream.c
+    chunkedAllocator.c
     context.c
     dictionary.c
     dwarf.c
@@ -49,6 +50,7 @@ set(sysbvm_sources
     token.c
     tuple.c
     type.c
+    virtualMemory.c
 )
 
 set(USE_UNITY_BUILD False)

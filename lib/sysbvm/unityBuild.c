@@ -21,6 +21,7 @@
 #include "bytecodeJitCommon.c"
 #include "bytecodeJitX86.c"
 #include "byteStream.c"
+#include "chunkedAllocator.c"
 #include "context.c"
 #include "dictionary.c"
 #include "dwarf.c"
@@ -59,3 +60,4 @@
 #include "token.c"
 #include "tuple.c"
 #include "type.c"
+#include "virtualMemory.c"

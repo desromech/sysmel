@@ -1,4 +1,5 @@
 #include "internal/heap.h"
+#include "internal/virtualMemory.h"
 #include "sysbvm/assert.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,108 +10,6 @@
 #define SYSBVM_HEAP_COLLECTION_GAMMA_FACTOR 3
 
 #define SYSBVM_HEAP_CODE_ZONE_SIZE (16<<20)
-
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-
-static void *sysbvm_heap_allocateSystemMemory(size_t sizeToAllocate)
-{
-    return VirtualAlloc(NULL, sizeToAllocate, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-}
-
-static void *sysbvm_heap_allocateSystemMemoryForCode(size_t sizeToAllocate)
-{
-    return VirtualAlloc(NULL, sizeToAllocate, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
-}
-
-static void sysbvm_heap_freeSystemMemory(void *memory, size_t sizeToFree)
-{
-    (void)sizeToFree;
-    VirtualFree(memory, 0, MEM_RELEASE);
-}
-
-static size_t sysbvm_heap_getSystemAllocationAlignment(void)
-{
-    SYSTEM_INFO systemInfo;
-    memset(&systemInfo, 0, sizeof(systemInfo));
-    GetSystemInfo(&systemInfo);
-    return systemInfo.dwPageSize;
-}
-
-static void sysbvm_heap_lockCodePagesForWriting(void *codePointer, size_t size)
-{
-    size_t pageAlignment = sysbvm_heap_getSystemAllocationAlignment();
-    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
-    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
-
-    DWORD oldProtection = 0;
-    VirtualProtect((void*)startAddress, endAddress - startAddress, PAGE_READWRITE, &oldProtection);
-}
-
-static void sysbvm_heap_unlockCodePagesForExecution(void *codePointer, size_t size)
-{
-    size_t pageAlignment = sysbvm_heap_getSystemAllocationAlignment();
-    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
-    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
-
-    DWORD oldProtection = 0;
-    VirtualProtect((void*)startAddress, endAddress - startAddress, PAGE_EXECUTE_READ, &oldProtection);
-}
-
-#else
-
-#include <sys/mman.h>
-#include <unistd.h>
-
-static void *sysbvm_heap_allocateSystemMemory(size_t sizeToAllocate)
-{
-    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-    if(result == MAP_FAILED)
-        return 0;
-
-    return result;
-}
-
-static void *sysbvm_heap_allocateSystemMemoryForCode(size_t sizeToAllocate)
-{
-    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
-    if(result == MAP_FAILED)
-        return 0;
-
-    return result;
-}
-
-static void sysbvm_heap_freeSystemMemory(void *memory, size_t sizeToFree)
-{
-    munmap(memory, sizeToFree);
-}
-
-static size_t sysbvm_heap_getSystemAllocationAlignment(void)
-{
-    return getpagesize();
-}
-
-static void sysbvm_heap_lockCodePagesForWriting(void *codePointer, size_t size)
-{
-    size_t pageAlignment = sysbvm_heap_getSystemAllocationAlignment();
-    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
-    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
-
-    mprotect((void*)startAddress, endAddress - startAddress, PROT_READ | PROT_WRITE);
-}
-
-static void sysbvm_heap_unlockCodePagesForExecution(void *codePointer, size_t size)
-{
-    size_t pageAlignment = sysbvm_heap_getSystemAllocationAlignment();
-    uintptr_t startAddress = (uintptr_t)codePointer & (-pageAlignment);
-    uintptr_t endAddress = ((uintptr_t)codePointer + size + pageAlignment - 1) & (-pageAlignment);
-
-    mprotect((void*)startAddress, endAddress - startAddress, PROT_READ | PROT_EXEC);
-}
-
-#endif
 
 static uintptr_t uintptrAlignedTo(uintptr_t pointer, size_t alignment)
 {
@@ -183,7 +82,7 @@ sysbvm_tuple_t *sysbvm_heap_allocateGCRootTableEntry(sysbvm_heap_t *heap)
 {
     if(!heap->gcRootTable)
     {
-        heap->gcRootTable = (sysbvm_tuple_t*)sysbvm_heap_allocateSystemMemory(SYSBVM_HEAP_CODE_ZONE_SIZE);
+        heap->gcRootTable = (sysbvm_tuple_t*)sysbvm_virtualMemory_allocateSystemMemory(SYSBVM_HEAP_CODE_ZONE_SIZE);
         heap->gcRootTableCapacity = SYSBVM_HEAP_CODE_ZONE_SIZE / sizeof(sysbvm_tuple_t);
         heap->gcRootTableSize = 0;
     }
@@ -201,7 +100,7 @@ void *sysbvm_heap_allocateAndLockCodeZone(sysbvm_heap_t *heap, size_t size, size
 {
     if(!heap->codeZone)
     {
-        heap->codeZone = (uint8_t*)sysbvm_heap_allocateSystemMemoryForCode(SYSBVM_HEAP_CODE_ZONE_SIZE);
+        heap->codeZone = (uint8_t*)sysbvm_virtualMemory_allocateSystemMemoryForCode(SYSBVM_HEAP_CODE_ZONE_SIZE);
         if(!heap->codeZone)
             abort();
 
@@ -216,20 +115,20 @@ void *sysbvm_heap_allocateAndLockCodeZone(sysbvm_heap_t *heap, size_t size, size
     heap->codeZoneSize = alignedOffset + size;;
 
     uint8_t *result = heap->codeZone + alignedOffset;
-    sysbvm_heap_lockCodePagesForWriting(result, size);
+    sysbvm_virtualMemory_lockCodePagesForWriting(result, size);
     return result;
 }
 
 void sysbvm_heap_lockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size)
 {
     (void)heap;
-    sysbvm_heap_lockCodePagesForWriting(codePointer, size);
+    sysbvm_virtualMemory_lockCodePagesForWriting(codePointer, size);
 }
 
 void sysbvm_heap_unlockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size)
 {
     (void)heap;
-    sysbvm_heap_unlockCodePagesForExecution(codePointer, size);
+    sysbvm_virtualMemory_unlockCodePagesForExecution(codePointer, size);
 }
 
 SYSBVM_API sysbvm_object_tuple_t *sysbvm_heap_shallowCopyTuple(sysbvm_heap_t *heap, sysbvm_object_tuple_t *tupleToCopy)
@@ -265,7 +164,7 @@ void sysbvm_heap_destroy(sysbvm_heap_t *heap)
     }
 
     if(heap->codeZone)
-        sysbvm_heap_freeSystemMemory(heap->codeZone, heap->codeZoneCapacity);
+        sysbvm_virtualMemory_freeSystemMemory(heap->codeZone, heap->codeZoneCapacity);
 }
 
 static void sysbvm_heap_computeNextCollectionThreshold(sysbvm_heap_t *heap)
