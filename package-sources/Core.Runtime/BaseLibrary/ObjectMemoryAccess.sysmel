@@ -34,7 +34,7 @@ public global ObjectModel::getTupleHeaderPointerOf := {:(Untyped)object :: Objec
     nil
 }.
 
-Untyped extend: {
+AnyValue extend: {
     public final inline method __rawContentsPointer__ => Void pointer
         := ObjectModel::getTupleHeaderPointerOf(self) + 1iptr reinterpretCastTo: Void pointer.
 

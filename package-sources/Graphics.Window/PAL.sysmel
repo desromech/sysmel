@@ -1,0 +1,15 @@
+public struct SysmelPAL::WindowEvent definition: {
+
+}.
+
+public struct SysmelPAL::Window.
+public global SysmelPAL::WindowHandle := SysmelPAL::Window pointer.
+
+public externC function sysmel_pal_windowSystem_initialize() => Void.
+public externC function sysmel_pal_windowSystem_finalize() => Void.
+
+public externC function sysmel_pal_window_create(titleSize: Size, title: Char8 const pointer, x: Int32, y: Int32, width: Int32, height: Int32, flags: UInt32) => SysmelPAL::WindowHandle.
+public externC function sysmel_pal_window_destroy(window: SysmelPAL::WindowHandle) => Void.
+
+public externC function sysmel_pal_window_pollEvent(event: SysmelPAL::WindowEvent ref) => Boolean.
+public externC function sysmel_pal_window_waitEvent(event: SysmelPAL::WindowEvent ref) => Boolean.

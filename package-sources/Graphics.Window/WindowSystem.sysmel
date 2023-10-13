@@ -1,0 +1,50 @@
+WindowSystem definition: {
+    private field openWindowList => OrderedCollection.
+
+    private global Default mutable => WindowSystem.
+
+    __Meta__ definition: {
+        public method default => WindowSystem
+            := Default ifNil: {Default := self new}
+    }.
+
+    public override method initialize => Void := {
+        super initialize.
+        openWindowList := OrderedCollection new.
+
+        sysmel_pal_windowSystem_initialize()
+    }.
+
+    public override method finalize => Void := {
+        super finalize.
+        sysmel_pal_windowSystem_finalize()
+    }.
+
+    public method createWindowWithTitle: (title: String) width: (width: UInt32) height: (height: UInt32) ::=> Window := {
+        self assert: title isNotNil.
+
+        let handle := sysmel_pal_window_create(title size, title __rawContentsPointer__ reinterpretCastTo: Char8 const pointer, -1i32, -1i32, width asInt32, height asInt32, 0u32).
+        handle ifNil: {return: nil}.
+
+        let window := Window new
+            initializeWithWindowSystem: self handle: handle;
+            yourself.
+
+        openWindowList add: window.
+
+        window
+    }.
+
+    public method run => Void := {
+        while: openWindowList isNotEmpty do: {
+            self runEventLoopIteration
+        }.
+    }.
+
+    public method runEventLoopIteration => Void := {
+        let event mutable := SysmelPAL::WindowEvent basicNew.
+        sysmel_pal_window_waitEvent(event) ifTrue: {
+            ## TODO: Wait until next event
+        }.
+    }.
+}.

@@ -7,3 +7,9 @@
 #else
 #include "pal-stdlib.c"
 #endif
+
+#ifdef USE_SDL2
+#include "pal-sdl2.c"
+#else
+#include "pal-null-window.c"
+#endif

@@ -27,9 +27,6 @@ loadSourceNamed: "VirtualTableSetSource.sysmel".
 loadSourceNamed: "ImageBuilderVirtualTableSetSource.sysmel".
 loadSourceNamed: "CurrentImageVirtualTableSetSource.sysmel".
 
-loadSourceNamed: "Json.sysmel".
-loadSourceNamed: "AST.sysmel".
-
 loadSourceNamed: "ByteStream.sysmel".
 loadSourceNamed: "Exception.sysmel".
 loadSourceNamed: "IO.sysmel".

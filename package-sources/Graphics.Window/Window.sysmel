@@ -1,0 +1,18 @@
+public class WindowSystem superclass: Object.
+
+public class Window superclass: Object; definition: {
+    private field windowSystem => WindowSystem.
+    private field handle => SysmelPAL::WindowHandle.
+
+    public method initializeWithWindowSystem: (initialWindowSystem: WindowSystem) handle: (initialHandle: SysmelPAL::WindowHandle) ::=> Void := {
+        windowSystem := initialWindowSystem.
+        handle := initialHandle
+    }.
+
+    public method close => Void := {
+        handle ifNil: {return: void}.
+
+        sysmel_pal_window_destroy(handle).
+        handle := nil.
+    }.
+}.

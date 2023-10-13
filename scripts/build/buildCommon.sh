@@ -10,5 +10,13 @@ CC="gcc"
 SYSBVMI="$OUT_DIR/sysbvmi"
 SYSBVMI32="$OUT_DIR32/sysbvmi"
 
+SDL2_CFLAGS=$(sdl2-config --cflags)
+SDL2_LDFLAG=$(sdl2-config --libs)
+
+if test -n "$SDL2_CFLAGS"; then
+    BUILD_CFLAGS="-DUSE_SDL2 $SDL2_CFLAGS $BUILD_CFLAGS"
+    BUILD_LD_FLAGS="$SDL2_LDFLAG $BUILD_LD_FLAGS"
+fi
+
 mkdir -p $OUT_DIR
 mkdir -p $OUT_DIR32
