@@ -1,0 +1,30 @@
+## Primitive definitions.
+loadSourceNamed: "BootstrapCore.sysmel".
+
+#(
+    "MiniSUnit"
+    "Core.Runtime.Tests"
+
+    "Parsec"
+    "Parsec.Tests"
+    "Compiler.Bytecode"
+    "Compiler.NativeCode"
+    "Language.Sysmel"
+    "Language.Sysmel.Tests"
+
+    "ImageBuilder"
+
+    "Compiler.MIR"
+    "Compiler.MIR.Tests"
+
+    "Assembler"
+    "Assembler.X86"
+    "Assembler.Arm"
+    "Assembler.Arm64"
+    "Assembler.RiscV"
+
+    "Compiler.HIR"
+    "Compiler.HIR.Tests"
+) do: {:each |
+    loadPackageNamed: each
+}.

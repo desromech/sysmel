@@ -1,0 +1,3 @@
+loadSourceNamed: "Bootstrap.EnvironmentSetup/package.sysmel".
+loadSourceNamed: "Core.Runtime/package.sysmel".
+printLine("Bootstrap Core package loading finished.").
