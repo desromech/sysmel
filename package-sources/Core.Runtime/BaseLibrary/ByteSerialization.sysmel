@@ -50,7 +50,7 @@ ValueType definition: {
         } ifFalse: {
             memcpy(
                 (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
-                value __rawContentsPointer__ reinterpretCastTo: Void const pointer,
+                value __untypedRawContentsPointer__ reinterpretCastTo: Void const pointer,
                 self validInstanceSize
             ).
         }.
@@ -62,7 +62,7 @@ ValueType definition: {
         } ifFalse: {
             memcpy(
                 (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
-                (owner __rawContentsBytePointer__ + typeSlot validOffset asIntPointer) reinterpretCastTo: Void const pointer,
+                (owner __untypedRawContentsBytePointer__ + typeSlot validOffset asIntPointer) reinterpretCastTo: Void const pointer,
                 self validInstanceSize
             ).
         }.
@@ -120,7 +120,7 @@ PointerLikeType definition: {
             } ifFalse: {
                 memcpy(
                     (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
-                    value __rawContentsPointer__ reinterpretCastTo: Void const pointer,
+                    value __untypedRawContentsPointer__ reinterpretCastTo: Void const pointer,
                     self validInstanceSize
                 ).
             }

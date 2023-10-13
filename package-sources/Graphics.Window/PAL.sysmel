@@ -1,5 +1,6 @@
-public struct SysmelPAL::WindowEvent definition: {
+public global SysmelPAL::WindowEventType := UInt8.
 
+public struct SysmelPAL::WindowEvent definition: {
 }.
 
 public struct SysmelPAL::Window.

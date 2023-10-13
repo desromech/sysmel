@@ -9,7 +9,7 @@ public class ByteSerializableObject superclass: Object; definition: {
             } ifFalse: {
                 memcpy(
                     (bytes __rawContentsBytePointer__ + offset asIntPointer) reinterpretCastTo: Void pointer,
-                    value __rawContentsPointer__ reinterpretCastTo: Void const pointer,
+                    value __untypedRawContentsBytePointer__ reinterpretCastTo: Void const pointer,
                     self validInstanceSize
                 ).
             }.

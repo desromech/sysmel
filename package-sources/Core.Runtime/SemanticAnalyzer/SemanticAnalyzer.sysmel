@@ -1351,6 +1351,24 @@ DependentFunctionType definition: {
     }.
 }.
 
+FunctionBytecodeCompiler definition: {
+    __Meta__ definition: {
+        public abstract eager method compileFunctionSourceAnalyzedDefinition: (sourceAnalyzedDefinition: FunctionSourceAnalyzedDefinition) ::=> FunctionBytecode
+            := self subclassResponsibility
+    }.
+}.
+
+public global FunctionBytecodeCompiler::Current mutable => FunctionBytecodeCompiler class := FunctionBytecodeDirectCompiler.
+
+FunctionNativeCodeCompiler definition: {
+    __Meta__ definition: {
+        public abstract eager method compileFunctionSourceAnalyzedDefinition: (sourceAnalyzedDefinition: FunctionSourceAnalyzedDefinition) orBytecode: (bytecode: FunctionBytecode) ::=> FunctionNativeCodeDefinition
+            := self subclassResponsibility
+    }.
+}.
+
+public global FunctionNativeCodeCompiler::Current mutable => FunctionNativeCodeCompiler class := nil.
+
 FunctionDefinition definition: {
     public eager method ensureTypeAnalysis => Void := {
         sourceDefinition argumentNodes ifNil: {return: void}.
@@ -1378,7 +1396,7 @@ FunctionDefinition definition: {
         sourceAnalyzedDefinition environment returnTypeExpression: sourceAnalyzedDefinition resultTypeNode.
     }.
 
-    public eager override method ensureAnalysis => Void := {
+    public eager method ensureSourceAnalyzedDefinition => FunctionSourceAnalyzedDefinition := {
         sourceDefinition ifNil: {return: void}.
         bytecode ifNotNil: {return: void}.
         sourceAnalyzedDefinition isNotNil && sourceAnalyzedDefinition captures isNotNil ifTrue: {return: void}.
@@ -1398,6 +1416,32 @@ FunctionDefinition definition: {
 
         let captureTypes := sourceAnalyzedDefinition captures collect: {:(SymbolBinding)eachCaptureBinding :: Type | eachCaptureBinding type ifNil: Untyped}.
         captureVectorType := SequenceTupleTypeTemplate(captureTypes).
+
+        sourceAnalyzedDefinition
+    }.
+
+    public eager override method ensureAnalysis => Void := {
+        sourceDefinition ifNil: {return: void}.
+        bytecode ifNotNil: {return: void}.
+        sourceAnalyzedDefinition isNotNil && sourceAnalyzedDefinition captures isNotNil ifTrue: {return: void}.
+        
+        let validSourceAnalyzedDefinition := self ensureSourceAnalyzedDefinition.
+
+        FunctionBytecodeCompiler::Current ifNotNil: {
+            bytecode := FunctionBytecodeCompiler::Current compileFunctionSourceAnalyzedDefinition: validSourceAnalyzedDefinition.
+
+            ## Discard our source analyzed definition after the bytecode is generated.
+            ## TODO: Perform this discarding only after implementing the bytecode interpreter in Sysmel.
+            ##bytecode ifNotNil: {
+            ##    sourceAnalyzedDefinition := nil
+            ##}.
+        }.
+
+        FunctionNativeCodeCompiler::Current ifNotNil: {
+            nativeCodeDefinition := FunctionNativeCodeCompiler::Current compileFunctionSourceAnalyzedDefinition: validSourceAnalyzedDefinition orBytecode: bytecode
+
+            ## TODO: Install the native code definition if possible.
+        }.
     }.
 }.
 

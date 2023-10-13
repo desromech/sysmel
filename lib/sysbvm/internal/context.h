@@ -320,7 +320,10 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t functionBytecodeAssemblerLabel;
     sysbvm_tuple_t functionBytecodeAssemblerInstruction;
     sysbvm_tuple_t functionBytecodeAssemblerVectorOperand;
+    sysbvm_tuple_t functionBytecodeCompiler;
     sysbvm_tuple_t functionBytecodeDirectCompiler;
+
+    sysbvm_tuple_t functionNativeCodeCompiler;
 
     sysbvm_tuple_t globalNamespace;
     sysbvm_tuple_t defaultAnalysisQueueValueBox;

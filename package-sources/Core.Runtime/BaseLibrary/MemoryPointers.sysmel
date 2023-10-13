@@ -28,7 +28,7 @@ ValueType extend: {
         } ifFalse: {
             memcpy(
                 pointer reinterpretCastTo: Void pointer,
-                value __rawContentsBytePointer__ reinterpretCastTo: Void const pointer,
+                value __untypedRawContentsBytePointer__ reinterpretCastTo: Void const pointer,
                 self validInstanceSize
             ).
         }.

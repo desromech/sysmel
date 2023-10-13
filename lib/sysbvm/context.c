@@ -1400,7 +1400,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "sourceASTNode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
 
         NULL);
-    context->roots.functionBytecodeDirectCompiler = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeDirectCompiler", context->roots.objectType,
+    context->roots.functionBytecodeCompiler = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeCompiler", context->roots.objectType,
+        NULL);
+    context->roots.functionBytecodeDirectCompiler = sysbvm_context_createIntrinsicClass(context, "FunctionBytecodeDirectCompiler", context->roots.functionBytecodeCompiler,
         "assembler", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssembler,
         "bindingDictionary", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.methodDictionaryType,
 
@@ -1408,7 +1410,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "continueLabel", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionBytecodeAssemblerAbstractInstruction,
 
         NULL);
-    
+    context->roots.functionNativeCodeCompiler = sysbvm_context_createIntrinsicClass(context, "FunctionNativeCodeCompiler", context->roots.objectType,
+        NULL);
+
     context->roots.exceptionType = sysbvm_context_createIntrinsicClass(context, "Exception", context->roots.objectType,
         "messageText", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
         NULL);

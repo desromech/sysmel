@@ -1,5 +1,8 @@
 FunctionBytecodeDirectCompiler definition: {
     __Meta__ definition: {
+        public override method compileFunctionSourceAnalyzedDefinition: (sourceAnalyzedDefinition: FunctionSourceAnalyzedDefinition) ::=> FunctionBytecode
+            := self new compileFunctionSourceAnalyzedDefinition: sourceAnalyzedDefinition.
+
         public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> FunctionBytecode
             := self new compileFunctionDefinition: functionDefinition.
 
@@ -33,24 +36,25 @@ FunctionBytecodeDirectCompiler definition: {
         captureOperand
     }.
 
-    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> FunctionBytecode := {
-        functionDefinition ensureAnalysis.
-
+    public method compileFunctionSourceAnalyzedDefinition: (sourceAnalyzedDefinition: FunctionSourceAnalyzedDefinition) ::=> FunctionBytecode := {
         self assembler
-            sourcePosition: functionDefinition sourceAnalyzedDefinition sourcePosition;
-            arguments: (functionDefinition sourceAnalyzedDefinition argumentNodes collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)index :: FunctionBytecodeAssemblerVectorOperand |
+            sourcePosition: sourceAnalyzedDefinition sourcePosition;
+            arguments: (sourceAnalyzedDefinition argumentNodes collectWithIndex: {:(ASTArgumentNode)argumentNode :(Size)index :: FunctionBytecodeAssemblerVectorOperand |
                 self generateArgumentForNode: argumentNode index: index
             }) asArray;
-            captures: (functionDefinition sourceAnalyzedDefinition captures collectWithIndex: {:(SymbolCaptureBinding)captureBinding :(Size)index :: FunctionBytecodeAssemblerVectorOperand |
+            captures: (sourceAnalyzedDefinition captures collectWithIndex: {:(SymbolCaptureBinding)captureBinding :(Size)index :: FunctionBytecodeAssemblerVectorOperand |
                 self generateCaptureForBinding: captureBinding index: index
             }) asArray.
 
-        let resultValue := functionDefinition sourceAnalyzedDefinition bodyNode compileBytecodesDirectlyWith: self.
+        let resultValue := sourceAnalyzedDefinition bodyNode compileBytecodesDirectlyWith: self.
         self assembler return: resultValue.
 
         self assembler optimize.
         self assembler build
     }.
+
+    public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> FunctionBytecode
+        := self compileFunctionSourceAnalyzedDefinition: functionDefinition ensureSourceAnalyzedDefinition.
 
     public method compileFunction: (function: Function) ::=> FunctionBytecode
         := self compileFunctionDefinition: function definition.
