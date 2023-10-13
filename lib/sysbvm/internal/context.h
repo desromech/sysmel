@@ -267,6 +267,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t astArgumentNodeType;
     sysbvm_tuple_t astBinaryExpressionSequenceNodeType;
     sysbvm_tuple_t astBreakNodeType;
+    sysbvm_tuple_t astCaseNodeType;
     sysbvm_tuple_t astCoerceValueNodeType;
     sysbvm_tuple_t astContinueNodeType;
     sysbvm_tuple_t astDoWhileContinueWithNodeType;
@@ -289,6 +290,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t astPragmaNodeType;
     sysbvm_tuple_t astReturnNodeType;
     sysbvm_tuple_t astSequenceNodeType;
+    sysbvm_tuple_t astSwitchNodeType;
     sysbvm_tuple_t astTupleSlotNamedAtNodeType;
     sysbvm_tuple_t astTupleSlotNamedAtPutNodeType;
     sysbvm_tuple_t astTupleSlotNamedReferenceAtNodeType;

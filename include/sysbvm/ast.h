@@ -36,6 +36,13 @@ typedef struct sysbvm_astBreakNode_s
     sysbvm_astNode_t super;
 } sysbvm_astBreakNode_t;
 
+typedef struct sysbvm_astCaseNode_s
+{
+    sysbvm_astNode_t super;
+    sysbvm_tuple_t keyExpression;
+    sysbvm_tuple_t valueExpression;
+} sysbvm_astCaseNode_t;
+
 typedef struct sysbvm_astCoerceValueNode_s
 {
     sysbvm_astNode_t super;
@@ -208,6 +215,14 @@ typedef struct sysbvm_astSequenceNode_s
     sysbvm_tuple_t expressions;
 } sysbvm_astSequenceNode_t;
 
+typedef struct sysbvm_astSwitchNode_s
+{
+    sysbvm_astNode_t super;
+    sysbvm_tuple_t expression;
+    sysbvm_tuple_t caseExpressions;
+    sysbvm_tuple_t defaultExpression;
+} sysbvm_astSwitchNode_t;
+
 typedef struct sysbvm_astUnexpandedApplicationNode_s
 {
     sysbvm_astNode_t super;
@@ -308,6 +323,11 @@ SYSBVM_API bool sysbvm_astNode_isBinaryExpressionSequenceNode(sysbvm_context_t *
  * Is this a break node?
  */ 
 SYSBVM_API bool sysbvm_astNode_isBreakNode(sysbvm_context_t *context, sysbvm_tuple_t tuple);
+
+/**
+ * Is this a case node?
+ */ 
+SYSBVM_API bool sysbvm_astNode_isCaseNode(sysbvm_context_t *context, sysbvm_tuple_t tuple);
 
 /**
  * Is this a continue node?
@@ -418,6 +438,11 @@ SYSBVM_API bool sysbvm_astNode_isReturnNode(sysbvm_context_t *context, sysbvm_tu
  * Is this a sequence node?
  */ 
 SYSBVM_API bool sysbvm_astNode_isSequenceNode(sysbvm_context_t *context, sysbvm_tuple_t tuple);
+
+/**
+ * Is this a switch node?
+ */ 
+SYSBVM_API bool sysbvm_astNode_isSwitchNode(sysbvm_context_t *context, sysbvm_tuple_t tuple);
 
 /**
  * Is this a tuple slot named at node?

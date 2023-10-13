@@ -43,6 +43,8 @@ void sysbvm_bytecodeInterpreter_ensureTablesAreFilled(void)
     sysbvm_implicitVariableBytecodeOperandCountTable[SYSBVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS >> 4] = 1;
     sysbvm_implicitVariableBytecodeOperandCountTable[SYSBVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS >> 4] = 1;
 
+    sysbvm_implicitVariableBytecodeOperandCountTable[SYSBVM_OPCODE_CASE_JUMP >> 4] = 1;
+
     sysbvm_bytecodeInterpreter_tablesAreFilled = true;
 }
 
@@ -620,6 +622,8 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeClosureWithCaptures", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MAKE_CLOSURE_WITH_CAPTURES));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeDictionaryWithElements", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeTupleWithElements", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS));
+
+    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::CaseJump", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_CASE_JUMP));
 
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::FirstVariable", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_FIRST_VARIABLE));
 

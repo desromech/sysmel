@@ -19,6 +19,11 @@ SYSBVM_API bool sysbvm_astNode_isBreakNode(sysbvm_context_t *context, sysbvm_tup
     return sysbvm_tuple_isKindOf(context, tuple, context->roots.astBreakNodeType);
 }
 
+SYSBVM_API bool sysbvm_astNode_isCaseNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
+{
+    return sysbvm_tuple_isKindOf(context, tuple, context->roots.astCaseNodeType);
+}
+
 SYSBVM_API bool sysbvm_astNode_isCoerceValueNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
 {
     return sysbvm_tuple_isKindOf(context, tuple, context->roots.astCoerceValueNodeType);
@@ -127,6 +132,11 @@ SYSBVM_API bool sysbvm_astNode_isReturnNode(sysbvm_context_t *context, sysbvm_tu
 SYSBVM_API bool sysbvm_astNode_isSequenceNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
 {
     return sysbvm_tuple_isKindOf(context, tuple, context->roots.astSequenceNodeType);
+}
+
+SYSBVM_API bool sysbvm_astNode_isSwitchNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)
+{
+    return sysbvm_tuple_isKindOf(context, tuple, context->roots.astSwitchNodeType);
 }
 
 SYSBVM_API bool sysbvm_astNode_isTupleSlotNamedAtNode(sysbvm_context_t *context, sysbvm_tuple_t tuple)

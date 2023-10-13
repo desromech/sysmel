@@ -1189,6 +1189,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "typeExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "valueExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
+    context->roots.astCaseNodeType = sysbvm_context_createIntrinsicClass(context, "ASTCaseNode", context->roots.astNodeType,
+        "keyExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "valueExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        NULL);
     context->roots.astContinueNodeType = sysbvm_context_createIntrinsicClass(context, "ASTContinueNode", context->roots.astNodeType,
         NULL);
     context->roots.astDoWhileContinueWithNodeType = sysbvm_context_createIntrinsicClass(context, "ASTDoWhileContinueWithNode", context->roots.astNodeType,
@@ -1292,6 +1296,12 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.astSequenceNodeType = sysbvm_context_createIntrinsicClass(context, "ASTSequenceNode", context->roots.astNodeType,
         "pragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "expressions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        NULL);
+    context->roots.astSwitchNodeType = sysbvm_context_createIntrinsicClass(context, "ASTSwitchNode", context->roots.astNodeType,
+        "pragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "expression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
+        "caseExpressions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "defaultExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         NULL);
     context->roots.astTupleSlotNamedAtNodeType = sysbvm_context_createIntrinsicClass(context, "ASTTupleSlotNamedAtNode", context->roots.astNodeType,
         "tupleExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

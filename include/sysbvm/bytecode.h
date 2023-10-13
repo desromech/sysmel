@@ -56,6 +56,8 @@ typedef enum sysbvm_opcode_e
     SYSBVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS = 0xB0, /// <Result> := makeDictionaryWithElements <Elements>...
     SYSBVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS = 0xC0, /// <Result> := makeTupleWithElements <Elements>...
 
+    SYSBVM_OPCODE_CASE_JUMP = 0xE0, /// caseJump <Value> <Key>... <Destination>... <DefaultDestination>
+
     SYSBVM_OPCODE_FIRST_VARIABLE = SYSBVM_OPCODE_CALL
 } sysbvm_opcode_t;
 
