@@ -377,6 +377,29 @@ let: #parseLambdaSignatureArguments with: {:(Array)argumentsSExpression :: Array
         yourself.
 } makeMacro withEagerAnalysis.
 
+public: #switch:withCases: with: {:(MacroContext)macroContext :(ASTNode)expression :(ASTMakeDictionaryNode)casesDictionary :: ASTSwitchNode |
+    let: #caseExpressions with: OrderedCollection new.
+    let: #defaultExpression type: ASTNode mutableWith: nil.
+
+    casesDictionary elements do: {:(ASTMakeAssociationNode)associationNode :: Void |
+        associationNode key isNil || associationNode key isAnonymousSymbolNode ifTrue: {
+            defaultExpression := associationNode value
+        } ifFalse: {
+            caseExpressions add: (ASTCaseNode new
+                keyExpression: associationNode key;
+                valueExpression: associationNode value;
+                yourself)
+        }
+    }.
+
+    ASTSwitchNode new
+        sourcePosition: macroContext sourcePosition;
+        expression: expression;
+        caseExpressions: caseExpressions asArray;
+        defaultExpression: defaultExpression;
+        yourself
+} makeMacro.
+
 ASTNode
     withSelector: #cullExpressionWith:at: addMethod: {:(ASTNode)self :(ASTNode)argument :(SourcePosition)sourcePosition :: ASTNode |
         self

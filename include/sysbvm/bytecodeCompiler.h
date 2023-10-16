@@ -283,6 +283,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_send(sysbvm_context_t
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_sendWithLookupReceiverType(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t receiverLookupType, sysbvm_tuple_t selector, sysbvm_tuple_t receiver, sysbvm_tuple_t arguments);
 
 /**
+ * Case jump instruction.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_caseJump(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t value, sysbvm_tuple_t caseKeys, sysbvm_tuple_t caseDestinations, sysbvm_tuple_t defaultDestination);
+
+/**
  * Store instruction.
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_store(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t pointer, sysbvm_tuple_t value);

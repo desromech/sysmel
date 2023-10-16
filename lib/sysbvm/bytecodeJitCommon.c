@@ -455,10 +455,18 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
 
         uint8_t standardOpcode = opcode;
         uint8_t operandCount = 0;
+        uint8_t caseCount = 0;
         if(opcode >= SYSBVM_OPCODE_FIRST_VARIABLE)
         {
-            operandCount = (opcode & 0x0F) + sysbvm_implicitVariableBytecodeOperandCountTable[opcode >> 4];
+            operandCount = (opcode & 0x0F);
             standardOpcode = opcode & 0xF0;
+            if(standardOpcode == SYSBVM_OPCODE_CASE_JUMP)
+            {
+                caseCount = operandCount;
+                operandCount *= 2;
+            }
+
+            operandCount += sysbvm_implicitVariableBytecodeOperandCountTable[opcode >> 4];
         }
         else
         {
@@ -476,7 +484,7 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
 
         // Validate the destination operands.
         uint8_t destinationOperandCount = sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(standardOpcode);
-        uint8_t offsetOperandCount = sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(standardOpcode);
+        uint8_t offsetOperandCount = caseCount + sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(standardOpcode);
 
         for(uint8_t i = 0; i < destinationOperandCount; ++i)
         {
@@ -636,6 +644,10 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
             break;
         case SYSBVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS:
             sysbvm_jit_makeDictionary(&jit, decodedOperands[0], opcode & 0xF, decodedOperands + 1);
+            break;
+
+        case SYSBVM_OPCODE_CASE_JUMP:
+            sysbvm_jit_caseJump(&jit, decodedOperands[0], caseCount, decodedOperands + 1, decodedOperands + 1 + caseCount, decodedOperands[operandCount - 1], pc);
             break;
         default:
             sysbvm_error("Unsupported bytecode instruction.");

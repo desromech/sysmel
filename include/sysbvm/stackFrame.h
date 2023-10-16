@@ -46,7 +46,7 @@ typedef struct sysbvm_stackFrameFunctionActivationRecord_s
     jmp_buf jmpbuffer;
 } sysbvm_stackFrameFunctionActivationRecord_t;
 
-#define SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE 20
+#define SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE 32
 #define SYSBVM_BYTECODE_FUNCTION_MAX_CALL_ARGUMENTS 16
 
 typedef struct sysbvm_stackFrameBytecodeFunctionActivationRecord_s

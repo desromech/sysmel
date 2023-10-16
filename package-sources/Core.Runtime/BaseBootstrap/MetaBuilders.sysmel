@@ -1,10 +1,3 @@
-__Global__
-    name: #__Global__;
-    setSymbol: #__OwnerProgramEntity__ value: __Global__;
-    setSymbol: #public:with: value: {:macroContext :(ASTNode)symbol :(ASTNode)value :: ASTNode |
-        ``(__OwnerProgramEntity__ setPublicSymbol: `,symbol value: `,value)
-    } makeMacro.
-
 Class
     withSelector: #publicSubclass:classSlots:slots: addMacroMethod: {:macroContext :(ASTNode)self :(ASTNode)name :(ASTNode)classSlots :(ASTNode)instanceSlots :: ASTNode |
         ``(public: `,name with: (`,self subclass: `,name classSlots: `,classSlots slots: `,instanceSlots))

@@ -101,8 +101,8 @@ FunctionBytecodeAssemblerInstruction definition: {
 
     public override method isBranchInstruction => Boolean := {
         let opcode := self standardOpcode.
-        ((opcode = FunctionBytecode::Opcode::Jump) || (opcode = FunctionBytecode::Opcode::JumpIfTrue))
-        || (opcode = FunctionBytecode::Opcode::JumpIfFalse)
+        (opcode = FunctionBytecode::Opcode::Jump) || (opcode = FunctionBytecode::Opcode::JumpIfTrue)
+        || (opcode = FunctionBytecode::Opcode::JumpIfFalse) || (opcode = FunctionBytecode::Opcode::CaseJump)
     }.
 
     public method isLoadStoreInstruction => Boolean := {
@@ -332,6 +332,15 @@ FunctionBytecodeAssembler definition: {
             standardOpcode: FunctionBytecode::Opcode::AllocaWithValue;
             operands: (Array with: result with: pointerLikeType with: value);
             yourself).
+
+    public method caseJumpOn: (value: FunctionBytecodeAssemblerVectorOperand) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: FunctionBytecodeAssemblerLabel) ::=> FunctionBytecodeAssemblerInstruction := {
+        self assert: keys size <= 16rF sz.
+        self assert: keys size = destinations size.
+        self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::CaseJump;
+            operands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination);
+            yourself)
+    }.
 
     public method call: (function: FunctionBytecodeAssemblerVectorOperand) arguments: (arguments: Array) result: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: arguments size <= 16rF sz.

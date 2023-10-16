@@ -1306,7 +1306,6 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "expressions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         NULL);
     context->roots.astSwitchNodeType = sysbvm_context_createIntrinsicClass(context, "ASTSwitchNode", context->roots.astNodeType,
-        "pragmas", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "expression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,
         "caseExpressions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "defaultExpression", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.astNodeType,

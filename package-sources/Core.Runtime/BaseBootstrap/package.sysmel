@@ -2,6 +2,7 @@ loadSourceNamed: "Runtime.sysmel".
 loadSourceNamed: "AST.sysmel".
 __DefaultAnalysisQueueValueBox__ value waitPendingAnalysis.
 
+loadSourceNamed: "GlobalMacros.sysmel".
 loadSourceNamed: "RuntimeMacros.sysmel".
 loadSourceNamed: "MetaBuilders.sysmel".
 loadSourceNamed: "PackageMacro.sysmel".

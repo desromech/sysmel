@@ -1,3 +1,4 @@
+#*
 public struct TestStruct definition: {
     public field intField => Int32.
     public field floatField => Float32.
@@ -46,6 +47,22 @@ let hirModule := HIRModuleCompilationContext forDefaultTarget
     finish.
 
 printLine(hirModule fullPrintString).
+*#
+
+public function testSwitch(v: Int32) => Float32 := {
+    switch: v withCases: #{
+        0i32 : 0f32.
+        1i32 : 1f32.
+        _: -1f32
+    }.
+}.
+
+let hirModule := HIRModuleCompilationContext forDefaultTarget
+    exclusiveCompilationMode: true;
+    compileFunctionsWithDefinitions: (testSwitch,);
+    finish.
+
+printLine(hirModule fullPrintString).
 
 let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget.
 ##let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForWindows asMirCompilationTarget.
@@ -54,4 +71,4 @@ printLine(mirModule fullPrintString).
 let lirModule := mirModule asTargetIR.
 printLine(lirModule fullPrintString).
 
-lirModule assemble writeObjectToFileNamed: "testGlobal.obj".
+lirModule assemble writeObjectToFileNamed: "testGlobal.o".

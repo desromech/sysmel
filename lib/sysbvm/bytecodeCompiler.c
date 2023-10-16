@@ -557,6 +557,27 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_sendWithLookupReceive
     return instruction;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_caseJump(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t value, sysbvm_tuple_t caseKeys, sysbvm_tuple_t caseDestinations, sysbvm_tuple_t defaultDestination)
+{
+    size_t caseCount = sysbvm_array_getSize(caseKeys);
+    SYSBVM_ASSERT(caseCount == sysbvm_array_getSize(caseDestinations));
+
+    sysbvm_functionBytecodeAssembler_countExtension(context, assembler, caseCount>>4);
+
+    sysbvm_tuple_t operands = sysbvm_array_create(context, 1 + caseCount + caseCount + 1);
+    size_t operandIndex = 0;
+    sysbvm_array_atPut(operands, operandIndex++, value);
+    for(size_t i = 0; i < caseCount; ++i)
+        sysbvm_array_atPut(operands, operandIndex++, sysbvm_array_at(caseKeys, i));
+    for(size_t i = 0; i < caseCount; ++i)
+        sysbvm_array_atPut(operands, operandIndex++, sysbvm_array_at(caseDestinations, i));
+    sysbvm_array_atPut(operands, operandIndex++, defaultDestination);
+
+    sysbvm_tuple_t instruction = sysbvm_functionBytecodeAssemblerInstruction_create(context, SYSBVM_OPCODE_CASE_JUMP, operands);
+    sysbvm_functionBytecodeAssembler_addInstruction(assembler, instruction);
+    return instruction;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeArrayWithElements(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t result, sysbvm_tuple_t elements)
 {
     size_t elementCount = sysbvm_array_getSize(elements);
@@ -731,7 +752,9 @@ static size_t sysbvm_functionBytecodeAssemblerInstruction_assembleInto(sysbvm_co
         sysbvm_bytecodeInterpreter_ensureTablesAreFilled();
         size_t implicitOperandCount = sysbvm_implicitVariableBytecodeOperandCountTable[standardOpcode >> 4];
         SYSBVM_ASSERT(operandCount >= implicitOperandCount);
-        size_t variableOperandCount = (operandCount - implicitOperandCount) & 0xF;
+        size_t variableOperandCount = standardOpcode == SYSBVM_OPCODE_CASE_JUMP
+            ? ((operandCount - implicitOperandCount) / 2) & 0xF
+            : (operandCount - implicitOperandCount) & 0xF;
         opcode += (uint8_t)variableOperandCount;
     }
     destination[offset++] = opcode;
@@ -1429,6 +1452,76 @@ static sysbvm_tuple_t sysbvm_astIfNode_primitiveCompileIntoBytecode(sysbvm_conte
     return gcFrame.result;
 }
 
+static sysbvm_tuple_t sysbvm_astSwitchNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
+{
+    (void)context;
+    (void)closure;
+    if(argumentCount != 2) sysbvm_error_argumentCountMismatch(2, argumentCount);
+
+    sysbvm_tuple_t *node = &arguments[0];
+    sysbvm_functionBytecodeDirectCompiler_t **compiler = (sysbvm_functionBytecodeDirectCompiler_t **)&arguments[1];
+
+    sysbvm_astSwitchNode_t **switchNode = (sysbvm_astSwitchNode_t**)node;
+    struct {
+        sysbvm_tuple_t mergeLabel;
+        sysbvm_tuple_t result;
+        sysbvm_tuple_t value;
+        sysbvm_tuple_t keyList;
+        sysbvm_tuple_t caseLabelList;
+        sysbvm_tuple_t defaultLabel;
+        sysbvm_tuple_t defaultResult;
+    } gcFrame = {0};
+    SYSBVM_STACKFRAME_PUSH_GC_ROOTS(gcFrameRecord, gcFrame);
+
+    // Emit the value.
+    gcFrame.value = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*switchNode)->expression);
+
+    // Emit the keys.
+    size_t caseCount = sysbvm_array_getSize((*switchNode)->caseExpressions);
+    gcFrame.keyList = sysbvm_array_create(context, caseCount);
+    gcFrame.caseLabelList = sysbvm_array_create(context, caseCount);
+    for(size_t i = 0; i < caseCount; ++i)
+    {
+        sysbvm_astCaseNode_t *caseNode = (sysbvm_astCaseNode_t*)sysbvm_array_at((*switchNode)->caseExpressions, i);
+        sysbvm_tuple_t caseKey = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, caseNode->keyExpression);
+        sysbvm_array_atPut(gcFrame.keyList, i, caseKey);
+
+        sysbvm_tuple_t caseLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+        sysbvm_array_atPut(gcFrame.caseLabelList, i, caseLabel);
+    }
+
+    gcFrame.defaultLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+    gcFrame.mergeLabel = sysbvm_functionBytecodeAssemblerInstruction_createLabel(context);
+
+    // Emit the switch.
+    sysbvm_functionBytecodeAssembler_caseJump(context, (*compiler)->assembler, gcFrame.value, gcFrame.keyList, gcFrame.caseLabelList, gcFrame.defaultLabel);
+
+    gcFrame.result = sysbvm_functionBytecodeAssembler_newTemporary(context, (*compiler)->assembler, (*switchNode)->super.analyzedType);
+
+    // Emit the different cases.
+    for(size_t i = 0; i < caseCount; ++i)
+    {
+        sysbvm_astCaseNode_t *caseNode = (sysbvm_astCaseNode_t*)sysbvm_array_at((*switchNode)->caseExpressions, i);
+        sysbvm_tuple_t caseLabel = sysbvm_array_at(gcFrame.caseLabelList, i);
+        sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, caseLabel);
+
+        sysbvm_tuple_t caseValue = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, caseNode->valueExpression);
+        sysbvm_functionBytecodeAssembler_move(context, (*compiler)->assembler, gcFrame.result, caseValue);
+        sysbvm_functionBytecodeAssembler_jump(context, (*compiler)->assembler, gcFrame.mergeLabel);
+    }
+
+    // Emit the default case.
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.defaultLabel);
+    if((*switchNode)->defaultExpression)
+        gcFrame.defaultResult = sysbvm_functionBytecodeDirectCompiler_compileASTNode(context, *compiler, (*switchNode)->defaultExpression);
+    else
+        gcFrame.defaultResult = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_NULL_TUPLE);
+    sysbvm_functionBytecodeAssembler_move(context, (*compiler)->assembler, gcFrame.result, gcFrame.defaultResult);
+
+    sysbvm_functionBytecodeAssembler_addInstruction((*compiler)->assembler, gcFrame.mergeLabel);
+    return gcFrame.result;
+}
+
 static sysbvm_tuple_t sysbvm_astLambdaNode_primitiveCompileIntoBytecode(sysbvm_context_t *context, sysbvm_tuple_t closure, size_t argumentCount, sysbvm_tuple_t *arguments)
 {
     (void)closure;
@@ -1968,6 +2061,7 @@ void sysbvm_functionBytecodeDirectCompiler_registerPrimitives(void)
     sysbvm_primitiveTable_registerFunction(sysbvm_astMessageSendNode_primitiveCompileIntoBytecode, "ASTMessageSendNode::doCompileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astReturnNode_primitiveCompileIntoBytecode, "ASTReturnNode::doCompileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astSequenceNode_primitiveCompileIntoBytecode, "ASTSequenceNode::doCompileIntoBytecodeWith:");
+    sysbvm_primitiveTable_registerFunction(sysbvm_astSwitchNode_primitiveCompileIntoBytecode, "ASTSwitchNode::doCompileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtNode::doCompileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedAtPutNode::doCompileIntoBytecodeWith:");
     sysbvm_primitiveTable_registerFunction(sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode, "ASTTupleSlotNamedReferenceAtNode::doCompileIntoBytecodeWith:");
@@ -1997,6 +2091,7 @@ void sysbvm_functionBytecodeDirectCompiler_setupPrimitives(sysbvm_context_t *con
     sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astMessageSendNodeType, &sysbvm_astMessageSendNode_primitiveCompileIntoBytecode);
     sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astReturnNodeType, &sysbvm_astReturnNode_primitiveCompileIntoBytecode);
     sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astSequenceNodeType, &sysbvm_astSequenceNode_primitiveCompileIntoBytecode);
+    sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astSwitchNodeType, &sysbvm_astSwitchNode_primitiveCompileIntoBytecode);
     sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtNodeType, &sysbvm_astTupleSlotNamedAtNode_primitiveCompileIntoBytecode);
     sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedAtPutNodeType, &sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoBytecode);
     sysbvm_functionBytecodeDirectCompiler_setupNodeCompilationFunction(context, context->roots.astTupleSlotNamedReferenceAtNodeType, &sysbvm_astTupleSlotNamedReferenceAtNode_primitiveCompileIntoBytecode);

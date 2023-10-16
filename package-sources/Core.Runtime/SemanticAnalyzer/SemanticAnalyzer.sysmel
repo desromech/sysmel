@@ -1999,6 +1999,103 @@ ASTIfNode definition: {
     }.
 }.
 
+ASTSwitchNode definition: {
+    public override eager method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
+        let value := expression analyzeAndEvaluateWithEnvironment: environment.
+        let result mutable => Untyped := nil.
+        let hasFoundCase mutable := false.
+        caseExpressions do: {:(ASTCaseNode)eachCase :: Void |
+            let key := eachCase keyExpression analyzeAndEvaluateWithEnvironment: environment.
+            if: key = value then: {
+                result := eachCase valueExpression analyzeAndEvaluateWithEnvironment: environment.
+                hasFoundCase := true.
+            }
+        }.
+
+        hasFoundCase ifFalse: {
+            defaultExpression ifNotNil: {
+                result := defaultExpression analyzeAndEvaluateWithEnvironment: environment
+            }
+        }.
+        result __refLoad__
+    }.
+
+    public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode := {
+        let analyzedNode := self copy
+            analyzerToken: environment validAnalyzerToken;
+            expression: (environment analyzeWithDecayedType: self expression);
+            yourself.
+
+        let expectedKeyType := analyzedNode expression analyzedType.
+        let resultType mutable => Type := nil.
+
+        let addResultType := {:(Type)newResultType :: Void |
+            resultType ifNil: {
+                resultType := newResultType
+            } ifNotNil: {
+                resultType := newResultType computeConditionCoercionTypeWith: resultType
+            }.
+        }.
+
+        ## Analyze the cases.
+        analyzedNode caseExpressions: (analyzedNode caseExpressions collect: {:(ASTCaseNode)eachCase :: ASTCaseNode |
+            let analyzedCaseNode := eachCase copy
+                analyzerToken: environment validAnalyzerToken;
+                keyExpression: (environment analyze: eachCase keyExpression withExpectedType: expectedKeyType);
+                valueExpression: (environment analyzeWithCurrentExpectedType: eachCase valueExpression);
+                yourself.
+            addResultType(analyzedCaseNode valueExpression analyzedType).
+            analyzedCaseNode
+        }).
+
+        ## Analyze the default case.
+        analyzedNode defaultExpression ifNotNil: {
+            analyzedNode defaultExpression: (environment analyzeWithCurrentExpectedType: analyzedNode defaultExpression).
+            addResultType(analyzedNode defaultExpression analyzedType).
+        }.
+        
+        resultType ifNil: (resultType := UndefinedObject).
+        analyzedNode analyzedType: resultType.
+
+        ## Apply the implicit coercions.
+        analyzedNode caseExpressions: (analyzedNode caseExpressions collect: {:(ASTCaseNode)eachCase :: ASTCaseNode |
+            eachCase analyzedType ~~ resultType ifTrue: {
+                eachCase copy
+                    analyzerToken: environment validAnalyzerToken;
+                    valueExpression: (environment analyze: eachCase valueExpression withExpectedType: resultType);
+                    yourself
+            } ifFalse: {
+                eachCase
+            }
+        }).
+        analyzedNode defaultExpression ifNotNil: {
+            analyzedNode defaultExpression: (environment analyze: analyzedNode defaultExpression withExpectedType: resultType)
+        }.
+
+        analyzedNode
+    }.
+
+    public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped := {
+        let value := expression evaluateWithEnvironment: environment.
+        let result mutable => Untyped := nil.
+        let hasFoundCase mutable := false.
+        caseExpressions do: {:(ASTCaseNode)eachCase :: Void |
+            let key := eachCase keyExpression evaluateWithEnvironment: environment.
+            if: key = value then: {
+                result := eachCase valueExpression evaluateWithEnvironment: environment.
+                hasFoundCase := true.
+            }
+        }.
+
+        hasFoundCase ifFalse: {
+            defaultExpression ifNotNil: {
+                result := defaultExpression evaluateWithEnvironment: environment
+            }
+        }.
+        result __refLoad__
+    }.
+}.
+
 ASTReturnNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped := {
         self semanticError: "TODO: ASTReturnNode analyzeAndEvaluateWithEnvironment"

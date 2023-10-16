@@ -144,6 +144,47 @@ ASTIfNode extend: {
     }.
 }.
 
+ASTSwitchNode extend: {
+    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let assembler := compiler assembler.
+
+        let value := self expression compileBytecodesDirectlyWith: compiler.
+
+        let caseKeys := self caseExpressions collect: {:(ASTCaseNode)eachCase :: FunctionBytecodeAssemblerVectorOperand |
+            eachCase keyExpression compileBytecodesDirectlyWith: compiler
+        }.
+        let caseLabels := self caseExpressions collect: {:(ASTCaseNode)eachCase :: FunctionBytecodeAssemblerLabel |
+            assembler label: #caseLabel
+        }.
+
+        let result := assembler temporary: #switchResult.
+        let defaultCase := assembler label: #switchDefaultCase.
+        let switchMerge := assembler label: #switchMerge.
+
+        assembler caseJumpOn: value keys: caseKeys destinations: caseLabels defaultDestination: defaultCase.
+
+        self caseExpressions doWithIndex: {:(ASTCaseNode)eachCase :(Size)caseIndex :: Void |
+            let key => FunctionBytecodeAssemblerVectorOperand := caseKeys at: caseIndex.
+            let destination => FunctionBytecodeAssemblerLabel := caseLabels at: caseIndex.
+
+            assembler beginLabel: destination.
+            let caseValue := eachCase valueExpression compileBytecodesDirectlyWith: compiler.
+            assembler
+                move: caseValue into: result;
+                jumpTo: switchMerge.
+        }.
+
+        assembler
+            beginLabel: defaultCase;
+            move: (self defaultExpression
+                ifNotNil: (self defaultExpression compileBytecodesDirectlyWith: compiler)
+                ifNil: (assembler literal: nil)) into: result;
+            jumpTo: switchMerge;
+            beginLabel: switchMerge.
+        result
+    }.
+}.
+
 ASTWhileContinueWithNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
         let assembler := compiler assembler.

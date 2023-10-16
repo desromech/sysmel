@@ -949,6 +949,35 @@ SYSBVM_API void sysbvm_jit_jumpRelativeIfFalse(sysbvm_bytecodeJit_t *jit, int16_
 }
 
 
+SYSBVM_API void sysbvm_jit_caseJump(sysbvm_bytecodeJit_t *jit, int16_t valueOperand, size_t caseCount, int16_t *caseKeyOperands, int16_t *caseLabelOperands, int16_t defaultLabelOperand, size_t pc)
+{
+    for(size_t i = 0; i < caseCount; ++i)
+    {
+        sysbvm_jit_x86_jitLoadContextInRegister(jit, SYSBVM_X86_64_ARG0);
+        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG1, valueOperand);
+        sysbvm_jit_moveOperandToRegister(jit, SYSBVM_X86_64_ARG2, caseKeyOperands[i]);
+        sysbvm_jit_x86_call(jit, &sysbvm_tuple_equals);
+
+        uint8_t instruction[] = {
+            // test AL, AL
+            0x84, sysbvm_jit_x86_modRMRegister(SYSBVM_X86_RAX, SYSBVM_X86_RAX),
+
+            // jnz
+            0x0F, 0x85, 0x00, 0x00, 0x00, 0x00,
+        };
+
+        size_t relocationOffset = sysbvm_bytecodeJit_addBytes(jit, sizeof(instruction), instruction) - 4;
+        sysbvm_bytecodeJitPCRelocation_t relocation = {
+            .offset = relocationOffset,
+            .targetPC = pc + caseLabelOperands[i],
+            .addend = -4,
+        };
+        sysbvm_bytecodeJit_addPCRelocation(jit, relocation);
+    }
+
+    sysbvm_jit_jumpRelative(jit, pc + defaultLabelOperand);
+}
+
 static void sysbvm_jit_cfi_beginPrologue(sysbvm_bytecodeJit_t *jit)
 {
     sysbvm_dwarf_cie_t ehCie = {0};

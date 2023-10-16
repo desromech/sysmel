@@ -20,7 +20,9 @@ let opcodeExtraImplicitOperandCountDictionary := #{
     FunctionBytecode::Opcode::MakeByteArrayWithElements : 1sz.
     FunctionBytecode::Opcode::MakeClosureWithCaptures : 2sz.
     FunctionBytecode::Opcode::MakeDictionaryWithElements : 1sz.
-    FunctionBytecode::Opcode::MakeTupleWithElements : 1sz
+    FunctionBytecode::Opcode::MakeTupleWithElements : 1sz.
+    
+    FunctionBytecode::Opcode::CaseJump : 2sz
 }.
 public: #FunctionBytecode::OpcodeExtraImplicitOperandCountDictionary with: opcodeExtraImplicitOperandCountDictionary.
 
@@ -65,6 +67,8 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::MakeClosureWithCaptures : #makeClosureWithCaptures.
     FunctionBytecode::Opcode::MakeDictionaryWithElements : #makeDictionaryWithElements.
     FunctionBytecode::Opcode::MakeTupleWithElements : #makeTupleWithElements.
+
+    FunctionBytecode::Opcode::CaseJump : #caseJump.
 }.
 public: #FunctionBytecode::OpcodeNameDictionary with: opcodeNameDictionary.
 
@@ -104,6 +108,8 @@ let opcodeDestinationOperandCount := #{
     FunctionBytecode::Opcode::MakeClosureWithCaptures : 1sz.
     FunctionBytecode::Opcode::MakeDictionaryWithElements : 1sz.
     FunctionBytecode::Opcode::MakeTupleWithElements : 1sz.
+    
+    FunctionBytecode::Opcode::CaseJump : 0sz.
 }.
 public: #FunctionBytecode::OpcodeDestinationOperandCountDictionary with: opcodeDestinationOperandCount.
 
@@ -121,16 +127,24 @@ FunctionBytecode definition: {
         if: opcode >= FunctionBytecode::Opcode::FirstVariable then: {
             let standardOpcode := opcode & 16rF0 u8.
             let opcodeVariantNumber := opcode & 16r0F u8.
-            ((countExtension << 4sz) | (opcodeVariantNumber asSize)) + (opcodeExtraImplicitOperandCountDictionary at: standardOpcode)
+            let variantSize := (countExtension << 4sz) | (opcodeVariantNumber asSize).
+            let implicitOperandCount := opcodeExtraImplicitOperandCountDictionary at: standardOpcode.
+
+            if: standardOpcode = FunctionBytecode::Opcode::CaseJump then: {
+                variantSize*2sz + implicitOperandCount
+            } else: {
+                variantSize + implicitOperandCount
+            }
         } else: {
             (opcode >> 4u8) asSize
         }
     }.
 
     public final method isBranchOpcode: (opcode: UInt8) ::=> Boolean
-        := ((opcode = FunctionBytecode::Opcode::Jump) ||
-            (opcode = FunctionBytecode::Opcode::JumpIfTrue)) ||
-            (opcode = FunctionBytecode::Opcode::JumpIfFalse).
+        := (opcode = FunctionBytecode::Opcode::Jump) ||
+            (opcode = FunctionBytecode::Opcode::JumpIfTrue) ||
+            (opcode = FunctionBytecode::Opcode::JumpIfFalse) ||
+            (opcode = FunctionBytecode::Opcode::CaseJump).
 
     public method decodedInstructionsDo: aBlock ::=> Void := {
         let instructions := self instructions.

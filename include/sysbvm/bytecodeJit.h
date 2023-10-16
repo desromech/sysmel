@@ -189,6 +189,7 @@ SYSBVM_API void sysbvm_jit_makeClosureWithCaptures(sysbvm_bytecodeJit_t *jit, in
 SYSBVM_API void sysbvm_jit_jumpRelative(sysbvm_bytecodeJit_t *jit, size_t targetPC);
 SYSBVM_API void sysbvm_jit_jumpRelativeIfTrue(sysbvm_bytecodeJit_t *jit, int16_t conditionOperand, size_t targetPC);
 SYSBVM_API void sysbvm_jit_jumpRelativeIfFalse(sysbvm_bytecodeJit_t *jit, int16_t conditionOperand, size_t targetPC);
+SYSBVM_API void sysbvm_jit_caseJump(sysbvm_bytecodeJit_t *jit, int16_t valueOperand, size_t caseCount, int16_t *caseKeyOperands, int16_t *caseLabelOperands, int16_t defaultLabelOperand, size_t pc);
 
 SYSBVM_API void sysbvm_jit_moveOperandToOperand(sysbvm_bytecodeJit_t *jit, int16_t destinationOperand, int16_t sourceOperand);
 SYSBVM_API void sysbvm_jit_return(sysbvm_bytecodeJit_t *jit, int16_t operand);

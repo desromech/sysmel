@@ -43,7 +43,7 @@ void sysbvm_bytecodeInterpreter_ensureTablesAreFilled(void)
     sysbvm_implicitVariableBytecodeOperandCountTable[SYSBVM_OPCODE_MAKE_DICTIONARY_WITH_ELEMENTS >> 4] = 1;
     sysbvm_implicitVariableBytecodeOperandCountTable[SYSBVM_OPCODE_MAKE_TUPLE_WITH_ELEMENTS >> 4] = 1;
 
-    sysbvm_implicitVariableBytecodeOperandCountTable[SYSBVM_OPCODE_CASE_JUMP >> 4] = 1;
+    sysbvm_implicitVariableBytecodeOperandCountTable[SYSBVM_OPCODE_CASE_JUMP >> 4] = 2;
 
     sysbvm_bytecodeInterpreter_tablesAreFilled = true;
 }
@@ -88,6 +88,7 @@ SYSBVM_API uint8_t sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(uint8_
     case SYSBVM_OPCODE_JUMP:
     case SYSBVM_OPCODE_JUMP_IF_TRUE:
     case SYSBVM_OPCODE_JUMP_IF_FALSE:
+    case SYSBVM_OPCODE_CASE_JUMP:
         return 1;
     default: return 0;
     }
@@ -204,10 +205,18 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
 
         uint8_t standardOpcode = opcode;
         uint8_t operandCount = 0;
+        uint8_t caseCount = 0;
         if(opcode >= SYSBVM_OPCODE_FIRST_VARIABLE)
         {
-            operandCount = (opcode & 0x0F) + sysbvm_implicitVariableBytecodeOperandCountTable[opcode >> 4];
+            operandCount = (opcode & 0x0F);
             standardOpcode = opcode & 0xF0;
+            if(standardOpcode == SYSBVM_OPCODE_CASE_JUMP)
+            {
+                caseCount = operandCount;
+                operandCount *= 2;
+            }
+
+            operandCount += sysbvm_implicitVariableBytecodeOperandCountTable[opcode >> 4];
         }
         else
         {
@@ -227,7 +236,7 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
 
         // Validate the destination operands.
         uint8_t destinationOperandCount = sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(standardOpcode);
-        uint8_t offsetOperandCount = sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(standardOpcode);
+        uint8_t offsetOperandCount = caseCount + sysbvm_bytecodeInterpreter_offsetOperandCountForOpcode(standardOpcode);
 
         for(uint8_t i = 0; i < destinationOperandCount; ++i)
         {
@@ -439,6 +448,25 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
                 operandRegisterFile[0] = sysbvm_dictionary_createWithCapacity(context, dictionarySize);
                 for(size_t i = 0; i < dictionarySize; ++i)
                     sysbvm_dictionary_add(context, operandRegisterFile[0], operandRegisterFile[1 + i]);
+            }
+            break;
+            
+        case SYSBVM_OPCODE_CASE_JUMP:
+            {
+                bool hasFoundCase = false;
+                for(size_t i = 0; i < caseCount; ++i)
+                {
+                    if(operandRegisterFile[0] == operandRegisterFile[i + 1] || sysbvm_tuple_equals(context, operandRegisterFile[0], operandRegisterFile[i + 1]))
+                    {
+                        // Found the case.
+                        hasFoundCase = true;
+                        pc += decodedOperands[1 + caseCount + i];
+                        break;
+                    }
+                }
+
+                if(!hasFoundCase)
+                    pc += decodedOperands[operandCount - 1];
             }
             break;
         default:
