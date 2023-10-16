@@ -27,6 +27,7 @@ typedef struct sysbvm_environment_s
     sysbvm_tuple_t parent;
     sysbvm_tuple_t analysisQueue;
     sysbvm_tuple_t symbolTable;
+    sysbvm_tuple_t children;
 } sysbvm_environment_t;
 
 typedef sysbvm_environment_t sysbvm_namespace_t;

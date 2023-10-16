@@ -2,8 +2,20 @@ TypeSlot
     withSelector: #hasAnyFlags: addMethod: {:(TypeSlot)self :(Bitflags)flags :: Boolean |
         ((self __slotNamedAt__: #flags) & flags) ~= 0bflgs
     } withEagerAnalysis;
+    withSelector: #visibility addMethod: {:(TypeSlot)self :: Bitflags |
+        ((self __slotNamedAt__: #flags) & TypeSlotFlags::VisibilityMask) >> TypeSlotFlags::VisibilityShift
+    } withEagerAnalysis;
+    withSelector: #isPrivate addMethod: {:(TypeSlot)self :: Boolean |
+        self visibility = TypeSlotFlags::Private
+    } withEagerAnalysis;
+    withSelector: #isProtected addMethod: {:(TypeSlot)self :: Boolean |
+        self visibility = TypeSlotFlags::Protected
+    } withEagerAnalysis;
+    withSelector: #isInternal addMethod: {:(TypeSlot)self :: Boolean |
+        self visibility = TypeSlotFlags::Internal
+    } withEagerAnalysis;
     withSelector: #isPublic addMethod: {:(TypeSlot)self :: Boolean |
-        self hasAnyFlags: TypeSlotFlags::Public
+        self visibility = TypeSlotFlags::Public
     } withEagerAnalysis;
     withSelector: #isReadonly addMethod: {:(TypeSlot)self :: Boolean |
         self hasAnyFlags: TypeSlotFlags::ReadOnly

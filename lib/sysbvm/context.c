@@ -398,6 +398,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     sysbvm_tuple_setType((sysbvm_object_tuple_t*)sysbvm_tuple_getType(context, context->roots.metaclassType), context->roots.metaclassType);
 
+    // Package type
+    context->roots.packageType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.packageType);
+
     // Create the type slot class.
     context->roots.typeSlotType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.programEntityType);
 
@@ -673,6 +676,9 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "owner", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.programEntityType,
         "serialToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.packageType, "Package", SYSBVM_NULL_TUPLE,
+        "children", SYSBVM_TYPE_SLOT_FLAG_PROTECTED, context->roots.orderedCollectionType,
+        NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.typeType, "Type", SYSBVM_NULL_TUPLE,
         "supertype", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_RTTI_EXCLUDED, context->roots.typeType,
         "slots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.arrayType,
@@ -698,6 +704,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
         "pendingSlots", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
         "subtypes", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, SYSBVM_NULL_TUPLE,
+        "children", SYSBVM_TYPE_SLOT_FLAG_PROTECTED, context->roots.orderedCollectionType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.classType, "Class", SYSBVM_NULL_TUPLE, NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.metatypeType, "Metatype", SYSBVM_NULL_TUPLE,
@@ -755,6 +762,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "parent", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.environmentType,
         "analysisQueue", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.analysisQueueType,
         "symbolTable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.identityDictionaryType,
+        "children", SYSBVM_TYPE_SLOT_FLAG_PROTECTED, context->roots.orderedCollectionType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.namespaceType, "Namespace", SYSBVM_NULL_TUPLE,
         NULL);

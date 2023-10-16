@@ -33,6 +33,7 @@ set(sysbvm_sources
     message.c
     orderedCollection.c
     orderedOffsetTable.c
+    package.c
     parser.c
     pic.c
     pragma.c
