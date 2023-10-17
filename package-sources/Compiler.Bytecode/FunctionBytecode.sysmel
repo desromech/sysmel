@@ -143,8 +143,7 @@ FunctionBytecode definition: {
     public final method isBranchOpcode: (opcode: UInt8) ::=> Boolean
         := (opcode = FunctionBytecode::Opcode::Jump) ||
             (opcode = FunctionBytecode::Opcode::JumpIfTrue) ||
-            (opcode = FunctionBytecode::Opcode::JumpIfFalse) ||
-            (opcode = FunctionBytecode::Opcode::CaseJump).
+            (opcode = FunctionBytecode::Opcode::JumpIfFalse).
 
     public method decodedInstructionsDo: aBlock ::=> Void := {
         let instructions := self instructions.
@@ -196,6 +195,18 @@ FunctionBytecode definition: {
 
     public method allBranchTargetsDo: (aBlock: (IntPointer) => Void) := {
         self decodedInstructionsDo: {:(UInt8)opcode :(Array)operands :(Size)pc :(Size)nextPC :: Void |
+            (opcode >= FunctionBytecode::Opcode::FirstVariable) && ((opcode & 16rF0 u8) = FunctionBytecode::Opcode::CaseJump) ifTrue: {
+                let caseCount := (operands size - 2sz) / 2sz.
+                let i mutable := 0sz.
+                while: i <= caseCount do: {
+                    let jumpDelta => Int16 := operands at: 1sz + caseCount + i.
+                    let jumpDestination := nextPC asIntPointer + jumpDelta asIntPointer.
+                    aBlock(jumpDestination).
+                } continueWith: (i := i + 1sz).
+
+                return: void.
+            }.
+
             (self isBranchOpcode: opcode) ifTrue: {
                 let jumpDelta => Int16 := operands last.
                 let jumpDestination := nextPC asIntPointer + jumpDelta asIntPointer.

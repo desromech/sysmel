@@ -646,6 +646,34 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         self storeInTemporary: operands first value: (builder makeDictionary: elements)
     }.
 
+    public method compileCaseJump: (opcode: UInt8) operands: (operands: Array) pc: (pc: Size) nextPC: (nextPC: Size) ::=> Void := {
+        self assert: operands size >= 2sz.
+        let caseCount := (operands size - 2sz) // 2sz.
+
+        let valueOperand => Int16 := operands first.
+        let value := self valueOfOperand: valueOperand.
+
+        let defaultDestinationOperand => Int16 := operands last.
+        let defaultDestination => HIRBasicBlock := pcToBasicBlockTable at: (nextPC asIntPointer + defaultDestinationOperand asIntPointer) asSize.
+
+        let caseKeys := Array new: caseCount.
+        let caseDestinations := Array new: caseCount.
+
+        let i mutable := 0sz.
+        while: i < caseCount do: {
+            let keyOperand => Int16 := operands at: 1sz + i.
+            let caseDestinationOperand => Int16 := operands at: 1sz + caseCount + i.
+
+            let key := self valueOfOperand: keyOperand.
+            caseKeys at: i put: key.
+
+            let destination => HIRBasicBlock := pcToBasicBlockTable at: (nextPC asIntPointer + caseDestinationOperand asIntPointer) asSize.
+            caseDestinations at: i put: destination.
+        } continueWith: (i := i + 1sz).
+
+        builder switch: value caseKeys: caseKeys destinations: caseDestinations defaultDestination: defaultDestination.
+    }.
+
     let OpcodeCompilationFunction := (HIRFunctionBytecodeCompilationContext, UInt8, Array, Size, Size) => Void.
     let OpcodeDispatchTable := (Array new: 256)
         at: FunctionBytecode::Opcode::Nop put: HIRFunctionBytecodeCompilationContext >> #compileNop:operands:pc:nextPC:;
@@ -686,6 +714,8 @@ public final class HIRFunctionBytecodeCompilationContext superclass: Object; def
         at: FunctionBytecode::Opcode::MakeByteArrayWithElements put: HIRFunctionBytecodeCompilationContext >> #compileMakeByteArrayWithElements:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::MakeClosureWithCaptures put: HIRFunctionBytecodeCompilationContext >> #compileMakeClosureWithCaptures:operands:pc:nextPC:;
         at: FunctionBytecode::Opcode::MakeDictionaryWithElements put: HIRFunctionBytecodeCompilationContext >> #compileMakeDictionaryWithElements:operands:pc:nextPC:;
+
+        at: FunctionBytecode::Opcode::CaseJump put: HIRFunctionBytecodeCompilationContext >> #compileCaseJump:operands:pc:nextPC:;
 
         yourself.
 

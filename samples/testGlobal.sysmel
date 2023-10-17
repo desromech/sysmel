@@ -49,11 +49,11 @@ let hirModule := HIRModuleCompilationContext forDefaultTarget
 printLine(hirModule fullPrintString).
 *#
 
-public function testSwitch(v: Int32) => Float32 := {
+public function testSwitch(v: Int8) => Float32 := {
     switch: v withCases: #{
-        0i32 : 0f32.
-        1i32 : 1f32.
-        _: -1f32
+        0i8 : 0f32.
+        1i8 : 1f32.
+        _: -1.0f32
     }.
 }.
 
@@ -62,9 +62,11 @@ let hirModule := HIRModuleCompilationContext forDefaultTarget
     compileFunctionsWithDefinitions: (testSwitch,);
     finish.
 
+hirModule performStandardOptimizations.
 printLine(hirModule fullPrintString).
 
 let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForLinux asMirCompilationTarget.
+mirModule performStandardOptimizations.
 ##let mirModule := hirModule asMIRModuleFor: AsmCompilationTarget x86_64 setForWindows asMirCompilationTarget.
 printLine(mirModule fullPrintString).
 

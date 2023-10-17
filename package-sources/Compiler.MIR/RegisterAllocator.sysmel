@@ -227,6 +227,12 @@ MIRRegisterAllocator definition: {
         }
     }.
 
+    public virtual method allocateRelativeImmediate32ForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
+        let operand := instruction operands at: operandIndex.
+        self assert: operand isRelativeImmediate32.
+        instruction operandRegisters at: operandIndex put: (MIRPhysicalLocationImmediate for: operand)
+    }.
+
     public virtual method allocateMemoryForInstruction: (instruction: MIRInstruction) operandAt: (operandIndex: Size) ::=> Void := {
         instruction operandRegisters at: operandIndex put: MIRPhysicalLocationMemory uniqueInstance
     }.

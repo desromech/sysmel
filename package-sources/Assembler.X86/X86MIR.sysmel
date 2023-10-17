@@ -5970,6 +5970,134 @@ MIR::Operation::ReturnVoid
         codegen stackFrameLayout hasRequiredConstruction ifTrue: (codegen textSection cfiEndEpilogue).
     }.
 
+let switchRegister8AllocationBlock := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+    allocator allocateRegister8ForInstruction: instruction operandAt: 0sz.
+    let caseCount := (instruction operands size - 2sz) / 2sz.
+    let i mutable := 0sz.
+    while: (i < caseCount) do: {
+        allocator
+            allocateImmediate32ForInstruction: instruction operandAt: 1sz + i;
+            allocateRelativeImmediate32ForInstruction: instruction operandAt: 1sz + caseCount + i
+    } continueWith: (i := i + 1sz).
+
+    allocator allocateRelativeImmediate32ForInstruction: instruction operandAt: instruction operands size - 1sz.
+}.
+
+let switchRegisterAllocationBlock := {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void |
+    allocator allocateRegisterForInstruction: instruction operandAt: 0sz.
+    let caseCount := (instruction operands size - 2sz) / 2sz.
+    let i mutable := 0sz.
+    while: (i < caseCount) do: {
+        allocator
+            allocateImmediate32ForInstruction: instruction operandAt: 1sz + i;
+            allocateRelativeImmediate32ForInstruction: instruction operandAt: 1sz + caseCount + i
+    } continueWith: (i := i + 1sz).
+
+    allocator allocateRelativeImmediate32ForInstruction: instruction operandAt: instruction operands size - 1sz.
+}.
+
+MIR::Operation::SwitchInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: switchRegister8AllocationBlock;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let caseCount := (instruction operands size - 2sz) / 2sz.
+        let valueRegister := instruction firstOperandRegister x86::int8For: codegen.
+
+        let i mutable := 0sz.
+        while: (i < caseCount) do: {
+            codegen textSection
+                x86::cmp: valueRegister with: ((instruction operandRegisterAt: 1sz + i) x86::int8For: codegen);
+                x86::jz: ((instruction operandRegisterAt: 1sz + caseCount + i) x86::relCall32OrInt32For: codegen)
+        } continueWith: (i := i + 1sz).
+
+        codegen textSection
+            x86::jmp: (instruction operandRegisters last x86::relCall32OrInt32For: codegen)
+    }.
+
+MIR::Operation::SwitchUInt8
+    forTargets: #(x86 x86_64) registerConstraintsWith: switchRegister8AllocationBlock;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let caseCount := (instruction operands size - 2sz) / 2sz.
+        let valueRegister := instruction firstOperandRegister x86::int8For: codegen.
+
+        let i mutable := 0sz.
+        while: (i < caseCount) do: {
+            codegen textSection
+                x86::cmp: valueRegister with: ((instruction operandRegisterAt: 1sz + i) x86::int8For: codegen);
+                x86::jz: ((instruction operandRegisterAt: 1sz + caseCount + i) x86::relCall32OrInt32For: codegen)
+        } continueWith: (i := i + 1sz).
+
+        codegen textSection
+            x86::jmp: (instruction operandRegisters last x86::relCall32OrInt32For: codegen)
+    }.
+
+MIR::Operation::SwitchInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: switchRegisterAllocationBlock;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let caseCount := (instruction operands size - 2sz) / 2sz.
+        let valueRegister := instruction firstOperandRegister x86::int16For: codegen.
+
+        let i mutable := 0sz.
+        while: (i < caseCount) do: {
+            codegen textSection
+                x86::cmp: valueRegister with: ((instruction operandRegisterAt: 1sz + i) x86::int16For: codegen);
+                x86::jz: ((instruction operandRegisterAt: 1sz + caseCount + i) x86::relCall32OrInt32For: codegen)
+        } continueWith: (i := i + 1sz).
+
+        codegen textSection
+            x86::jmp: (instruction operandRegisters last x86::relCall32OrInt32For: codegen)
+    }.
+
+MIR::Operation::SwitchUInt16
+    forTargets: #(x86 x86_64) registerConstraintsWith: switchRegisterAllocationBlock;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let caseCount := (instruction operands size - 2sz) / 2sz.
+        let valueRegister := instruction firstOperandRegister x86::int16For: codegen.
+
+        let i mutable := 0sz.
+        while: (i < caseCount) do: {
+            codegen textSection
+                x86::cmp: valueRegister with: ((instruction operandRegisterAt: 1sz + i) x86::int16For: codegen);
+                x86::jz: ((instruction operandRegisterAt: 1sz + caseCount + i) x86::relCall32OrInt32For: codegen)
+        } continueWith: (i := i + 1sz).
+
+        codegen textSection
+            x86::jmp: (instruction operandRegisters last x86::relCall32OrInt32For: codegen)
+    }.
+
+MIR::Operation::SwitchInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: switchRegisterAllocationBlock;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let caseCount := (instruction operands size - 2sz) / 2sz.
+        let valueRegister := instruction firstOperandRegister x86::int32For: codegen.
+
+        let i mutable := 0sz.
+        while: (i < caseCount) do: {
+            codegen textSection
+                x86::cmp: valueRegister with: ((instruction operandRegisterAt: 1sz + i) x86::int32For: codegen);
+                x86::jz: ((instruction operandRegisterAt: 1sz + caseCount + i) x86::relCall32OrInt32For: codegen)
+        } continueWith: (i := i + 1sz).
+
+        codegen textSection
+            x86::jmp: (instruction operandRegisters last x86::relCall32OrInt32For: codegen)
+    }.
+
+MIR::Operation::SwitchUInt32
+    forTargets: #(x86 x86_64) registerConstraintsWith: switchRegisterAllocationBlock;
+    forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |
+        let caseCount := (instruction operands size - 2sz) / 2sz.
+        let valueRegister := instruction firstOperandRegister x86::int32For: codegen.
+
+        let i mutable := 0sz.
+        while: (i < caseCount) do: {
+            codegen textSection
+                x86::cmp: valueRegister with: ((instruction operandRegisterAt: 1sz + i) x86::int32For: codegen);
+                x86::jz: ((instruction operandRegisterAt: 1sz + caseCount + i) x86::relCall32OrInt32For: codegen)
+        } continueWith: (i := i + 1sz).
+
+        codegen textSection
+            x86::jmp: (instruction operandRegisters last x86::relCall32OrInt32For: codegen)
+    }.
+
 MIR::Operation::Trap
     forTargets: #(x86 x86_64) registerConstraintsWith: {:(MIRInstruction)instruction :(MIRRegisterAllocator)allocator :: Void | };
     forTargets: #(x86 x86_64) generateWith: {:(MIRInstruction)instruction :(MIRFunctionAsmCodeGenerator)codegen :: Void |

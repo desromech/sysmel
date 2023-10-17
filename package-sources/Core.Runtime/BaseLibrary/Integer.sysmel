@@ -362,12 +362,12 @@ Integer definition: {
     }.
 
     public pure final eager method asFloat32 ::=> Float32 := {
-        <primitive: #Integer::asUInt64>
+        <primitive: #Integer::asFloat32>
         self isSmallInteger ifTrue: {
             return: self smallIntegerUncheckedDecoded asFloat32
         }.
 
-        self asUInt64 asFloat32
+        self asInt64 asFloat32
     }.
 
     public pure final eager method asFloat64 ::=> Float64 := {
@@ -376,7 +376,7 @@ Integer definition: {
             return: self smallIntegerUncheckedDecoded asFloat64
         }.
 
-        self asUInt64 asFloat64
+        self asInt64 asFloat64
     }.
 
     if: Size == UInt64 then: {

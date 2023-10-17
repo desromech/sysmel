@@ -1207,6 +1207,7 @@ public final class MIROperation superclass: Object; definition: {
     public field isMove => Boolean.
     public field isPure => Boolean.
     public field isStore => Boolean.
+    public field isSwitch => Boolean.
     public field isTerminator => Boolean.
 
     public field x86 => MIROperationTargetSpecific.
@@ -1248,6 +1249,9 @@ public final class MIROperation superclass: Object; definition: {
 
         public method terminatorNamed: (name: Symbol) ::=> self
             := self new name: name; isTerminator: true; yourself.
+
+        public method switchNamed: (name: Symbol) ::=> self
+            := self new name: name; isSwitch: true; isTerminator: true; yourself.
 
         public method debugNamed: (name: Symbol) ::=> self
             := self new name: name; isDebug: true; yourself.
@@ -1312,8 +1316,14 @@ MIRInstruction definition: {
     public method thirdOperandRegister => MIRPhysicalLocation := operandRegisters third.
     public method fourthOperandRegister => MIRPhysicalLocation := operandRegisters fourth.
 
+    public method operandRegisterAt: (index: Size) ::=> MIRPhysicalLocation
+        := operandRegisters at: index.
+
     public method firstScratchRegister => MIRPhysicalLocation := scratchRegisters first.
-    public method secondScratchRegister => MIRPhysicalLocation := scratchRegisters first.
+    public method secondScratchRegister => MIRPhysicalLocation := scratchRegisters second.
+
+    public method scratchRegisterAt: (index: Size) ::=> MIRPhysicalLocation
+        := scratchRegisters at: index.
 
     public override method isTerminator => Boolean := operation isTerminator.
     public override method isDebug => Boolean := operation isDebug.
@@ -1452,6 +1462,16 @@ MIRInstruction definition: {
 
 public global MIR::Operation::Branch := MIROperation terminatorNamed: #branch.
 public global MIR::Operation::ConditionalBranch := MIROperation terminatorNamed: #condBranch.
+
+public global MIR::Operation::SwitchInt8 := MIROperation switchNamed: #switchInt8.
+public global MIR::Operation::SwitchInt16 := MIROperation switchNamed: #switchInt16.
+public global MIR::Operation::SwitchInt32 := MIROperation switchNamed: #switchInt32.
+public global MIR::Operation::SwitchInt64 := MIROperation switchNamed: #switchInt64.
+public global MIR::Operation::SwitchUInt8 := MIROperation switchNamed: #switchUInt8.
+public global MIR::Operation::SwitchUInt16 := MIROperation switchNamed: #switchUInt16.
+public global MIR::Operation::SwitchUInt32 := MIROperation switchNamed: #switchUInt32.
+public global MIR::Operation::SwitchUInt64 := MIROperation switchNamed: #switchUInt64.
+public global MIR::Operation::SwitchPointer := MIROperation switchNamed: #switchPointer.
 
 public global MIR::Operation::MoveInt8       := MIROperation moveNamed: #moveInt8.
 public global MIR::Operation::MoveInt16      := MIROperation moveNamed: #moveInt16.
@@ -2205,6 +2225,33 @@ public final class MIRBlockBuilder superclass: Object; definition: {
 
     public method when: (condition: MIRValue) branchIfTrue: (trueDestination: MIRValue) branchIfFalse: (falseDestination: MIRValue) ::=> MIRInstruction
         := self operation: MIR::Operation::ConditionalBranch with: condition with: trueDestination with: falseDestination.
+
+    public method switchInt8: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchInt8 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchInt16: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchInt16 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchInt32: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchInt32 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchInt64: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchInt64 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchUInt8: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchUInt8 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchUInt16: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchUInt16 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchUInt32: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchUInt32 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchUInt64: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchUInt64 withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
+
+    public method switchPointer: (value: MIRValue) keys: (keys: Array) destinations: (destinations: Array) defaultDestination: (defaultDestination: MIRValue) ::=> MIRInstruction
+        := self operation: MIR::Operation::SwitchPointer withOperands: (Array with: value) -- keys -- destinations -- (Array with: defaultDestination).
 
     public method call: (function: MIRValue) operation: (callOperation: MIROperation) convention: (callingConvention: MIRCallingConvention) arguments: (arguments: Array) type: (type: Type) ::=> MIRInstruction
         := self addInstruction: ((MIRInstruction withType: type compilationTarget: self compilationTarget)

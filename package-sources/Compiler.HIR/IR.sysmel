@@ -60,6 +60,7 @@ HIRValue definition: {
     public virtual method isSendInstruction => Boolean := false.
     public virtual method isSetDebugValueForBindingInstruction => Boolean := false.
     public virtual method isStoreInstruction => Boolean := false.
+    public virtual method isSwitchInstruction => Boolean := false.
     public virtual method isTrapInstruction => Boolean := false.
     public virtual method isTypeSlotAtInstruction => Boolean := false.
     public virtual method isTypeSlotReferenceAtInstruction => Boolean := false.
@@ -2124,6 +2125,53 @@ public final class HIRConditionalBranchInstruction superclass: HIRInstruction; d
     }.
 }.
 
+public final class HIRSwitchInstruction superclass: HIRInstruction; definition: {
+    public field value => HIRValue.
+    public field caseKeys => Array.
+    public field caseDestinations => Array.
+    public field defaultDestination => HIRBasicBlock.
+
+    public override method isSwitchInstruction => Boolean := true.
+    public override method isTerminatorInstruction => Boolean := true.
+
+    public override method successors => Array
+        := caseDestinations -- (Array with: self defaultDestination).
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        stream nextPutAll: "switch "; print: self value; nextPutAll: " default "; print: self defaultDestination.
+
+        caseKeys doWithIndex: {:(HIRValue)key :(Size)index :: Void |
+            let destination => HIRBasicBlock := caseDestinations at: index.
+            stream nl; tab; tab; print: key; nextPutAll: " -> "; print: destination.
+        }.
+    }.
+
+    public override method usedValuesDo: aBlock ::=> Void := {
+        aBlock(self value).
+        caseKeys do: aBlock.
+        caseDestinations do: aBlock.
+        aBlock(self defaultDestination).
+    }.
+
+    public override method replaceUsedValue: replacedValue with: replacement ::=> Void := {
+        if: self value = replacedValue then: (self value: replacement).
+        if: self defaultDestination = replacedValue then: (self defaultDestination: replacement).
+        caseKeys replaceAll: replacedValue with: replacement.
+        caseDestinations replaceAll: replacedValue with: replacement.
+    }.
+
+    public override method replaceUsedValuesWith: (replacementDictionary: Dictionary) ::=> Void := {
+        replacementDictionary at: self value ifPresent: {:(HIRValue)replacement :: Void | self value: replacement}.
+        caseDestinations replaceAllWithDictionary: replacementDictionary.
+        replacementDictionary at: self defaultDestination ifPresent: {:(HIRBasicBlock)replacement :: Void | self defaultDestination: replacement}.
+    }.
+
+    public override method replaceDestination: (oldDestination: HIRBasicBlock) with: (newDestination: HIRBasicBlock) ::=> Void := {
+        if: self defaultDestination = oldDestination then: (self defaultDestination: newDestination).
+        caseDestinations replaceAll: oldDestination with: newDestination.
+    }.
+}.
+
 public final class HIRDownCastInstruction superclass: HIRInstruction; definition: {
     public field targetType => HIRValue.
     public field value => HIRValue.
@@ -3218,6 +3266,16 @@ HIRInstructionBuilder definition: {
             condition: condition;
             trueDestination: trueDestination;
             falseDestination: falseDestination;
+            type: Void;
+            registerInUsedValues;
+            yourself).
+    
+    public method switch: (value: HIRValue) caseKeys: (caseKeys: Array) destinations: (caseDestinations: Array) defaultDestination: (defaultDestination: HIRBasicBlock) ::=> HIRSwitchInstruction
+        := self addInstruction: ((HIRSwitchInstruction forContext: context)
+            value: value;
+            caseKeys: caseKeys;
+            caseDestinations: caseDestinations;
+            defaultDestination: defaultDestination;
             type: Void;
             registerInUsedValues;
             yourself).
