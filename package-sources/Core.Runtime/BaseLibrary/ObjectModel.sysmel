@@ -1789,7 +1789,7 @@ public function ObjectModel::fetchUncheckedEntryPointMatchingBoxDescriptorOrBoxi
 }.
 
 public function ObjectModel::interpretFunctionWithArguments(function: Function, arguments: Array) => Untyped
-    := function interpretWithArgument: arguments.
+    := function interpretWithArguments: arguments.
 
 ## Generate the trampolines via macro metaprogramming.
 public global ObjectModel::DirectFunctionApplicationTrampolines := Array new: 17.
@@ -1872,7 +1872,7 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
                 return: checkedEntryPointFunction(function, `@argumentIdentifiers)
             }.
 
-            function interpretWithArgument: (`@argumentIdentifiers,)
+            function interpretWithArguments: (`@argumentIdentifiers,)
         }.
         ObjectModel::DirectFunctionApplicationTrampolines at: `,(ArgumentCount asMacroLiteral) put: `,(applyDirectName asMacroIdentifier).
 
@@ -1890,7 +1890,7 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
                             return: checkedEntryPointFunction(functional, `@argumentIdentifiers)
                         }.
                         
-                        function interpretWithArgument: (`@argumentIdentifiers,)
+                        function interpretWithArguments: (`@argumentIdentifiers,)
                     }.
                 }
             }.

@@ -100,4 +100,9 @@ Function definition: {
 
         error("applyWithExpandedArguments with an excessive number of arguments.").
     }.
+
+    public method interpretWithArguments: (arguments: Array) ::=> Untyped := {
+        self doEnsureAnalysis.
+        definition interpretClosure: self withArguments: arguments
+    }.
 }.

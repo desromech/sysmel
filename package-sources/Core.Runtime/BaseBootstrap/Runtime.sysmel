@@ -1610,6 +1610,9 @@ SequenceableCollection
 
         result
     } makeVirtual;
+    withSelector: #copyFrom:count: addMethod: {:(SequenceableCollection)self :(Size)startIndex :(Size)count :: self species |
+        self copyFrom: startIndex until: startIndex + count
+    };
 
     withSelector: #first: addMethod: {:(SequenceableCollection)self :(Size)elementsToKeep :: self species |
         self copyFrom: 0sz until: elementsToKeep

@@ -78,10 +78,16 @@ FunctionBytecodeAssemblerInstruction definition: {
     public override method assembleIn: (instructionStream: ByteArray) ::=> Void := {
         let destination mutable := self pc.
         let standardOpcode := self standardOpcode.
-        let opcode := if: standardOpcode >= FunctionBytecode::Opcode::FirstVariable
-            then: standardOpcode + (self operands size asUInt8
-                - (FunctionBytecode::OpcodeExtraImplicitOperandCountDictionary at: standardOpcode) asUInt8)
-            else: standardOpcode.
+        let opcode mutable := standardOpcode.
+        
+        standardOpcode >= FunctionBytecode::Opcode::FirstVariable ifTrue: {
+            let operandCount := self operands size - (FunctionBytecode::OpcodeExtraImplicitOperandCountTable __uncheckedByteSlotAt__: standardOpcode asSize) asSize.
+            let opcodeOperandCount := (standardOpcode = FunctionBytecode::Opcode::CaseJump
+                ifTrue: operandCount / 2sz
+                ifFalse: operandCount).
+            opcode := opcode + (opcodeOperandCount asUInt8 & 16r0F u8)
+        }.
+        
         instructionStream at: destination put: opcode.
         destination := destination + 1sz.
 
@@ -120,7 +126,7 @@ FunctionBytecodeAssemblerInstruction definition: {
         := self operands last.
 
     public override method markOperandUsages => Void := {
-        let destinationOperandCount := FunctionBytecode::OpcodeDestinationOperandCountDictionary at: self standardOpcode.
+        let destinationOperandCount := (FunctionBytecode::OpcodeDestinationOperandCountTable uint8At: self standardOpcode asSize) asSize.
         let operands := self operands.
         let operandCount := operands size - (if: self isBranchInstruction then: 1sz else: 0sz).
         

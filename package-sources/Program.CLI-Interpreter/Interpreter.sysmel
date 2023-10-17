@@ -105,6 +105,10 @@ public function CLISysmelInterpreter::nativeMain(argc: Int32, argv: Char8 const 
 
 public function CLISysmelInterpreter::nativeRuntimeMain(argc: Int32, argv: Char8 const pointer pointer) => Int32 := {
     GarbageCollector::initialize().
+
+    ## FIXME: Remove this line after generating global variables with initial values.
+    FunctionBytecodeCompiler::Current := FunctionBytecodeDirectCompiler.
+
     let result := CLISysmelInterpreter::nativeMain(argc, argv).
     AnalysisQueue current waitPendingAnalysis.
     GarbageCollector::shutdown().
