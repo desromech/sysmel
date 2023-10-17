@@ -193,6 +193,7 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
 
     size_t instructionsSize;
     size_t pc;
+    size_t countExtension = 0;
     for(;;)
     {
         pc = activationRecord->pc;
@@ -202,13 +203,20 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
 
         uint8_t *instructions = SYSBVM_CAST_OOP_TO_OBJECT_TUPLE(activationRecord->instructions)->bytes;
         uint8_t opcode = instructions[pc++];
+        if(opcode == SYSBVM_OPCODE_COUNT_EXTENSION)
+        {
+            uint8_t lowByte = instructions[pc++];
+            uint8_t highByte = instructions[pc++];
+            countExtension = (countExtension << 16) | (highByte << 8) | lowByte;
+            continue;
+        }
 
         uint8_t standardOpcode = opcode;
-        uint8_t operandCount = 0;
-        uint8_t caseCount = 0;
+        size_t operandCount = 0;
+        size_t caseCount = 0;
         if(opcode >= SYSBVM_OPCODE_FIRST_VARIABLE)
         {
-            operandCount = (opcode & 0x0F);
+            operandCount = (countExtension << 4) + (opcode & 0x0F);
             standardOpcode = opcode & 0xF0;
             if(standardOpcode == SYSBVM_OPCODE_CASE_JUMP)
             {
@@ -222,8 +230,10 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
         {
             operandCount = opcode >> 4;
         }
+        countExtension = 0;
 
         // Decode the operands.
+        SYSBVM_ASSERT(operandCount <= SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE);
         SYSBVM_ASSERT(pc + operandCount*2 <= instructionsSize);
         for(uint8_t i = 0; i < operandCount; ++i)
         {
@@ -231,8 +241,6 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
             uint16_t highByte = instructions[pc++];
             decodedOperands[i] = lowByte | (highByte << 8);
         }
-
-        SYSBVM_ASSERT(operandCount <= SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE);
 
         // Validate the destination operands.
         uint8_t destinationOperandCount = sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(standardOpcode);

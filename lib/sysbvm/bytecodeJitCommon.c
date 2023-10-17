@@ -444,6 +444,7 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
     sysbvm_jit_prologue(&jit);
 
     size_t pc = 0;
+    size_t countExtension = 0;
     while(pc < instructionsSize)
     {
         jit.pcDestinations[pc] = jit.instructions.size;
@@ -452,13 +453,20 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
         sysbvm_bytecodeJit_addSourcePositionRecord(&jit, functionBytecode, (uint16_t)pc, jit.instructions.size);
 
         uint8_t opcode = instructions[pc++];
+        if(opcode == SYSBVM_OPCODE_COUNT_EXTENSION)
+        {
+            uint8_t lowByte = instructions[pc++];
+            uint8_t highByte = instructions[pc++];
+            countExtension = (countExtension << 16) | (highByte << 8) | lowByte;
+            continue;
+        }
 
         uint8_t standardOpcode = opcode;
-        uint8_t operandCount = 0;
-        uint8_t caseCount = 0;
+        size_t operandCount = 0;
+        size_t caseCount = 0;
         if(opcode >= SYSBVM_OPCODE_FIRST_VARIABLE)
         {
-            operandCount = (opcode & 0x0F);
+            operandCount = (countExtension << 4) + (opcode & 0x0F);
             standardOpcode = opcode & 0xF0;
             if(standardOpcode == SYSBVM_OPCODE_CASE_JUMP)
             {
@@ -472,8 +480,10 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
         {
             operandCount = opcode >> 4;
         }
+        countExtension = 0;
 
         // Decode the operands.
+        SYSBVM_ASSERT(operandCount < SYSBVM_BYTECODE_FUNCTION_OPERAND_REGISTER_FILE_SIZE);
         SYSBVM_ASSERT(pc + operandCount*2 <= instructionsSize);
         for(uint8_t i = 0; i < operandCount; ++i)
         {
