@@ -1431,10 +1431,9 @@ FunctionDefinition definition: {
             bytecode := FunctionBytecodeCompiler::Current compileFunctionSourceAnalyzedDefinition: validSourceAnalyzedDefinition.
 
             ## Discard our source analyzed definition after the bytecode is generated.
-            ## TODO: Perform this discarding only after implementing the bytecode interpreter in Sysmel.
-            ##bytecode ifNotNil: {
-            ##    sourceAnalyzedDefinition := nil
-            ##}.
+            bytecode ifNotNil: {
+                sourceAnalyzedDefinition := nil
+            }.
         }.
 
         FunctionNativeCodeCompiler::Current ifNotNil: {
