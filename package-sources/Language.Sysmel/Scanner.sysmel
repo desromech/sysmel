@@ -1,0 +1,339 @@
+public class SysmelScanner superclass: Object; definition: {
+    public field sourceCode => SourceCode.
+    public field sourceCollection => String.
+    public field position => Size.
+
+    public method scanSourceCode: (theSourceCode: SourceCode) ::=> Array := {
+        sourceCode := theSourceCode.
+        sourceCollection := sourceCode text.
+        position := 0sz.
+
+        let tokens := OrderedCollection new.
+        while: self atEnd not do: {
+            let token := self scanNextToken.
+            token ifNotNil: {
+                tokens add: token
+            }
+        }.
+
+        tokens asArray
+    }.
+
+    public method peek: (offset: Size) ::=> Int32 := {
+        let peekPosition := position + offset.
+        peekPosition < sourceCollection size
+            ifTrue: (sourceCollection char8At: peekPosition) asInt32
+            ifFalse: -1i32
+    }.
+
+    public method peek ::=> Int32
+        := self peek: 0sz.
+
+    public method advance: (increment: Size) ::=> Void := {
+        position := position + increment min: sourceCollection size
+    }.
+
+    public method advance ::=> Void
+        := self advance: 1sz.
+
+    public method atEnd => Boolean
+        := position >= sourceCollection size.
+
+    public method sourcePositionFrom: (startIndex: Size) ::=> SourcePosition
+        := SourcePosition for: sourceCode startIndex: startIndex asUInt32 endIndex: position asUInt32.
+
+    public method isOperatorCharacter: (character: Int32) ::=> Boolean := {
+        switch: character withCases: #{
+        '+'i32 : true.
+        '-'i32 : true.
+        '/'i32 : true.
+        '\\'i32 : true.
+        '*'i32 : true.
+        '~'i32 : true.
+        '<'i32 : true.
+        '>'i32 : true.
+        '='i32 : true.
+        '@'i32 : true.
+        '%'i32 : true.
+        '|'i32 : true.
+        '&'i32 : true.
+        '?'i32 : true.
+        '!'i32 : true.
+        '^'i32 : true.
+        _: false
+        }
+    }.
+
+    public method isNewlineCharacter: (character: Int32) ::=> Boolean
+        := (character = '\n'i32) || (character = '\r'i32).
+
+    public method isWhiteCharacter: (character: Int32) ::=> Boolean
+        := (0i32 <= character) && (character <= ' 'i32).
+
+    public method isIdentifierStart: (character: Int32) ::=> Boolean
+        := (('A'i32 <= character) && (character <= 'Z'i32)) ||
+           (('a'i32 <= character) && (character <= 'z'i32)) ||
+           ('_'i32 = character).
+
+    public method isIdentifierMiddle: (character: Int32) ::=> Boolean
+        := (('A'i32 <= character) && (character <= 'Z'i32)) ||
+           (('a'i32 <= character) && (character <= 'z'i32)) ||
+           (('0'i32 <= character) && (character <= '9'i32)) ||
+           ('_'i32 = character).
+
+    public method isSign: (character: Int32) ::=> Boolean
+        := ('+'i32 = character) || ('-'i32 = character).
+
+    public method isRadixR: (character: Int32) ::=> Boolean
+        := ('r'i32 = character) || ('R'i32 = character).
+
+    public method isExponentE: (character: Int32) ::=> Boolean
+        := ('e'i32 = character) || ('E'i32 = character).
+
+    public method isDigit: (character: Int32) ::=> Boolean
+        := ('0'i32 <= character) && (character <= '9'i32).
+
+    public method isDigitOrUnderscore: (character: Int32) ::=> Boolean
+        := (('0'i32 <= character) && (character <= '9'i32)) || ('_'i32 = character).
+
+    public method skipSingleLineComment => Boolean := {
+        (self peek = '#'i32) && ((self peek: 1sz) = '#'i32) ifFalse: #{
+            return: false
+        }.
+
+        self advance: 2sz.
+        while: self atEnd not && (self isNewlineCharacter: self peek) not do: {
+            self advance
+        }.
+
+        true
+    }.
+
+    public method skipMultiLineComment => Boolean := {
+        (self peek = '#'i32) && ((self peek: 1sz) = '*'i32) ifFalse: #{
+            return: false
+        }.
+
+        self advance: 2sz.
+        let nestingLevel mutable := 1i32.
+        while: (self atEnd not) && (nestingLevel > 0i32) do: {
+            (self peek = '*'i32) && ((self peek: 1sz) = '#'i32) ifTrue: {
+                self advance: 2sz.
+                nestingLevel := nestingLevel - 1i32.
+            } ifFalse: {
+                (self peek = '#'i32) && ((self peek: 1sz) = '*'i32) ifTrue: {
+                    self advance: 2sz.
+                    nestingLevel := nestingLevel + 1i32.
+                } ifFalse: {
+                    self advance
+                }
+            }
+        }.
+
+        true
+    }.
+
+    public method skipWhite => Void := {
+        let hasSeenComments mutable := false.
+        do: {
+            hasSeenComments := false.
+
+            while: (self isWhiteCharacter: self peek) do: {
+                self advance
+            }.
+
+            self skipSingleLineComment ifTrue: {
+                hasSeenComments := true.
+            }.
+            self skipMultiLineComment ifTrue: {
+                hasSeenComments := true.
+            }.
+        } while: (hasSeenComments && self atEnd not)
+    }.
+
+    public method makeToken: (kind: UInt8) from: (startPosition: Size) ::=> SysmelToken
+        := SysmelToken kind: kind value: (sourceCollection copyFrom: startPosition until: position) asSymbol sourcePosition: (self sourcePositionFrom: startPosition).
+
+    public method scanNextToken => SysmelToken := {
+        self skipWhite.
+        self atEnd ifTrue: {return: nil}.
+        
+        let startPosition := position.
+        let character := self peek.
+
+        ## Identifiers.
+        (self isIdentifierStart: character) ifTrue: {
+            while: (self isIdentifierMiddle: self peek) do: {
+                self advance
+            }.
+
+
+            return: (SysmelToken kind: SysmelTokenKind::Identifier
+                value: (sourceCollection copyFrom: startPosition until: position) asSymbol
+                sourcePosition: (self sourcePositionFrom: startPosition))            
+        }.
+
+        ## Numbers
+        (self isDigit: character) || (self isSign: character) ifTrue: {
+            self advance.
+            while: (self isDigitOrUnderscore: character) do: {
+                self advance
+            }.
+
+            (self isRadixR: self peek) ifTrue: {
+                self advance.
+                while: (self isIdentifierMiddle: character) do: {
+                    self advance
+                }.
+
+                return: (SysmelToken kind: SysmelTokenKind::Integer
+                    value: (Integer parseString: (sourceCollection copyFrom: startPosition until: position))
+                    sourcePosition: (self sourcePositionFrom: startPosition))
+            }.
+
+            (self peek = '.'i32) && (self isDigit: (self peek: 1sz)) ifTrue: {
+                self advance.
+                while: (self isDigitOrUnderscore: character) do: {
+                    self advance
+                }.
+
+                (self isExponentE: self peek) ifTrue: {
+                    self advance.
+                    (self isSign: self peek) ifTrue: {
+                        self advance.
+                    }.
+                    while: (self isDigit: character) do: {
+                        self advance
+                    }.
+                }.
+
+                return: (SysmelToken kind: SysmelTokenKind::Float
+                    value: (Float64 parseString: (sourceCollection copyFrom: startPosition until: position))
+                    sourcePosition: (self sourcePositionFrom: startPosition))
+            } ifFalse: {
+                return: (SysmelToken kind: SysmelTokenKind::Integer
+                    value: (Integer parseString: (sourceCollection copyFrom: startPosition until: position))
+                    sourcePosition: (self sourcePositionFrom: startPosition))
+            }
+        }.
+
+        ## Operators
+        switch: character withCases: #{
+            '('i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::LeftParent value: #"(" sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            ')'i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::RightParent value: #")" sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            '['i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::LeftBracket value: #"[" sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            ']'i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::RightBracket value: #"]" sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            '{'i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::LeftCurlyBracket value: #"{" sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            '}'i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::RightCurlyBracket value: #"}" sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            ';'i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::Semicolon value: #";" sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            ','i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::Comma value: #"," sourcePosition: (self sourcePositionFrom: startPosition)
+            }.
+            '.'i32 : {
+                self advance.
+                (self peek = '.'i32) && ((self peek: 1sz) = '.'i32) ifTrue: {
+                    self advance: 2sz.
+                    SysmelToken kind: SysmelTokenKind::Ellipsis value: #"..." sourcePosition: (self sourcePositionFrom: startPosition)
+                } ifFalse: {
+                    SysmelToken kind: SysmelTokenKind::Dot value: #"." sourcePosition: (self sourcePositionFrom: startPosition)
+                }.
+            }.
+            ':'i32 : {
+                self advance.
+                (self peek = ':'i32) ifTrue: {
+                    self advance.
+                    SysmelToken kind: SysmelTokenKind::ColonColon value: #"::" sourcePosition: (self sourcePositionFrom: startPosition)
+                } ifFalse: {
+                    (self peek = '='i32) ifTrue: {
+                        self advance.
+                        SysmelToken kind: SysmelTokenKind::Assignment value: #":=" sourcePosition: (self sourcePositionFrom: startPosition)
+                    } ifFalse: {
+                        self advance.
+                        SysmelToken kind: SysmelTokenKind::Colon value: #":" sourcePosition: (self sourcePositionFrom: startPosition)
+                    }
+                }.
+            }.
+            '`'i32 : {
+                self advance.
+                switch: self peek withCases: #{
+                '\''i32 : {
+                    self advance.
+                    SysmelToken kind: SysmelTokenKind::Quote value: #"`'" sourcePosition: (self sourcePositionFrom: startPosition)
+                }.
+                '`'i32 : {
+                    self advance.
+                    SysmelToken kind: SysmelTokenKind::QuasiQuote value: #"``" sourcePosition: (self sourcePositionFrom: startPosition)
+                }.
+                ','i32 : {
+                    self advance.
+                    SysmelToken kind: SysmelTokenKind::QuasiUnquote value: #"`," sourcePosition: (self sourcePositionFrom: startPosition)
+                }.
+                '@'i32 : {
+                    self advance.
+                    SysmelToken kind: SysmelTokenKind::Splice value: #"`@" sourcePosition: (self sourcePositionFrom: startPosition)
+                }.
+                _: {
+                    self advance.
+                    SysmelToken kind: SysmelTokenKind::Error value: "Unexpected character " -- character asChar8 printString sourcePosition: (self sourcePositionFrom: startPosition)
+                }
+                }.
+            }.
+            '|'i32 : {
+                self advance.
+                SysmelToken kind: SysmelTokenKind::Bar value: #"|" sourcePosition: (self sourcePositionFrom: startPosition)                
+            }.
+            _: {
+                (self isOperatorCharacter: character) ifTrue: {
+                    do: {
+                        self advance
+                    } while: (self isOperatorCharacter: self peek).
+                    
+                    let operatorSize := position - startPosition.
+                    operatorSize = 1sz ifTrue: {
+                        switch: character withCases: #{
+                        '<'i32 : {
+                            return: (SysmelToken kind: SysmelTokenKind::LessThan value: #"<" sourcePosition: (self sourcePositionFrom: startPosition))
+                        }.
+                        '>'i32 : {
+                            return: (SysmelToken kind: SysmelTokenKind::GreaterThan value: #">" sourcePosition: (self sourcePositionFrom: startPosition))
+                        }.
+                        '*'i32 : {
+                            return: (SysmelToken kind: SysmelTokenKind::Star value: #"*" sourcePosition: (self sourcePositionFrom: startPosition))
+                        }.
+                        _: {}
+                        }
+                    }.
+
+                    self makeToken: SysmelTokenKind::Operator from: startPosition
+                } ifFalse: {
+                    self advance.
+                    SysmelToken kind: SysmelTokenKind::Error value: "Unexpected character " -- character asChar8 printString sourcePosition: (self sourcePositionFrom: startPosition)
+                }.
+
+            }
+        }
+    }.
+}.
+
