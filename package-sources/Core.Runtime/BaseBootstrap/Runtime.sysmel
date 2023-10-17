@@ -3250,8 +3250,11 @@ PointerLikeType
         (RawTuple::type:)(result, self).
         result
     };
-    withSelector: #withBoxForValue: addMethod: {:(PointerLikeType)self :(Untyped)value :: Untyped |
+    withSelector: #withBoxForValue: addMethod: {:(PointerLikeType)self :(Untyped)value :: self |
         self withStorage: (ValueBox with: value)
+    };
+    withSelector: #withEmptyBox addMethod: {:(PointerLikeType)self :: self |
+        self withStorage: (ValueBox basicNew)
     };
     withSelector: #untypedWithStorage: addMethod: {:(PointerLikeType)self :storage :: Untyped |
         let: #result with: (RawTuple::new(1sz)).

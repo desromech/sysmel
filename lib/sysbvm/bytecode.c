@@ -61,7 +61,6 @@ SYSBVM_API uint8_t sysbvm_bytecodeInterpreter_destinationOperandCountForOpcode(u
     case SYSBVM_OPCODE_DOWNCAST_VALUE:
     case SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE:
     case SYSBVM_OPCODE_MAKE_ASSOCIATION:
-    case SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
     case SYSBVM_OPCODE_SLOT_AT:
     case SYSBVM_OPCODE_SLOT_REFERENCE_AT:
     case SYSBVM_OPCODE_REF_SLOT_AT:
@@ -403,9 +402,6 @@ SYSBVM_API void sysbvm_bytecodeInterpreter_interpretWithActivationRecord(sysbvm_
         case SYSBVM_OPCODE_MAKE_ASSOCIATION:
             operandRegisterFile[0] = sysbvm_association_create(context, operandRegisterFile[1], operandRegisterFile[2]);
             break;
-        case SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR:
-            operandRegisterFile[0] = sysbvm_function_createClosureWithCaptureVectorArray(context, operandRegisterFile[1], operandRegisterFile[2]);
-            break;
 
         // Variable operand.
         case SYSBVM_OPCODE_CALL:
@@ -640,7 +636,6 @@ void sysbvm_bytecode_setupPrimitives(sysbvm_context_t *context)
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::DownCastValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_DOWNCAST_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::UncheckedDownCastValue", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_UNCHECKED_DOWNCAST_VALUE));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeAssociation", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MAKE_ASSOCIATION));
-    sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::MakeClosureWithVector", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_MAKE_CLOSURE_WITH_VECTOR));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotAt", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotReferenceAt", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_REFERENCE_AT));
     sysbvm_context_setIntrinsicSymbolBindingNamedWithValue(context, "FunctionBytecode::Opcode::SlotAtPut", sysbvm_tuple_uint8_encode(SYSBVM_OPCODE_SLOT_AT_PUT));

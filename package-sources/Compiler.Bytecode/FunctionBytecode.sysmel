@@ -33,7 +33,6 @@ let opcodeNameDictionary := #{
     FunctionBytecode::Opcode::DownCastValue : #downCastValue.
     FunctionBytecode::Opcode::UncheckedDownCastValue : #uncheckedDownCastValue.
     FunctionBytecode::Opcode::MakeAssociation : #makeAssociation.
-    FunctionBytecode::Opcode::MakeClosureWithVector : #makeClosureWithVector.
     FunctionBytecode::Opcode::SlotAt : #slotAt.
     FunctionBytecode::Opcode::SlotReferenceAt : #slotReferenceAt.
     FunctionBytecode::Opcode::SlotAtPut : #slotAtPut.

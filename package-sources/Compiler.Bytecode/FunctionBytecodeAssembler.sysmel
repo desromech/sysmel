@@ -376,12 +376,6 @@ FunctionBytecodeAssembler definition: {
             operands: (Array with: result with: key with: value);
             yourself).
 
-    public method makeClosure: (functionDefinition: FunctionBytecodeAssemblerVectorOperand) withCaptureVector: (captureVector: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
-        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
-            standardOpcode: FunctionBytecode::Opcode::MakeClosureWithVector;
-            operands: (Array with: result with: functionDefinition with: captureVector);
-            yourself).
-
     public method makeClosure: (functionDefinition: FunctionBytecodeAssemblerVectorOperand) withCaptures: (captures: Array) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction := {
         self assert: captures size <= 16rF sz.
         self addInstruction: (FunctionBytecodeAssemblerInstruction new

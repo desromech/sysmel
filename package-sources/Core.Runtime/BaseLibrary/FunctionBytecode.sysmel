@@ -35,7 +35,6 @@ public global FunctionBytecode::OpcodeDestinationOperandCountTable := (ByteArray
     at: FunctionBytecode::Opcode::DownCastValue put: 1u8;
     at: FunctionBytecode::Opcode::UncheckedDownCastValue put: 1u8;
     at: FunctionBytecode::Opcode::MakeAssociation put: 1u8;
-    at: FunctionBytecode::Opcode::MakeClosureWithVector put: 1u8;
     at: FunctionBytecode::Opcode::SlotAt put: 1u8;
     at: FunctionBytecode::Opcode::SlotReferenceAt put: 1u8;
 
@@ -210,8 +209,109 @@ FunctionBytecode definition: {
                 }.
 
                 ## Two operands.
+                FunctionBytecode::Opcode::Alloca : {
+                    let pointerLikeType => PointerLikeType := registerFile __uncheckedSlotAt__: 1sz.
+                    registerFile __uncheckedSlotAt__: 0sz put: pointerLikeType withEmptyBox
+                }.
+                FunctionBytecode::Opcode::Load : {
+                    let pointerLikeValue => Untyped := registerFile __uncheckedSlotAt__: 1sz.
+                    let pointerLikeType := RawTuple::type(pointerLikeValue) downCastTo: PointerLikeType.
+                    registerFile __uncheckedSlotAt__: 0sz put: pointerLikeType loadValueFunction(pointerLikeValue)
+                }.
+                FunctionBytecode::Opcode::LoadSymbolValueBinding : {
+                    let symbolValueBinding => SymbolValueBinding := registerFile __uncheckedSlotAt__: 1sz.
+                    registerFile __uncheckedSlotAt__: 0sz put: symbolValueBinding value
+                }.
+                FunctionBytecode::Opcode::Store : {
+                    let pointerLikeValue => Untyped := registerFile __uncheckedSlotAt__: 0sz.
+                    let pointerLikeType := RawTuple::type(pointerLikeValue) downCastTo: PointerLikeType.
+                    pointerLikeType storeValueFunction(registerFile __uncheckedSlotAt__: 1sz)
+                }.
+                FunctionBytecode::Opcode::Move : {
+                    registerFile __uncheckedSlotAt__: 0sz put: (registerFile __uncheckedSlotAt__: 1sz)
+                }.
+
+                FunctionBytecode::Opcode::JumpIfTrue : {
+                    let condition := registerFile __uncheckedSlotAt__: 0sz.
+                    condition ifTrue: {
+                        let delta := decodedOperands at: 1sz.
+                        isBackwardBranch := delta < 0i16.
+
+                        pc := (pc asIntPointer + delta asIntPointer) asSize
+                    }
+                }.
+                FunctionBytecode::Opcode::JumpIfFalse : {
+                    let condition := registerFile __uncheckedSlotAt__: 0sz.
+                    condition ifFalse: {
+                        let delta := decodedOperands at: 1sz.
+                        isBackwardBranch := delta < 0i16.
+
+                        pc := (pc asIntPointer + delta asIntPointer) asSize
+                    }
+                }.
+                FunctionBytecode::Opcode::SetDebugValue : {
+                    ## Nothing is required here.
+                }.
+                FunctionBytecode::Opcode::SlotAt : {
+                    let tuple => Untyped := registerFile __uncheckedSlotAt__: 1sz.
+                    let typeSlot := registerFile __uncheckedSlotAt__: 2sz.
+                    registerFile __uncheckedSlotAt__: 0sz put: (RawTuple::typeSlotAt:)(tuple, typeSlot)
+                }.
+                FunctionBytecode::Opcode::SlotReferenceAt : {
+                    let tuple => Untyped := registerFile __uncheckedSlotAt__: 1sz.
+                    let typeSlot := registerFile __uncheckedSlotAt__: 2sz.
+                    self error: "TODO: Implement getting reference for slot."
+                }.
+                FunctionBytecode::Opcode::SlotAtPut : {
+                    let tuple => Untyped := registerFile __uncheckedSlotAt__: 0sz.
+                    let typeSlot := registerFile __uncheckedSlotAt__: 1sz.
+                    let value => Untyped := registerFile __uncheckedSlotAt__: 2sz.
+                    (RawTuple::typeSlotAt:put:)(tuple, typeSlot, value)
+                }.
+                FunctionBytecode::Opcode::RefSlotAt : {
+                    let tuple => Untyped := registerFile __uncheckedSlotAt__: 1sz.
+                    let typeSlot := registerFile __uncheckedSlotAt__: 2sz.
+                    registerFile __uncheckedSlotAt__: 0sz put: (RawTuple::refTypeSlotAt:)(tuple, typeSlot)
+                }.
+                FunctionBytecode::Opcode::RefSlotReferenceAt : {
+                    let tuple => Untyped := registerFile __uncheckedSlotAt__: 1sz.
+                    let typeSlot := registerFile __uncheckedSlotAt__: 2sz.
+                    self error: "TODO: Implement getting reference for slot."
+                }.
+                FunctionBytecode::Opcode::RefSlotAtPut : {
+                    let tuple => Untyped := registerFile __uncheckedSlotAt__: 0sz.
+                    let typeSlot := registerFile __uncheckedSlotAt__: 1sz.
+                    let value => Untyped := registerFile __uncheckedSlotAt__: 2sz.
+                    (RawTuple::refTypeSlotAt:put:)(tuple, typeSlot, value)
+                }.
 
                 ## Three operands
+                FunctionBytecode::Opcode::AllocaWithValue : {
+                    let pointerLikeType => PointerLikeType := registerFile __uncheckedSlotAt__: 1sz.
+                    let value => Untyped := registerFile __uncheckedSlotAt__: 2sz.
+                    registerFile __uncheckedSlotAt__: 0sz put: (pointerLikeType untypedWithBoxForValue: value)
+                }.
+                FunctionBytecode::Opcode::CoerceValue : {
+                    let type => Type := registerFile __uncheckedSlotAt__: 1sz.
+                    let value => Untyped := registerFile __uncheckedSlotAt__: 2sz.
+                    registerFile __uncheckedSlotAt__: 0sz put: (type coerceValue: value)
+                }.
+                FunctionBytecode::Opcode::DownCastValue : {
+                    let type => Type := registerFile __uncheckedSlotAt__: 1sz.
+                    let value => Untyped := registerFile __uncheckedSlotAt__: 2sz.
+                    ((RawTuple::type(value) ifNil: Untyped) isSubtypeOf: type) ifFalse: {
+                        self error: "Expected a value whose type is " -- type printString
+                    }.
+                    registerFile __uncheckedSlotAt__: 0sz put: value
+                }.
+                FunctionBytecode::Opcode::UncheckedDownCastValue : {
+                    registerFile __uncheckedSlotAt__: 0sz put: (registerFile __uncheckedSlotAt__: 2sz)
+                }.
+                FunctionBytecode::Opcode::MakeAssociation : {
+                    let key := registerFile __uncheckedSlotAt__: 1sz.
+                    let value := registerFile __uncheckedSlotAt__: 2sz.
+                    registerFile __uncheckedSlotAt__: 0sz put: (Association key: key value: value)
+                }.
 
                 _: (self error: "Unsupported opcode " -- opcode asString)
                 }
@@ -272,6 +372,46 @@ FunctionBytecode definition: {
                         )
                     }.
 
+                    registerFile __uncheckedSlotAt__: 0sz put: result
+                }.
+                (FunctionBytecode::Opcode::MakeArrayWithElements >> 4u8) : {
+                    let result := Array basicNew: variantCount.
+                    let i mutable := 0sz.
+                    while: (i < variantCount) do: {
+                        result __uncheckedSlotAt__: i put: (registerFile __uncheckedSlotAt__: 1sz + i)
+                    } continueWith: (i := i + 1sz).
+                    registerFile __uncheckedSlotAt__: 0sz put: result
+                }.
+                (FunctionBytecode::Opcode::MakeByteArrayWithElements >> 4u8) : {
+                    let result := ByteArray basicNew: variantCount.
+                    let i mutable := 0sz.
+                    while: (i < variantCount) do: {
+                        result __uncheckedByteSlotAt__: i put: (registerFile __uncheckedSlotAt__: 1sz + i)
+                    } continueWith: (i := i + 1sz).
+                    registerFile __uncheckedSlotAt__: 0sz put: result
+                }.
+                (FunctionBytecode::Opcode::MakeClosureWithCaptures >> 4u8) : {
+                    let functionDefinition => FunctionDefinition := registerFile __uncheckedSlotAt__: 1sz.
+                    functionDefinition ensureAnalysis.
+
+                    let captureVector => AnySequenceTuple := functionDefinition captureVectorType new.
+                    let i mutable := 0sz.
+                    while: (i < variantCount) do: {
+                        captureVector at: i put: (registerFile __uncheckedSlotAt__: 1sz + i)
+                    } continueWith: (i := i + 1sz).
+
+                    let closure := Function new.
+                    closure __type__: functionDefinition type.
+                    closure setupWithFunctionDefinition: functionDefinition captureVector: captureVector.
+
+                    registerFile __uncheckedSlotAt__: 0sz put: closure
+                }.
+                (FunctionBytecode::Opcode::MakeDictionaryWithElements >> 4u8) : {
+                    let result := Dictionary new: variantCount.
+                    let i mutable := 0sz.
+                    while: (i < variantCount) do: {
+                        result add: (registerFile __uncheckedSlotAt__: 1sz + i)
+                    } continueWith: (i := i + 1sz).
                     registerFile __uncheckedSlotAt__: 0sz put: result
                 }.
                 _: (self error: "Unsupported variable opcode " -- standardOpcode asString)
