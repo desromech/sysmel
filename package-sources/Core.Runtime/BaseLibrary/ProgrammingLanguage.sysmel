@@ -1,0 +1,112 @@
+ProgrammingLanguage definition: {
+    __Meta__ extend: {
+        public method scanSourceCode: (sourceCode: SourceCode) ::=> Array
+            := self new scanSourceCode: sourceCode.
+
+        public method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
+            := self new parseSourceCode: sourceCode.
+
+        public method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) withEnvironment: (evaluationEnvironment: Environment) ::=> AnyValue
+            := self new analyzeAndEvaluateSourceCode: sourceCode withEnvironment: evaluationEnvironment.
+
+        public method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
+            := self new analyzeAndEvaluateSourceCode: sourceCode.
+
+        public method findNameForExtension: (extension: String) ::=> StringSymbol := {
+            let foundLanguage := self findLanguageForExtension: extension.
+            foundLanguage ifNil: {
+                extension asSymbol
+            } ifNotNil: {
+                foundLanguage languageName
+            }
+        }.
+
+        public virtual method languageName => StringSymbol
+            := nil.
+
+        public virtual method supportsExtension: (extension: String) ::=> Boolean
+            := false.
+
+        public method findLanguageWithName: (name: StringSymbol) ::=> ProgrammingLanguage class := {
+            let found mutable => ProgrammingLanguage class := nil.
+            self withAllSubtypesDo: {:(ProgrammingLanguage class)each :: Void |
+                each languageName = name ifTrue: {
+                    found := each
+                }
+            }.
+
+            found
+        }.
+
+        public method findLanguageForExtension: (extension: String) ::=> ProgrammingLanguage class := {
+            let found mutable => AnyValue := nil.
+            self withAllSubtypesDo: {:(ProgrammingLanguage class)each :: Void |
+                (each supportsExtension: extension) ifTrue: {
+                    found := each
+                }
+            }.
+
+            found
+        }.
+    }.
+
+    public abstract method scanSourceCode: (sourceCode: SourceCode) ::=> Array
+        := self subclassResponsibility.
+
+    public virtual method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
+        := self parseTokens: (self scanSourceCode: sourceCode) sourceCode: sourceCode.
+
+    public abstract method parseTokens: (tokens: Array) sourceCode: (sourceCode: SourceCode) ::=> ASTNode
+        := self subclassResponsibility.
+
+    public virtual method environmentForEvaluatingSourceCode: (sourceCode: SourceCode) ::=> Environment
+        := Environment defaultForEvaluation
+            setNewSymbol: #__SourceDirectory__ bindingWithValue: sourceCode directory;
+            setNewSymbol: #__SourceName__ bindingWithValue: sourceCode name;
+            setNewSymbol: #__SourceLanguage__ bindingWithValue: self;
+            yourself.
+
+    public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) withEnvironment: (evaluationEnvironment: Environment) ::=> AnyValue := {
+        let ast := self parseSourceCode: sourceCode.
+        ast analyzeAndEvaluateWithEnvironment: evaluationEnvironment
+    }.
+
+    public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
+        := self analyzeAndEvaluateSourceCode: sourceCode withEnvironment: (self environmentForEvaluatingSourceCode: sourceCode).
+
+}.
+
+SourceCode definition: {
+    __Meta__ definition: {
+        public method loadWithSolvedPath: (solvedPath: String) ::=> self := {
+            let sourceCodeText := IO::readWholeFileNamedAsString(solvedPath).
+            let directory := FileSystem::dirname(solvedPath).
+            let basename := FileSystem::basename(solvedPath).
+            let extension := FileSystem::extension(solvedPath).
+
+            self text: sourceCodeText directory: directory name: basename language: (ProgrammingLanguage findNameForExtension: extension).
+        }.
+    }.
+
+    public method programmingLanguage => ProgrammingLanguage class
+        := ProgrammingLanguage findLanguageWithName: language.
+
+    public method scan => Array
+        := self programmingLanguage scanSourceCode: self.
+
+    public method parse => ASTNode
+        := self programmingLanguage parseSourceCode: self.
+
+    public method analyzeAndEvaluate => AnyValue
+        := self programmingLanguage analyzeAndEvaluateSourceCode: self.
+}.
+
+(loadSourceNamedWithSolvedPath:) adoptDefinitionOf: {:(String)solvedPath :: Void |
+    let sourceCode := SourceCode loadWithSolvedPath: solvedPath.
+    let language := sourceCode programmingLanguage.
+    language ifNil: {
+        error("Cannot evaluate source with unknown programming language.")
+    }.
+
+    sourceCode analyzeAndEvaluate
+}.

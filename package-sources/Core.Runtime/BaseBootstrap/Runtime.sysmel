@@ -1441,7 +1441,7 @@ SequenceableCollection
             if: value = (self at: i) then: (bestFound := i asIntPointer)
         ) continueWith: (i := i + 1sz).
 
-        -1iptr
+        bestFound
     };
     withSelector: #includes: addMethod: {:(SequenceableCollection)self :element :: Boolean |
         let: #i mutableWith: 0sz.

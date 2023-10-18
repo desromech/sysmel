@@ -63,32 +63,28 @@ public class CLISysmelInterpreter definition: {
     }.
 
     public method evaluateFileNamed: (fileName: String) ::=> Void := {
-        let sourceCodeText := IO::readWholeFileNamedAsString(fileName).
-        let directory := FileSystem::dirname(fileName).
-        let basename := FileSystem::basename(fileName).
-
-        let sourceCode := SourceCode text: sourceCodeText directory: directory name: basename language: #sysmel.
-        self evaluteSourceCode: sourceCode
+        let sourceCode := SourceCode loadWithSolvedPath: fileName.
+        self evaluateSourceCode: sourceCode
     }.
 
     public method evaluateString: (sourceString: String) ::=> AnyValue := {
         let sourceCode := SourceCode text: sourceString directory: "" name: "<cli>" language: #sysmel.
-        self evaluteSourceCode: sourceCode
+        self evaluateSourceCode: sourceCode
     }.
 
-    public method evaluteSourceCode: (sourceCode: SourceCode) ::=> AnyValue := {
+    public method evaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue := {
         let result mutable => AnyValue := nil.
         evaluationTimeToRun := evaluationTimeToRun + { :: Void |
             scanOnly ifTrue: {
-                result := (SysmelLanguage scanSourceCode: sourceCode).
+                result := sourceCode scan.
                 return: void
             }.
 
             parseOnly ifTrue: {
-                result := (SysmelLanguage parseSourceCode: sourceCode).
+                result := sourceCode parse.
                 return: void
             }.
-            result := SysmelLanguage analyzeAndEvaluateSourceCode: sourceCode.
+            result := sourceCode analyzeAndEvaluate.
         } timeToRunInMicroseconds.
         result
     }.

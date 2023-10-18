@@ -260,6 +260,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t float32Type;
     sysbvm_tuple_t float64Type;
 
+    sysbvm_tuple_t programmingLanguageType;
     sysbvm_tuple_t sourceCodeType;
     sysbvm_tuple_t sourcePositionType;
     sysbvm_tuple_t tokenType;

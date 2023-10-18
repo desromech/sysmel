@@ -861,29 +861,19 @@ let SysmelGrammar::ExpressionSequence := SysmelGrammar::ExpressionList ::==> {:(
         yourself
 }.
 
-public class SysmelLanguage superclass: Object; definition: {
-    __Meta__ extend: {
-        public method scanSourceCode: (sourceCode: SourceCode) ::=> Array
-            := self new scanSourceCode: sourceCode.
+public class SysmelLanguage superclass: ProgrammingLanguage; definition: {
+    __Meta__ definition: {
+        public override method languageName => StringSymbol
+            := #sysmel.
 
-        public method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
-            := self new parseSourceCode: sourceCode.
-
-        public method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) withEnvironment: (evaluationEnvironment: Environment) ::=> AnyValue
-            := self new analyzeAndEvaluateSourceCode: sourceCode withEnvironment: evaluationEnvironment.
-
-        public method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
-            := self new analyzeAndEvaluateSourceCode: sourceCode.
+        public override method supportsExtension: (extension: String) ::=> Boolean
+            := ".sysmel" = extension.
     }.
 
-    public virtual method scanSourceCode: (sourceCode: SourceCode) ::=> Array := {
-        SysmelScanner new scanSourceCode: sourceCode
-    }.
+    public override method scanSourceCode: (sourceCode: SourceCode)
+        ::=> Array := SysmelScanner new scanSourceCode: sourceCode.
 
-    public virtual method parseSourceCode: (sourceCode: SourceCode) ::=> ASTNode
-        := self parseTokens: (self scanSourceCode: sourceCode) sourceCode: sourceCode.
-
-    public virtual method parseTokens: (tokens: Array) sourceCode: (sourceCode: SourceCode) ::=> ASTNode := {
+    public override method parseTokens: (tokens: Array) sourceCode: (sourceCode: SourceCode) ::=> ASTNode := {
         let parseState := SysmelTokenParsecState new
             sourceCollection: tokens;
             sourceCode: sourceCode;
@@ -913,21 +903,6 @@ public class SysmelLanguage superclass: Object; definition: {
 
     public virtual method grammar => Parsec
         := SysmelGrammar::ExpressionSequence.
-
-    public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) withEnvironment: (evaluationEnvironment: Environment) ::=> AnyValue := {
-        let ast := self parseSourceCode: sourceCode.
-        ast analyzeAndEvaluateWithEnvironment: evaluationEnvironment
-    }.
-
-    public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
-        := self analyzeAndEvaluateSourceCode: sourceCode withEnvironment: (self environmentForEvaluatingSourceCode: sourceCode).
-
-    public virtual method environmentForEvaluatingSourceCode: (sourceCode: SourceCode) ::=> Environment
-        := Environment defaultForEvaluation
-            setNewSymbol: #__SourceDirectory__ bindingWithValue: sourceCode directory;
-            setNewSymbol: #__SourceName__ bindingWithValue: sourceCode name;
-            setNewSymbol: #__SourceLanguage__ bindingWithValue: sourceCode language;
-            yourself.
 }.
 
 public class SysmelLispLanguage superclass: SysmelLanguage; definition: {

@@ -74,6 +74,3 @@
     writeCount asSize = data size
 }.
 
-(loadSourceNamedWithSolvedPath:) adoptDefinitionOf: {:(String)solvedPath :: Void |
-    error("TODO: implement loadSourceNamedWithSolvedPath: ")
-}.
