@@ -41,6 +41,11 @@ public class CLISysmelInterpreter definition: {
                     printLine(self evaluateString: (arguments at: i)).
                     continue()
                 }.
+                argument = "-save-obj-file" ifTrue: {
+                    i := i + 1sz.
+                    self saveNativeImageObjectFile: (arguments at: i).
+                    continue()
+                }.
             } ifFalse: {
                 self evaluateFileNamed: argument
             }
@@ -51,6 +56,10 @@ public class CLISysmelInterpreter definition: {
         }.
 
         0i32
+    }.
+
+    public method saveNativeImageObjectFile: (fileName: String) ::=> Void := {
+        CLISysmelInterpreter buildNativeInterpreterImage saveTo: fileName
     }.
 
     public method evaluateFileNamed: (fileName: String) ::=> Void := {

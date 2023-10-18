@@ -920,7 +920,14 @@ public class SysmelLanguage superclass: Object; definition: {
     }.
 
     public virtual method analyzeAndEvaluateSourceCode: (sourceCode: SourceCode) ::=> AnyValue
-        := self analyzeAndEvaluateSourceCode: sourceCode withEnvironment: Environment defaultForEvaluation.
+        := self analyzeAndEvaluateSourceCode: sourceCode withEnvironment: (self environmentForEvaluatingSourceCode: sourceCode).
+
+    public virtual method environmentForEvaluatingSourceCode: (sourceCode: SourceCode) ::=> Environment
+        := Environment defaultForEvaluation
+            setNewSymbol: #__SourceDirectory__ bindingWithValue: sourceCode directory;
+            setNewSymbol: #__SourceName__ bindingWithValue: sourceCode name;
+            setNewSymbol: #__SourceLanguage__ bindingWithValue: sourceCode language;
+            yourself.
 }.
 
 public class SysmelLispLanguage superclass: SysmelLanguage; definition: {

@@ -38,7 +38,7 @@ ASTContinueNode extend: {
 
 ASTDoWhileContinueWithNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTDownCastNode>>doCompileIntoBytecodeWith").
+        := error("TODO: ASTDoWhileContinueWithNode>>doCompileIntoBytecodeWith").
 }.
 
 ASTDownCastNode extend: {
@@ -358,20 +358,20 @@ ASTSequenceNode extend: {
 
 ASTTupleSlotNamedAtNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTDownCastNode>>doCompileIntoBytecodeWith").
+        := error("TODO: ASTTupleSlotNamedAtNode>>doCompileIntoBytecodeWith").
 }.
 
 ASTTupleSlotNamedAtPutNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTDownCastNode>>doCompileIntoBytecodeWith").
+        := error("TODO: ASTTupleSlotNamedAtPutNode>>doCompileIntoBytecodeWith").
 }.
 
 ASTTupleSlotNamedReferenceAtNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTDownCastNode>>doCompileIntoBytecodeWith").
+        := error("TODO: ASTTupleSlotNamedReferenceAtNode>>doCompileIntoBytecodeWith").
 }.
 
 ASTUseNamedSlotsOfNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTDownCastNode>>doCompileIntoBytecodeWith").
+        := error("TODO: ASTUseNamedSlotsOfNode>>doCompileIntoBytecodeWith").
 }.
