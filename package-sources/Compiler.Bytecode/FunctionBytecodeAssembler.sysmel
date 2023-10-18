@@ -45,7 +45,7 @@ FunctionBytecodeAssemblerAbstractInstruction definition: {
         := nil.
 
     public virtual method markOperandUsages => Void := {}.
-    public virtual method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {}.
+    public virtual method optimizeLocalOnlyAllocaAndSlotReferencesWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {}.
 }.
 
 FunctionBytecodeAssemblerLabel definition: {
@@ -105,6 +105,11 @@ FunctionBytecodeAssemblerInstruction definition: {
         (opcode = FunctionBytecode::Opcode::Alloca) || (opcode = FunctionBytecode::Opcode::AllocaWithValue)
     }.
 
+    public method isReferenceAtInstruction => Boolean := {
+        let opcode := self standardOpcode.
+        (opcode = FunctionBytecode::Opcode::SlotReferenceAt)
+    }.
+
     public override method isBranchInstruction => Boolean := {
         let opcode := self standardOpcode.
         (opcode = FunctionBytecode::Opcode::Jump) || (opcode = FunctionBytecode::Opcode::JumpIfTrue)
@@ -131,35 +136,33 @@ FunctionBytecodeAssemblerInstruction definition: {
         let operandCount := operands size - (if: self isBranchInstruction then: 1sz else: 0sz).
         
         let i mutable := 0sz.
-        if: self isAllocaInstruction then: {
-            while: i < destinationOperandCount do: (
-                (operands at: i) hasAllocaDestination: true
-            ) continueWith: (i := i + 1sz)
-        } else: {
-            while: i < destinationOperandCount do: (
-                (operands at: i) hasNonAllocaDestination: true
-            ) continueWith: (i := i + 1sz)
-        }.
+        while: i < destinationOperandCount do: {
+            let operand => FunctionBytecodeAssemblerVectorOperand := operands at: i.
+            self isAllocaInstruction ifTrue: {
+                operand hasAllocaDestination: true
+            } ifFalse: {
+                operand hasNonAllocaDestination: true
+            }.
 
-        if: self isLoadInstruction then: {
-            while: i < operandCount do: (
-                (operands at: i) hasLoadStoreUsage: true
-            ) continueWith: (i := i + 1sz)
-        } else: {
-            if: self isStoreInstruction then: {
-                while: i < operandCount do: (
-                    if: i = 0sz then: {
-                        (operands at: i) hasLoadStoreUsage: true
-                    } else: {
-                        (operands at: i) hasLoadStoreUsage: false
-                    }
-                ) continueWith: (i := i + 1sz)
-            } else: {
-                while: i < operandCount do: (
-                    (operands at: i) hasNonLoadStoreUsage: true
-                ) continueWith: (i := i + 1sz)
+            self isReferenceAtInstruction ifTrue: {
+                operand hasSlotReferenceAtDestination: true
+            } ifFalse: {
+                operand hasNonSlotReferenceAtDestination: true
+            }.
+        } continueWith: (i := i + 1sz).
+
+        while: i < operandCount do: {
+            let operand => FunctionBytecodeAssemblerVectorOperand := operands at: i.
+            self isLoadInstruction ifTrue: {
+                operand hasLoadStoreUsage: true
+            } ifFalse: {
+                self isStoreInstruction && (i = 0sz) ifTrue: {
+                    operand hasLoadStoreUsage: true
+                } ifFalse: {
+                    operand hasNonLoadStoreUsage: true
+                }
             }
-        }
+        } continueWith: (i := i + 1sz)
     }.
 
     public method optimizeLocalOnlyAllocaWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
@@ -188,21 +191,27 @@ FunctionBytecodeAssemblerInstruction definition: {
         }
     }.
 
-    public override method optimizeLocalOnlyAllocasWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+    public method optimizeLocalOnlyReferenceAtWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+    }.
+
+    public override method optimizeLocalOnlyAllocaAndSlotReferencesWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
         if: self isAllocaInstruction then: (self optimizeLocalOnlyAllocaWith: assembler).
         if: self isLoadInstruction then: (self optimizeLocalOnlyLoadWith: assembler).
         if: self isStoreInstruction then: (self optimizeLocalOnlyStoreWith: assembler).
+        if: self isReferenceAtInstruction then: (self optimizeLocalOnlyReferenceAtWith: assembler).
     }.
 }.
 
 FunctionBytecodeAssembler definition: {
     public override method initialize => Void := {
-        self arguments: #().
-        self captures: #().
-        self literals: OrderedCollection new.
-        self literalDictionary: IdentityDictionary new.
-        self temporaries: OrderedCollection new.
-        self usedTemporaryCount: 0sz.
+        super initialize.
+        arguments := #().
+        captures := #().
+        literals := OrderedCollection new.
+        literalDictionary := IdentityDictionary new.
+        temporaries := OrderedCollection new.
+        temporaryTypes := OrderedCollection new.
+        usedTemporaryCount := 0sz.
     }.
 
     public method addInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> instruction class := {
@@ -296,12 +305,13 @@ FunctionBytecodeAssembler definition: {
         }
     }.
 
-    public method temporary: (name: Symbol) ::=> FunctionBytecodeAssemblerVectorOperand := {
+    public method temporary: (name: Symbol) type: (temporaryType: Type) ::=> FunctionBytecodeAssemblerVectorOperand := {
         let operand := FunctionBytecodeAssemblerVectorOperand new
             index: self temporaries size asInt16;
             vectorType: FunctionBytecode::OperandVectorName::Local;
             yourself.
         self temporaries add: operand.
+        self temporaryTypes add: temporaryType.
         self usedTemporaryCount: self temporaries size.
         operand
     }.
@@ -367,6 +377,12 @@ FunctionBytecodeAssembler definition: {
     public method coerceValue: (value: FunctionBytecodeAssemblerVectorOperand) toType: (targetType: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::CoerceValue;
+            operands: (Array with: result with: targetType with: value);
+            yourself).
+
+    public method downCastValue: (value: FunctionBytecodeAssemblerVectorOperand) toType: (targetType: FunctionBytecodeAssemblerVectorOperand) in: (result: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::DownCastValue;
             operands: (Array with: result with: targetType with: value);
             yourself).
 
@@ -454,6 +470,24 @@ FunctionBytecodeAssembler definition: {
             standardOpcode: FunctionBytecode::Opcode::Nop;
             yourself).
 
+    public method ref: (ref: FunctionBytecodeAssemblerVectorOperand) slotAt: (typeSlot: FunctionBytecodeAssemblerVectorOperand) into: (destination: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::RefSlotAt;
+            operands: (Array with: destination with: ref with: typeSlot);
+            yourself).
+
+    public method ref: (ref: FunctionBytecodeAssemblerVectorOperand) slotReferenceAt: (typeSlot: FunctionBytecodeAssemblerVectorOperand) into: (destination: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::RefSlotReferenceAt;
+            operands: (Array with: destination with: ref with: typeSlot);
+            yourself).
+
+    public method ref: (ref: FunctionBytecodeAssemblerVectorOperand) slotAt: (typeSlot: FunctionBytecodeAssemblerVectorOperand) put: (value: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::RefSlotAtPut;
+            operands: (Array with: ref with: typeSlot with: value);
+            yourself).
+
     public method return: (operand: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Return;
@@ -482,6 +516,24 @@ FunctionBytecodeAssembler definition: {
             operands: (Array with: pointer with: value);
             yourself).
 
+    public method tuple: (tuple: FunctionBytecodeAssemblerVectorOperand) slotAt: (typeSlot: FunctionBytecodeAssemblerVectorOperand) into: (destination: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::SlotAt;
+            operands: (Array with: destination with: tuple with: typeSlot);
+            yourself).
+
+    public method tuple: (tuple: FunctionBytecodeAssemblerVectorOperand) slotReferenceAt: (typeSlot: FunctionBytecodeAssemblerVectorOperand) into: (destination: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::SlotReferenceAt;
+            operands: (Array with: destination with: tuple with: typeSlot);
+            yourself).
+
+    public method tuple: (tuple: FunctionBytecodeAssemblerVectorOperand) slotAt: (typeSlot: FunctionBytecodeAssemblerVectorOperand) put: (value: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::SlotAtPut;
+            operands: (Array with: tuple with: typeSlot with: value);
+            yourself).
+
     public method breakpoint => FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Breakpoint;
@@ -493,12 +545,22 @@ FunctionBytecodeAssembler definition: {
             yourself).
 
     public method optimizeTemporaries => Void := {
+        self temporaries do: {:(FunctionBytecodeAssemblerVectorOperand)each :: Void |
+            each
+                hasAllocaDestination: false;
+                hasNonAllocaDestination: false;
+                hasSlotReferenceAtDestination: false;
+                hasNonSlotReferenceAtDestination: false;
+                hasLoadStoreUsage: false;
+                hasNonLoadStoreUsage: false
+        }.
+
         self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each :: Void |
             each markOperandUsages.
         }.
 
         self instructionsDo: {:(FunctionBytecodeAssemblerAbstractInstruction)each :: Void  |
-            each optimizeLocalOnlyAllocasWith: self
+            each optimizeLocalOnlyAllocaAndSlotReferencesWith: self
         }.
 
         ## Optimize out the temporaries that are not used.
@@ -537,11 +599,19 @@ FunctionBytecodeAssembler definition: {
     }.
 
     public method build => FunctionBytecode := {
+        let usedTemporaryTypes := Array new: usedTemporaryCount.
+        temporaries doWithIndex: {:(FunctionBytecodeAssemblerVectorOperand)each :(Size)index :: Void |
+            (each vectorType = FunctionBytecode::OperandVectorName::Local) && (each index >= 0i16) ifTrue: {
+                usedTemporaryTypes at: each index asSize put: (temporaryTypes at: index)
+            }
+        }.
+
         let result := FunctionBytecode new
-            literalVector: self literals asArray;
-            argumentCount: self arguments size;
-            captureVectorSize: self captures size;
-            localVectorSize: self usedTemporaryCount;
+            literalVector: literals asArray;
+            argumentCount: arguments size;
+            captureVectorSize: captures size;
+            localVectorSize: usedTemporaryCount;
+            temporaryTypes: usedTemporaryTypes;
             yourself.
 
         let debugSourcePositions := OrderedOffsetTableBuilder new.

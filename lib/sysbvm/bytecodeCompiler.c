@@ -984,6 +984,8 @@ static void sysbvm_functionBytecodeAssembler_optimizeTemporaries(sysbvm_context_
         sysbvm_functionBytecodeAssemblerVectorOperand_t *temporary = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)sysbvm_orderedCollection_at(assembler->temporaries, i);
         temporary->hasAllocaDestination = SYSBVM_FALSE_TUPLE;
         temporary->hasNonAllocaDestination = SYSBVM_FALSE_TUPLE;
+        temporary->hasSlotReferenceAtDestination = SYSBVM_FALSE_TUPLE;
+        temporary->hasNonSlotReferenceAtDestination = SYSBVM_FALSE_TUPLE;
         temporary->hasLoadStoreUsage = SYSBVM_FALSE_TUPLE;
         temporary->hasNonLoadStoreUsage = SYSBVM_FALSE_TUPLE;
     }
@@ -1952,6 +1954,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtPutNode_primitiveCompileIntoByte
     else
         sysbvm_functionBytecodeAssembler_slotAtPut(context, (*compiler)->assembler, gcFrame.tuple, gcFrame.slot, gcFrame.value);
 
+    gcFrame.result = sysbvm_functionBytecodeAssembler_addLiteral(context, (*compiler)->assembler, SYSBVM_VOID_TUPLE);
     SYSBVM_STACKFRAME_POP_GC_ROOTS(gcFrameRecord);
     return gcFrame.result;
 }

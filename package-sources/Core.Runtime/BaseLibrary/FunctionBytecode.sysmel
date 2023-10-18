@@ -326,7 +326,7 @@ FunctionBytecode definition: {
                 (FunctionBytecode::Opcode::UncheckedCall >> 4u8) : {
                     let function := registerFile __uncheckedSlotAt__: 1sz.
                     let arguments := registerFile copyFrom: 2sz count: variantCount.
-                    let result := function applyWithArguments: arguments.
+                    let result := function applyWithVariadicExpandedArguments: arguments.
                     registerFile __uncheckedSlotAt__: 0sz put: result
                 }.
                 (FunctionBytecode::Opcode::Send >> 4u8) : {

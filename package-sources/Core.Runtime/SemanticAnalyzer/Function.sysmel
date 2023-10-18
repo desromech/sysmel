@@ -129,8 +129,15 @@ Function definition: {
         result
     }.
 
+    public eager method applyWithVariadicExpandedArguments: (arguments: Array) ::=> Untyped := {
+        self isMemoized ifTrue: {
+            return: (self applyWithMemoizedArguments: arguments)
+        }.
+        return: (self applyWithExpandedArguments: arguments).
+    }.
+
     public eager method applyWithArguments: (arguments: Array) ::=> Untyped := {
-        let expandedArguments := self isVariadic ifTrue: {
+        self isVariadic ifTrue: {
             self assert: argumentCount > 0sz.
             let directArgumentCount := argumentCount - 1sz.
             let passedArgumentCount := arguments size.
@@ -150,15 +157,10 @@ Function definition: {
                 variadicVector at: i - directArgumentCount put: (arguments at: i)
             } continueWith: (i := i + 1sz).
 
-            expandedArguments
-        } ifFalse: {
-            arguments
+            return: (self applyWithVariadicExpandedArguments: expandedArguments)
         }.
-
-        self isMemoized ifTrue: {
-            return: (self applyWithMemoizedArguments: expandedArguments)
-        }.
-        return: (self applyWithExpandedArguments: expandedArguments).
+        
+        self applyWithVariadicExpandedArguments: arguments
     }.
 
     public method createFunctionActivationEnvironmentWithArguments: (arguments: Array) ::=> FunctionActivationEnvironment

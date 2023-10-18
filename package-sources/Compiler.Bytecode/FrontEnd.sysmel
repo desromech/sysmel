@@ -23,7 +23,7 @@ ASTCoerceValueNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
         let type := self typeExpression compileBytecodesDirectlyWith: compiler.
         let value := self valueExpression compileBytecodesDirectlyWith: compiler.
-        let result := compiler assembler temporary: #coercedValue.
+        let result := compiler assembler temporary: #coercedValue type: self analyzedType.
         compiler assembler coerceValue: value toType: type in: result.
         result
     }.      
@@ -37,13 +37,53 @@ ASTContinueNode extend: {
 }.
 
 ASTDoWhileContinueWithNode extend: {
-    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTDoWhileContinueWithNode>>doCompileIntoBytecodeWith").
+    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let assembler := compiler assembler.
+
+        let doWhileEntryLabel := assembler beginLabelNamed: #doWhileEntry.
+        let doWhileCondition := assembler label: #doWhileCondition.
+        let doWhileContinue := assembler label: #doWhileContinue.
+        let doWhileMergeLabel := assembler label: #doWhileMerge.
+
+        ## Body
+        self bodyExpression ifNotNil: {:(ASTNode)expression :: Void |
+            compiler withBreakLabel: doWhileMergeLabel continueLabel: doWhileContinue do: { :: Void |
+                expression compileBytecodesDirectlyWith: compiler
+            }.
+        }.
+        assembler jumpTo: doWhileCondition.
+
+        ## Condition.
+        assembler beginLabel: doWhileCondition.
+        self conditionExpression ifNotNil: {:(ASTNode)expression :: Void |
+            let condition := expression compileBytecodesDirectlyWith: compiler.
+            assembler jumpTo: doWhileMergeLabel ifFalse: condition.
+        } ifNil: {
+            assembler jumpTo: doWhileContinue.
+        }.
+        
+        ## Continue
+        assembler beginLabel: doWhileContinue.
+        self continueExpression ifNotNil: {:(ASTNode)expression :: Void |
+            expression compileBytecodesDirectlyWith: compiler
+        }.
+        assembler jumpTo: doWhileEntryLabel.
+
+        ## End loop and merge.
+        assembler
+            beginLabel: doWhileMergeLabel;
+            literal: void
+    }
 }.
 
 ASTDownCastNode extend: {
-    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTDownCastNode>>doCompileIntoBytecodeWith").
+    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let type := self typeExpression compileBytecodesDirectlyWith: compiler.
+        let value := self valueExpression compileBytecodesDirectlyWith: compiler.
+        let result := compiler assembler temporary: #downcastedValue type: self analyzedType.
+        compiler assembler downCastValue: value toType: type in: result.
+        result
+    }.
 }.
 
 ASTLambdaNode extend: {
@@ -57,7 +97,7 @@ ASTLambdaNode extend: {
             compiler getValueForLocalBinding: capture sourceBinding
         }.
 
-        let result := compiler assembler temporary: #lambda.
+        let result := compiler assembler temporary: #lambda type: self analyzedType.
         compiler assembler makeClosure: functionDefinitionValue withCaptures: captures in: result.
         result
     }.
@@ -80,7 +120,7 @@ ASTVariableDefinitionNode extend: {
         let assembler := compiler assembler.
 
         self isMutable ifTrue: {
-            let localVariable := assembler temporary: #localVariable.
+            let localVariable := assembler temporary: #localVariable type: self analyzedType.
             assembler allocaWithValue: value inPointerOfType: (assembler literal: self analyzedType) in: localVariable.
             compiler setValue: localVariable forBinding: self binding.
             localVariable
@@ -112,7 +152,7 @@ ASTIfNode extend: {
 
         let condition := self conditionExpression compileBytecodesDirectlyWith: compiler.
 
-        let result := assembler temporary: #ifResult.
+        let result := assembler temporary: #ifResult type: self analyzedType.
         let ifFalseBranch := assembler label: #ifFalseBranch.
         let ifMerge := assembler label: #ifMerge.
 
@@ -157,7 +197,7 @@ ASTSwitchNode extend: {
             assembler label: #caseLabel
         }.
 
-        let result := assembler temporary: #switchResult.
+        let result := assembler temporary: #switchResult type: self analyzedType.
         let defaultCase := assembler label: #switchDefaultCase.
         let switchMerge := assembler label: #switchMerge.
 
@@ -227,7 +267,7 @@ ASTWhileContinueWithNode extend: {
 let primitiveFunctionGenerators := #{
     #PointerLikeType::load : {:(ASTFunctionApplicationNode)self :(FunctionBytecodeDirectCompiler)compiler :: FunctionBytecodeAssemblerVectorOperand |
         let pointer := self arguments first compileBytecodesDirectlyWith: compiler.
-        let result := compiler assembler temporary: #load.
+        let result := compiler assembler temporary: #load type: self analyzedType.
         compiler assembler loadPointer: pointer in: result.
         result
     }.
@@ -259,7 +299,7 @@ ASTFunctionApplicationNode extend: {
                 each compileBytecodesDirectlyWith: compiler
             }).
 
-            let result := compiler assembler temporary: #sendResult.
+            let result := compiler assembler temporary: #sendResult type: self analyzedType.
             self isNoTypechecked ifNotNil: {
                 compiler assembler uncheckedCall: function arguments: arguments result: result
             } ifNil: {
@@ -278,7 +318,7 @@ ASTMakeAssociationNode extend: {
             ifNotNil: {:(ASTNode)value | value compileBytecodesDirectlyWith: compiler}
             ifNil: { compiler assembler literal: nil }.
 
-        let result := compiler assembler temporary: #makeAssociation.
+        let result := compiler assembler temporary: #makeAssociation type: self analyzedType.
         compiler assembler makeAssociationWithKey: key value: value in: result.
         result
     }.
@@ -287,7 +327,7 @@ ASTMakeAssociationNode extend: {
 ASTMakeByteArrayNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
         let elements := self elements collect: {:(ASTNode)each :: FunctionBytecodeAssemblerVectorOperand | each compileBytecodesDirectlyWith: compiler }.
-        let result := compiler assembler temporary: #makeByteArray.
+        let result := compiler assembler temporary: #makeByteArray type: self analyzedType.
         compiler assembler makeByteArrayWithElements: elements in: result.
         result
     }.
@@ -296,7 +336,7 @@ ASTMakeByteArrayNode extend: {
 ASTMakeArrayNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
         let elements := self elements collect: {:(ASTNode)each :: FunctionBytecodeAssemblerVectorOperand | each compileBytecodesDirectlyWith: compiler }.
-        let result := compiler assembler temporary: #makeArray.
+        let result := compiler assembler temporary: #makeArray type: self analyzedType.
         compiler assembler makeArrayWithElements: elements in: result.
         result
     }.
@@ -305,7 +345,7 @@ ASTMakeArrayNode extend: {
 ASTMakeDictionaryNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
         let elements := self elements collect: {:(ASTNode)each :: FunctionBytecodeAssemblerVectorOperand | each compileBytecodesDirectlyWith: compiler }.
-        let result := compiler assembler temporary: #makeDictionary.
+        let result := compiler assembler temporary: #makeDictionary type: self analyzedType.
         compiler assembler makeDictionaryWithElements: elements in: result.
         result
     }.
@@ -321,7 +361,7 @@ ASTMessageSendNode extend: {
                 each compileBytecodesDirectlyWith: compiler
             }.
 
-            let result := compiler assembler temporary: #sendResult.
+            let result := compiler assembler temporary: #sendResult type: self analyzedType.
             compiler assembler sendTo: receiver receiverLookupType: receiverLookupType selector: selector arguments: arguments result: result.
             result
         } ifNil: {
@@ -331,7 +371,7 @@ ASTMessageSendNode extend: {
                 each compileBytecodesDirectlyWith: compiler
             }.
 
-            let result := compiler assembler temporary: #sendResult.
+            let result := compiler assembler temporary: #sendResult type: self analyzedType.
             compiler assembler sendTo: receiver selector: selector arguments: arguments result: result.
             result
         }
@@ -357,21 +397,55 @@ ASTSequenceNode extend: {
 }.
 
 ASTTupleSlotNamedAtNode extend: {
-    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTTupleSlotNamedAtNode>>doCompileIntoBytecodeWith").
+    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let tuple := self tupleExpression compileBytecodesDirectlyWith: compiler.
+        let slot := compiler assembler literal: self boundSlot.
+        let result := compiler assembler temporary: #slotNamedAt type: self analyzedType.
+        self tupleExpression analyzedType isPointerLikeType ifTrue: {
+            compiler assembler ref: tuple slotAt: slot into: result
+        } ifFalse: {
+            compiler assembler tuple: tuple slotAt: slot into: result
+        }.
+
+        result
+    }.
 }.
 
 ASTTupleSlotNamedAtPutNode extend: {
-    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTTupleSlotNamedAtPutNode>>doCompileIntoBytecodeWith").
+    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let tuple := self tupleExpression compileBytecodesDirectlyWith: compiler.
+        let slot := compiler assembler literal: self boundSlot.
+        let value := self valueExpression compileBytecodesDirectlyWith: compiler.
+
+        self tupleExpression analyzedType isPointerLikeType ifTrue: {
+            compiler assembler ref: tuple slotAt: slot put: value
+        } ifFalse: {
+            compiler assembler tuple: tuple slotAt: slot put: value
+        }.
+
+        compiler assembler literal: void
+    }.
 }.
 
 ASTTupleSlotNamedReferenceAtNode extend: {
-    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTTupleSlotNamedReferenceAtNode>>doCompileIntoBytecodeWith").
+    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let tuple := self tupleExpression compileBytecodesDirectlyWith: compiler.
+        let slot := compiler assembler literal: self boundSlot.
+        let result := compiler assembler temporary: #slotNamedReferenceAt type: self analyzedType.
+        self tupleExpression analyzedType isPointerLikeType ifTrue: {
+            compiler assembler ref: tuple slotReferenceAt: slot into: result
+        } ifFalse: {
+            compiler assembler tuple: tuple slotReferenceAt: slot into: result
+        }.
+
+        result
+    }.
 }.
 
 ASTUseNamedSlotsOfNode extend: {
-    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
-        := error("TODO: ASTUseNamedSlotsOfNode>>doCompileIntoBytecodeWith").
+    public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let tuple := self tupleExpression compileBytecodesDirectlyWith: compiler.
+        compiler setValue: tuple forBinding: self binding.
+        compiler assembler literal: void
+    }.
 }.
