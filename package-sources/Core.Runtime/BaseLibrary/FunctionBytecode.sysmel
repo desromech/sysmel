@@ -232,7 +232,7 @@ FunctionBytecode definition: {
                 }.
 
                 FunctionBytecode::Opcode::JumpIfTrue : {
-                    let condition := registerFile __uncheckedSlotAt__: 0sz.
+                    let condition => Boolean := registerFile __uncheckedSlotAt__: 0sz.
                     condition ifTrue: {
                         let delta := decodedOperands at: 1sz.
                         isBackwardBranch := delta < 0i16.
@@ -241,7 +241,7 @@ FunctionBytecode definition: {
                     }
                 }.
                 FunctionBytecode::Opcode::JumpIfFalse : {
-                    let condition := registerFile __uncheckedSlotAt__: 0sz.
+                    let condition => Boolean := registerFile __uncheckedSlotAt__: 0sz.
                     condition ifFalse: {
                         let delta := decodedOperands at: 1sz.
                         isBackwardBranch := delta < 0i16.

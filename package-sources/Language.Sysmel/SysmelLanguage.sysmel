@@ -105,83 +105,6 @@ let Grammar::Token::Splice := SysmelTokenParsec for: SysmelTokenKind::Splice nam
 let Grammar::Token::Error := SysmelTokenParsec for: SysmelTokenKind::Splice name: "error".
 
 ## ----------------------------------------------------------------------------
-## Sysmel lisp grammar
-## ----------------------------------------------------------------------------
-let LispGrammar::Expression := MonadicMemoizedDelegateParser new.
-let LispGrammar::Atom := MonadicMemoizedDelegateParser new.
-let LispGrammar::ExpressionList := MonadicMemoizedDelegateParser new.
-
-let LispGrammar::ErrorToken := Grammar::Token::Error ::==> {:(ParsecResult)parserResult :: AnyValue |
-        let token := parserResult valueAsSysmelToken.
-        ASTErrorNode new
-            sourcePosition: token sourcePosition;
-            errorMessage: token value;
-            yourself
-    }.
-
-let LispGrammar::Identifier
-    := Grammar::Token::MultiKeyword
-    | Grammar::Token::Keyword
-    | Grammar::Token::Identifier
-    | Grammar::Token::Operator
-    | Grammar::Token::Star
-    | Grammar::Token::LessThan
-    | Grammar::Token::GreaterThan
-    | Grammar::Token::Bar
-    | Grammar::Token::Colon
-    | Grammar::Token::ColonColon
-    | Grammar::Token::Ellipsis
-    | Grammar::Token::Comma
-    | Grammar::Token::Semicolon
-    | Grammar::Token::Assignment
-    ::==> {:(ParsecResult)parserResult :: AnyValue |
-        let token := parserResult valueAsSysmelToken.
-        ASTIdentifierReferenceNode new
-            sourcePosition: token sourcePosition;
-            value: token value;
-            yourself
-    }.
-
-let LispGrammar::LiteralAtom
-    := Grammar::Token::Integer
-    | Grammar::Token::Float
-    | Grammar::Token::Character
-    | Grammar::Token::String
-    | Grammar::Token::Symbol 
-    
-    ::==> {:(ParsecResult)parserResult :: AnyValue |
-        let token := parserResult valueAsSysmelToken.
-        ASTLiteralNode new
-            sourcePosition: token sourcePosition;
-            value: token value;
-            yourself
-    }.
-LispGrammar::Atom := LispGrammar::LiteralAtom | LispGrammar::Identifier | LispGrammar::ErrorToken.
-LispGrammar::ExpressionList := LispGrammar::Expression star.
-
-let LispGrammar::SExpression
-    := (Grammar::Token::LeftParent -- LispGrammar::ExpressionList -- Grammar::Token::RightParent)
-    | (Grammar::Token::LeftBracket -- LispGrammar::ExpressionList -- Grammar::Token::RightBracket)
-    | (Grammar::Token::LeftCurlyBracket -- LispGrammar::ExpressionList -- Grammar::Token::RightCurlyBracket)
-    ::==> {:(ParsecResult)parserResult :: AnyValue |
-        let nodes => Array := parserResult value.
-        ASTUnexpandedSExpressionNode new
-            sourcePosition: parserResult sourcePosition;
-            elements: nodes second asArray;
-            yourself
-    }.
-
-LispGrammar::Expression := LispGrammar::Atom | LispGrammar::SExpression.
-
-let LispGrammar::ExpressionSequence := LispGrammar::Expression star ::==> {:(ParsecResult)parserResult :: AnyValue |
-    ASTSequenceNode new
-        sourcePosition: parserResult sourcePosition;
-        pragmas: #();
-        expressions: parserResult value asArray;
-        yourself
-}.
-
-## ----------------------------------------------------------------------------
 ## Sysmel grammar
 ## ----------------------------------------------------------------------------
 let SysmelGrammar::Literal := MonadicMemoizedDelegateParser new.
@@ -882,6 +805,7 @@ public class SysmelLanguage superclass: ProgrammingLanguage; definition: {
         let parseResult := self grammar parseWithState: parseState.
         parseResult isError ifTrue: {
             return: (ASTErrorNode new
+                sourcePosition: parseState sourcePositionUntilEnd;
                 errorMessage: parseResult errorMessage;
                 yourself).
         }.
@@ -893,6 +817,7 @@ public class SysmelLanguage superclass: ProgrammingLanguage; definition: {
 
                 let sequenceNode := resultNode downCastTo: ASTSequenceNode.
                 sequenceNode expressions: sequenceNode expressions -- (ASTErrorNode new
+                    sourcePosition: parseState sourcePositionUntilEnd;
                     errorMessage: "Expected expressions.";
                     yourself,)
             }.
@@ -903,9 +828,4 @@ public class SysmelLanguage superclass: ProgrammingLanguage; definition: {
 
     public virtual method grammar => Parsec
         := SysmelGrammar::ExpressionSequence.
-}.
-
-public class SysmelLispLanguage superclass: SysmelLanguage; definition: {
-    public override method grammar => Parsec
-        := LispGrammar::ExpressionSequence.
 }.
