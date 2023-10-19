@@ -51,7 +51,6 @@ WindowSystem definition: {
     public method convertAndDispatchEvent: (event: SysmelPAL::WindowEvent ref) ::=> Void := {
         let window := self findWindowWithHandle: event window.
         window ifNil: {
-            printLine("Got event unknown window: ", event type).
             return: void
         }.
 

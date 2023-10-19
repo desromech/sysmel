@@ -49,6 +49,44 @@ static void sysmel_pal_sdl2Window_convertEvent(SDL_Event *sdlEvent, sysmel_pal_w
     case SDL_QUIT:
         palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_QUIT;
         break;
+
+    case SDL_MOUSEBUTTONDOWN:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_MOUSE_BUTTON_DOWN;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+    case SDL_MOUSEBUTTONUP:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_MOUSE_BUTTON_UP;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+    case SDL_MOUSEMOTION:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_MOUSE_MOTION;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+    case SDL_MOUSEWHEEL:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_MOUSE_WHEEL;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+
+    case SDL_KEYDOWN:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_KEY_DOWN;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+    case SDL_KEYUP:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_KEY_UP;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+    case SDL_TEXTEDITING:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_TEXT_EDITING;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+    case SDL_TEXTINPUT:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_TEXT_INPUT;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
+    case SDL_KEYMAPCHANGED:
+        palEvent->type = SYSMEL_PAL_WINDOW_EVENT_TYPE_KEY_MAP_CHANGED;
+        palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->key.windowID);
+        break;
     case SDL_WINDOWEVENT:
         palEvent->window = (sysmel_pal_window_t*)SDL_GetWindowFromID(sdlEvent->window.windowID);
 
@@ -98,10 +136,12 @@ static void sysmel_pal_sdl2Window_convertEvent(SDL_Event *sdlEvent, sysmel_pal_w
             break;
         default:
             // By default ignored.
+            //printf("Unknown sdl window event 16r%x\n", sdlEvent->window.event);
             break;
         }
         break;
     default:
+        printf("Unknown sdl event 16r%x\n", sdlEvent->type);
         break;
     }
 }

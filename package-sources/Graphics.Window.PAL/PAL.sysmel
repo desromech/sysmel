@@ -6,6 +6,35 @@ public global SysmelPAL::WindowHandle := SysmelPAL::Window pointer.
 public struct SysmelPAL::WindowRenderer.
 public global SysmelPAL::WindowRendererHandle := SysmelPAL::WindowRenderer pointer.
 
+public global SysmelPAL::WindowEventType::UNKNOWN := 0u32.
+public global SysmelPAL::WindowEventType::QUIT := 1u32.
+
+public global SysmelPAL::WindowEventType::KeyDown := 16r100 u32.
+public global SysmelPAL::WindowEventType::KeyUp := 16r101 u32.
+public global SysmelPAL::WindowEventType::TextEditing := 16r102 u32.
+public global SysmelPAL::WindowEventType::TextInput := 16r103 u32.
+public global SysmelPAL::WindowEventType::KeyMapChanged := 16r104 u32.
+
+public global SysmelPAL::WindowEventType::MouseButtonDown := 16r200 u32.
+public global SysmelPAL::WindowEventType::MouseButtonUp := 16r201 u32.
+public global SysmelPAL::WindowEventType::MouseMotion := 16r202 u32.
+public global SysmelPAL::WindowEventType::MouseWheel := 16r203 u32.
+
+public global SysmelPAL::WindowEventType::Shown := 16r300 u32.
+public global SysmelPAL::WindowEventType::Hidden := 16r301 u32.
+public global SysmelPAL::WindowEventType::Exposed := 16r302 u32.
+public global SysmelPAL::WindowEventType::Moved := 16r303 u32.
+public global SysmelPAL::WindowEventType::Resize := 16r304 u32.
+public global SysmelPAL::WindowEventType::SizeChanged := 16r305 u32.
+public global SysmelPAL::WindowEventType::Minimize := 16r306 u32.
+public global SysmelPAL::WindowEventType::Maximized := 16r307 u32.
+public global SysmelPAL::WindowEventType::Restored := 16r308 u32.
+public global SysmelPAL::WindowEventType::Enter := 16r309 u32.
+public global SysmelPAL::WindowEventType::Leave := 16r30A u32.
+public global SysmelPAL::WindowEventType::FocusGained := 16r30B u32.
+public global SysmelPAL::WindowEventType::FocusLost := 16r30C u32.
+public global SysmelPAL::WindowEventType::Close := 16r30D u32.
+
 public struct SysmelPAL::WindowEvent definition: {
     public field type => SysmelPAL::WindowEventType.
     public field window => SysmelPAL::WindowHandle.

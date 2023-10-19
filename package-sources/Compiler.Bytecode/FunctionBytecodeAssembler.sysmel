@@ -135,9 +135,11 @@ FunctionBytecodeAssemblerInstruction definition: {
         := self operands last.
 
     public override method markOperandUsages => Void := {
+        let caseCount := self standardOpcode = FunctionBytecode::Opcode::CaseJump
+            ifTrue: (operands size - 2sz) / 2sz
+            ifFalse: 0sz.
         let destinationOperandCount := (FunctionBytecode::OpcodeDestinationOperandCountTable uint8At: self standardOpcode asSize) asSize.
-        let operands := self operands.
-        let operandCount := operands size - (if: self isBranchInstruction then: 1sz else: 0sz).
+        let operandCount := operands size - (if: self isBranchInstruction then: 1sz else: 0sz) - caseCount.
         
         let i mutable := 0sz.
         while: i < destinationOperandCount do: {

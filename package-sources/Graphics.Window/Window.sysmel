@@ -19,6 +19,14 @@ public class Window superclass: Object; definition: {
     }.
 
     public method convertAndDispatchEvent: (event: SysmelPAL::WindowEvent ref) ::=> Void := {
-        printLine("Got event ", event type)
+        switch: event type withCases: #{
+        SysmelPAL::WindowEventType::Exposed : {
+            printLine("WindowEventType::Exposed").
+        }.
+        SysmelPAL::WindowEventType::Close : {
+            printLine("WindowEventType::Close").
+        }.
+        _:{}
+        }
     }.
 }.
