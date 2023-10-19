@@ -11,6 +11,8 @@ typedef struct sysbvm_exception_s
 {
     sysbvm_tuple_header_t header;
     sysbvm_tuple_t messageText;
+    sysbvm_tuple_t innerException;
+    sysbvm_tuple_t sourcePosition;
 } sysbvm_exception_t;
 
 typedef sysbvm_exception_t sysbvm_error_t;

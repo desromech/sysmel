@@ -417,6 +417,12 @@ FunctionBytecodeAssembler definition: {
             operands: (Array with: result with: pointer);
             yourself).
 
+    public method loadSymbolValueBinding: (binding: FunctionBytecodeAssemblerVectorOperand) into: (destination: FunctionBytecodeAssemblerVectorOperand) ::=> FunctionBytecodeAssemblerInstruction
+        := self addInstruction: (FunctionBytecodeAssemblerInstruction new
+            standardOpcode: FunctionBytecode::Opcode::LoadSymbolValueBinding;
+            operands: (Array with: destination with: binding);
+            yourself).
+
     public method jumpTo: (destination: FunctionBytecodeAssemblerAbstractInstruction) ::=> FunctionBytecodeAssemblerInstruction
         := self addInstruction: (FunctionBytecodeAssemblerInstruction new
             standardOpcode: FunctionBytecode::Opcode::Jump;

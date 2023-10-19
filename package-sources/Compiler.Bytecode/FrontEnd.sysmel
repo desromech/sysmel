@@ -141,6 +141,31 @@ SymbolAnalysisBinding extend: {
         := compiler getValueForLocalBinding: self.
 }.
 
+SymbolTupleSlotBinding extend: {
+    public override method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let assembler := compiler assembler.
+        let tupleValue := compiler getValueForLocalBinding: tupleBinding.
+        let reference := assembler temporary: #slotRef type: type.
+        
+        tupleBinding type isPointerLikeType ifTrue: {
+            assembler ref: tupleValue slotReferenceAt: (assembler literal: typeSlot) into: reference
+        } ifFalse: {
+            assembler tuple: tupleValue slotReferenceAt: (assembler literal: typeSlot) into: reference
+        }.
+
+        reference
+    }.
+}.
+
+SymbolValueBinding extend: {
+    public override method compileBytecodesDirectlyWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
+        let assembler := compiler assembler.
+        let result := assembler temporary: self name type: self type.
+        assembler loadSymbolValueBinding: (assembler literal: self) into: result.
+        result
+    }.
+}.
+
 ASTIdentifierReferenceNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand
         := self binding compileBytecodesDirectlyWith: compiler.
