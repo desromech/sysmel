@@ -16,6 +16,14 @@ extern uint8_t sysbvm_implicitVariableBytecodeOperandCountTable[16];
 
 void sysbvm_bytecodeInterpreter_ensureTablesAreFilled(void);
 
+static bool sysbvm_functionBytecodeAssembler_isLocalVectorOperand(sysbvm_tuple_t operand)
+{
+    if(!operand) return false;
+
+    sysbvm_functionBytecodeAssemblerVectorOperand_t *vectorOperand = (sysbvm_functionBytecodeAssemblerVectorOperand_t*)operand;
+    return sysbvm_tuple_int16_decode(vectorOperand->vectorType) == SYSBVM_OPERAND_VECTOR_LOCAL;
+}
+
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssemblerInstruction_create(sysbvm_context_t *context, uint8_t opcode, sysbvm_tuple_t operands)
 {
     sysbvm_functionBytecodeAssemblerInstruction_t *result = (sysbvm_functionBytecodeAssemblerInstruction_t*)sysbvm_context_allocatePointerTuple(context, context->roots.functionBytecodeAssemblerInstruction, SYSBVM_SLOT_COUNT_FOR_STRUCTURE_TYPE(sysbvm_functionBytecodeAssemblerInstruction_t));
@@ -247,6 +255,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeDirectCompiler_getBindingValue(
 
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_newTemporary(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t type)
 {
+    if(sysbvm_type_isDirectSubtypeOf(type, context->roots.voidType))
+        return sysbvm_functionBytecodeAssembler_addLiteral(context, assembler, SYSBVM_VOID_TUPLE);
+    if(sysbvm_type_isDirectSubtypeOf(type, context->roots.undefinedObjectType))
+        return sysbvm_functionBytecodeAssembler_addLiteral(context, assembler, SYSBVM_NULL_TUPLE);
+
     size_t temporaryIndex = sysbvm_orderedCollection_getSize(assembler->temporaries);
     sysbvm_tuple_t temporaryOperand = sysbvm_functionBytecodeAssemblerVectorOperand_create(context, SYSBVM_OPERAND_VECTOR_LOCAL, (int16_t)temporaryIndex);
     sysbvm_orderedCollection_add(context, assembler->temporaries, temporaryOperand);
@@ -653,6 +666,9 @@ SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_makeClosureWithCaptur
 
 SYSBVM_API sysbvm_tuple_t sysbvm_functionBytecodeAssembler_move(sysbvm_context_t *context, sysbvm_functionBytecodeAssembler_t *assembler, sysbvm_tuple_t destination, sysbvm_tuple_t value)
 {
+    if(!sysbvm_functionBytecodeAssembler_isLocalVectorOperand(destination))
+        return SYSBVM_NULL_TUPLE;
+
     sysbvm_tuple_t operands = sysbvm_array_create(context, 2);
     sysbvm_array_atPut(operands, 0, destination);
     sysbvm_array_atPut(operands, 1, value);
