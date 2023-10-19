@@ -9,7 +9,9 @@ SimpleFunctionType definition: {
         functionFlags := theFunctionFlags.
         argumentTypes := theArgumentTypes.
         resultType := theResultType.
+        slots := #().
         self ensureVirtualTableLayoutIsComputed.
+        self ensureLayoutIsComputed.
     }.
 }.
 

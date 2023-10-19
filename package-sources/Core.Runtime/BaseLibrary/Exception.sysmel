@@ -22,7 +22,10 @@ ExceptionStackRecord __type__ definition: {
     }.
 
     public method findHandlerRecordFor: (exception: Exception) ::=> ExceptionOnDoStackRecord pointer := {
-        let currentPosition mutable := ExceptionStackRecord::LastActive.
+        let currentPosition mutable := ExceptionStackRecord::ActiveHandlerRecord
+            ifNil: ExceptionStackRecord::LastActive
+            ifNotNil: ExceptionStackRecord::ActiveHandlerRecord _ previous.
+
         while: (currentPosition isNotNil) do: {
             currentPosition _ isOnDo ifTrue: {
                 let onDoRecord := currentPosition reinterpretCastTo: ExceptionOnDoStackRecord pointer.
@@ -45,28 +48,72 @@ Exception definition: {
             := self new messageText: messageText; signal
     }.
 
-    public method signal => Unwinds := {
-        let handlerRecord := ExceptionStackRecord findHandlerRecordFor: self.
-        handlerRecord ifNil: {
-            printLine("Exception: ", self).
-            sysmel_pal_abort().
-        } ifNotNil: {
-            handlerRecord _ exceptionResult: handlerRecord _ exceptionBlock(self).
-            ExceptionStackRecord unwindUntil: handlerRecord.
-            
-            ExceptionStackRecord::LastActive := handlerRecord _ previous.
-            GCStackFrameRecord::LastActive := handlerRecord _ gcStackFrameRecord.
-            (handlerRecord _ __slotNamedReferenceAt__: #setjmpBuffer) longjmp
-        }.
+}.
+
+Exception withSelector: #signal replaceMethod: {:(Exception)self :: Unwinds |
+    let handlerRecord := ExceptionStackRecord findHandlerRecordFor: self.
+    handlerRecord ifNil: {
+        printLine(self).
+        sysmel_pal_abort().
+    } ifNotNil: {
+        ExceptionStackRecord::ActiveHandlerRecord := handlerRecord.
+        handlerRecord _ exceptionResult: handlerRecord _ exceptionBlock(self).
+        ExceptionStackRecord::ActiveHandlerRecord := nil.
+        ExceptionStackRecord unwindUntil: handlerRecord.
+        
+        ExceptionStackRecord::LastActive := handlerRecord _ previous.
+        GCStackFrameRecord::LastActive := handlerRecord _ gcStackFrameRecord.
+        (handlerRecord _ __slotNamedReferenceAt__: #setjmpBuffer) longjmp
     }.
 }.
 
-Object
-    withSelector: #assert: replaceMethod: {:(Object)self :(Boolean)condition :: Void |
-        condition ifFalse: {
-            AssertionFailure signal: "Assertion failure."
-        }
-    } withEagerAnalysis.
+(Function::ensure:) adoptDefinitionOf: {:body :(() => Void)cleanUp :: AnyValue |
+    <primitive: #Function::ensure: >
+
+    ## Make the clean up stack record.
+    let stackRecord mutable := ExceptionCleanUpActionStackRecord basicAllocate.
+    stackRecord
+        previous: ExceptionStackRecord::LastActive;
+        kind: ExceptionStackRecord::Kind::CleanUp;
+        cleanUpAction: cleanUp.
+    ExceptionStackRecord::LastActive := stackRecord address.
+
+    ## Evaluate the body.
+    let result := body().
+    
+    ## Remove the clean up stack record.
+    ExceptionStackRecord::LastActive := stackRecord previous.
+
+    ## Execute the clean up action.
+    cleanUp().
+
+    ## Return the result.
+    result
+}.
+
+(Function::on:do:) adoptDefinitionOf: {:self :exceptionFilter :exceptionBlock :: self __type__ canonicalResultType |
+    <primitive: #Function::on:do: >
+
+    ## Make the clean up stack record.
+    let stackRecord mutable := ExceptionOnDoStackRecord basicAllocate.
+    stackRecord
+        previous: ExceptionStackRecord::LastActive;
+        kind: ExceptionStackRecord::Kind::OnDo;
+        exceptionFilter: exceptionFilter;
+        exceptionBlock: exceptionBlock;
+        gcStackFrameRecord: GCStackFrameRecord::LastActive.
+    ExceptionStackRecord::LastActive := stackRecord address.
+
+    ## Perform setjmp
+    ## FIXME: Avoid this explicit __slotNamedReferenceAt__:
+    (stackRecord __slotNamedReferenceAt__: #setjmpBuffer) setjmp ifFalse: {
+        let result := self().
+        ExceptionStackRecord::LastActive := stackRecord previous.
+        result
+    } ifTrue: {
+        stackRecord exceptionResult
+    }.
+}.
 
 error adoptDefinitionOf: {:(String)message :: Unwinds |
     Error signal: message.

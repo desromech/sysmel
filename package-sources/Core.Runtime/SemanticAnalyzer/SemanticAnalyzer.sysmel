@@ -78,13 +78,38 @@ ASTNode definition: {
     public virtual eager method analyzeConcreteMetaValueWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
         := self.
 
-    public virtual eager method semanticError: (errorMessage: String) at: (errorSourcePosition: SourcePosition)::=> Unwinds := {
-        self error: errorSourcePosition printString -- ": " -- errorMessage
+    public eager method semanticError: (errorMessage: String) at: (errorSourcePosition: SourcePosition)::=> Unwinds := {
+        SemanticAnalysisError new
+            sourcePosition: sourcePosition;
+            signal: errorMessage
     }.
 
-    public virtual eager method semanticError: (errorMessage: String) ::=> Unwinds := {
+    public eager method semanticError: (errorMessage: String) ::=> Unwinds := {
         self semanticError: errorMessage at: self sourcePosition
     }.
+
+    public eager method parseError: (errorMessage: String) at: (errorSourcePosition: SourcePosition)::=> Unwinds := {
+        ParseError new
+            sourcePosition: sourcePosition;
+            signal: errorMessage
+    }.
+
+    public eager method parseError: (errorMessage: String) ::=> Unwinds := {
+        self parseError: errorMessage at: self sourcePosition
+    }.
+
+    public eager method catchEvaluationErrorsDuring: (aBlock: () => Untyped) ::=> Untyped
+        := aBlock on: Error do: {:(Error)error :: Void |
+            error isCompilationError ifTrue: {
+                error signal
+            } ifFalse: {
+                EvaluationError new
+                    sourcePosition: sourcePosition;
+                    innerException: error;
+                    messageText: error messageText;
+                    signal
+            }
+        }.
 
     public virtual eager method getOrCreateDependentApplicationValue => Untyped
         := analyzedType getOrCreateDependentApplicationValueForNode: self.
@@ -183,13 +208,13 @@ ASTDownCastNode definition: {
 
 ASTErrorNode definition: {
     public override method analyzeAndEvaluateWithEnvironment: (environment: Environment) ::=> Untyped
-        := self semanticError: self errorMessage.
+        := self parseError: self errorMessage.
 
     public override eager method analyzeWithEnvironment: (environment: AnalysisAndEvaluationEnvironment) ::=> ASTNode
-        := self semanticError: self errorMessage.
+        := self parseError: self errorMessage.
 
     public override eager method evaluateWithEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
-        := self semanticError: self errorMessage.
+        := self parseError: self errorMessage.
 }.
 
 ASTIdentifierReferenceNode definition: {
@@ -379,8 +404,12 @@ ASTVariableDefinitionNode definition: {
         }.
 
         let type => Type := self typeExpression ifNotNil: (self typeExpression analyzeAndEvaluateWithEnvironment: environment).
-        let value := self valueExpression ifNil: type defaultValue ifNotNil: (self valueExpression analyzeAndEvaluateWithEnvironment: environment).
-        let coercedValue := type ifNil: value ifNotNil: (type coerceValue: value).
+        let value := self valueExpression
+            ifNil: type defaultValue
+            ifNotNil: (self valueExpression analyzeAndEvaluateWithEnvironment: environment).
+        let coercedValue := type
+            ifNil: value
+            ifNotNil: (self catchEvaluationErrorsDuring: { :: Untyped | type coerceValue: value}).
 
         let mutableValue := self isMutable
             ifTrue: ((type ifNil: value __type__) ref untypedWithBoxForValue: value)
@@ -1169,6 +1198,7 @@ DependentFunctionType definition: {
         totalSlotCount := supertype totalSlotCount.
         instanceSize := supertype validInstanceSize.
         instanceAlignment := supertype instanceAlignment.
+        slots := #().
 
         functionFlags := theFunctionFlags.
         argumentNodes := theArgumentNode.
@@ -1180,6 +1210,7 @@ DependentFunctionType definition: {
         localBindings := functionAnalysisEnvironment localBindingList asArray.
 
         self ensureVirtualTableLayoutIsComputed.
+        self ensureLayoutIsComputed.
     }.
 
     public method canonicalize => FunctionType := {

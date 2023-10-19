@@ -31,6 +31,7 @@
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment);
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithDirectTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment);
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithCurrentExpectedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment);
+static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithReceiverTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment);
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t expectedType, sysbvm_tuple_t environment);
 static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithExpectedTypeExpressionWithEnvironmentAt(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t expectedTypeExpression, sysbvm_tuple_t environment, sysbvm_tuple_t sourcePosition, sysbvm_tuple_t *outExpectedCanonicalType);
 
@@ -239,6 +240,11 @@ static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithDirectTypeWithEnvironment
     return sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, astNode, context->roots.directTypeInferenceType, environment);
 }
 
+static sysbvm_tuple_t sysbvm_interpreter_analyzeASTWithReceiverTypeWithEnvironment(sysbvm_context_t *context, sysbvm_tuple_t astNode, sysbvm_tuple_t environment)
+{
+    return sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, astNode, context->roots.receiverTypeInferenceType, environment);
+}
+
 static sysbvm_tuple_t sysbvm_interpreter_applyCoercionToASTNodeIntoType(sysbvm_context_t *context, sysbvm_tuple_t astNode_, sysbvm_tuple_t environment_, sysbvm_tuple_t targetType_)
 {
     struct {
@@ -264,8 +270,12 @@ static sysbvm_tuple_t sysbvm_interpreter_applyCoercionToASTNodeIntoType(sysbvm_c
     {
         gcFrame.nodeType = sysbvm_astNode_getAnalyzedType(gcFrame.result);
         bool isDecayedType = gcFrame.targetType == context->roots.decayedTypeInferenceType;
+        bool isReceiverType = gcFrame.targetType == context->roots.receiverTypeInferenceType;
+
         if(isDecayedType)
             gcFrame.targetType = sysbvm_type_decay(context, gcFrame.nodeType);
+        else if(isReceiverType)
+            gcFrame.targetType = sysbvm_type_decayReceiver(context, gcFrame.nodeType);
 
         if(gcFrame.targetType && !sysbvm_type_isDirectSubtypeOf(gcFrame.nodeType, gcFrame.targetType))
         {
@@ -4314,7 +4324,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtNode_primitiveAnalyze(sysbvm_con
 
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.tupleSlotNamedAtNode->super.sourcePosition);
 
-    gcFrame.analyzedTupleExpression = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtNode->tupleExpression, *environment);
+    gcFrame.analyzedTupleExpression = sysbvm_interpreter_analyzeASTWithReceiverTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtNode->tupleExpression, *environment);
     gcFrame.tupleSlotNamedAtNode->tupleExpression = gcFrame.analyzedTupleExpression;
 
     gcFrame.analyzedNameExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtNode->nameExpression, context->roots.symbolType, *environment);
@@ -4446,7 +4456,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedReferenceAtNode_primitiveAnalyze(s
 
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.tupleSlotNamedReferenceAtNode->super.sourcePosition);
 
-    gcFrame.analyzedTupleExpression = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.tupleSlotNamedReferenceAtNode->tupleExpression, *environment);
+    gcFrame.analyzedTupleExpression = sysbvm_interpreter_analyzeASTWithReceiverTypeWithEnvironment(context, gcFrame.tupleSlotNamedReferenceAtNode->tupleExpression, *environment);
     gcFrame.tupleSlotNamedReferenceAtNode->tupleExpression = gcFrame.analyzedTupleExpression;
 
     gcFrame.analyzedNameExpression = sysbvm_interpreter_analyzeASTWithExpectedTypeWithEnvironment(context, gcFrame.tupleSlotNamedReferenceAtNode->nameExpression, context->roots.symbolType, *environment);
@@ -4575,7 +4585,7 @@ static sysbvm_tuple_t sysbvm_astTupleSlotNamedAtPutNode_primitiveAnalyze(sysbvm_
 
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.tupleSlotNamedAtPutNode->super.sourcePosition);
 
-    gcFrame.analyzedTupleExpression = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->tupleExpression, *environment);
+    gcFrame.analyzedTupleExpression = sysbvm_interpreter_analyzeASTWithReceiverTypeWithEnvironment(context, gcFrame.tupleSlotNamedAtPutNode->tupleExpression, *environment);
     gcFrame.tupleSlotNamedAtPutNode->tupleExpression = gcFrame.analyzedTupleExpression;
 
     if(gcFrame.tupleSlotNamedAtPutNode->nameExpression)
@@ -5051,7 +5061,7 @@ static sysbvm_tuple_t sysbvm_astUseNamedSlotsOfNode_primitiveAnalyze(sysbvm_cont
     gcFrame.useNode->super.analyzedType = context->roots.voidType;
     SYSBVM_STACKFRAME_PUSH_SOURCE_POSITION(sourcePositionRecord, gcFrame.useNode->super.sourcePosition);
 
-    gcFrame.analyzedTupleNode = sysbvm_interpreter_analyzeASTWithDecayedTypeWithEnvironment(context, gcFrame.useNode->tupleExpression, *environment);
+    gcFrame.analyzedTupleNode = sysbvm_interpreter_analyzeASTWithReceiverTypeWithEnvironment(context, gcFrame.useNode->tupleExpression, *environment);
     gcFrame.useNode->tupleExpression = gcFrame.analyzedTupleNode;
 
     if(sysbvm_astNode_isLiteralNode(context, gcFrame.analyzedTupleNode))

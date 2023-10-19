@@ -74,10 +74,6 @@ AnyValue
     withSelector: #shallowCopy addMethod: {:(AnyValue)self :: self __type__ | RawTuple::shallowCopy(self) } makeFinal withEagerAnalysis;
     withSelector: #copy addMethod: {:(AnyValue)self :: self __type__ | self shallowCopy postCopy; yourself } withEagerAnalysis;
 
-    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
-        error("doesNotUnderstand: " -- message selector printString)
-    } withEagerAnalysis;
-
     withSelector: #isNil addMethod: {:(AnyValue)self :: Boolean | self == nil } makePure makeFinal withEagerAnalysis;
     withSelector: #isNotNil addMethod: {:(AnyValue)self :: Boolean | self ~~ nil } makePure makeFinal withEagerAnalysis;
 
@@ -88,19 +84,7 @@ AnyValue
 
 Object
     withSelector: #class addMethod: {:(Object)self :: self __type__ __type__ | self __type__ } makePure makeFinal withEagerAnalysis;
-    withSelector: #species addMethod: {:(Object)self :: Class | self class } makeVirtual withEagerAnalysis;
-
-    withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Unwinds | error(errorMessage) } withEagerAnalysis;
-    withSelector: #primitiveFailed addMethod: {:(Object)self :: Unwinds | error("Primitive failed") } withEagerAnalysis;
-    withSelector: #errorSubscriptBounds: addMethod: {:(Object)self :(Size)index :: Unwinds | error("Index is out of bounds") } withEagerAnalysis;
-    withSelector: #assert: addMethod: {:(Object)self :(Boolean)condition :: Void |
-        if: condition then: void else: error("Assertion failure.")
-    } withEagerAnalysis;
-    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " Subclass responsibility." } withEagerAnalysis;
-    withSelector: #shouldBeImplemented addMethod: {:(Object)self :: Unwinds | self error: self __type__ printString -- " should be implemented." } withEagerAnalysis;
-    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
-        error((self __type__ printString -- " doesNotUnderstand: ") -- message selector printString)
-    } makeVirtual withEagerAnalysis.
+    withSelector: #species addMethod: {:(Object)self :: Class | self class } makeVirtual withEagerAnalysis.
 
 ## Early new implementation
 Type
@@ -135,6 +119,60 @@ Type
             self basicNew initialize; yourself
         }
     } withEagerAnalysis.
+
+Exception
+    withSelector: #signal addMethod: {:(Exception)self :: Unwinds |
+        <primitive: #Exception::signal>
+        error(self messageText)
+    } withEagerAnalysis;
+    withSelector: #signal: addMethod: {:(Exception)self :(String)messageText :: Unwinds |
+        self messageText: messageText; signal
+    } withEagerAnalysis.
+
+Exception __type__ 
+    withSelector: #signal addMethod: {:(Exception __type__)self :: Unwinds | self new signal } withEagerAnalysis;
+    withSelector: #signal: addMethod: {:(Exception __type__)self :(String)messageText :: Unwinds | self new signal: messageText } withEagerAnalysis.
+
+AnyValue
+    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
+        MessageNotUnderstood new
+            message: message;
+            receiver: self;
+            signal
+    } withEagerAnalysis.
+
+Object
+    withSelector: #error: addMethod: {:(Object)self :(String)errorMessage :: Unwinds |
+        Error signal: errorMessage
+    } withEagerAnalysis;
+    withSelector: #primitiveFailed addMethod: {:(Object)self :: Unwinds |
+        error("Primitive failed")
+    } withEagerAnalysis;
+    withSelector: #errorSubscriptBounds: addMethod: {:(Object)self :(Size)index :: Unwinds |
+        error("Index is out of bounds")
+    } withEagerAnalysis;
+    withSelector: #assert: addMethod: {:(Object)self :(Boolean)condition :: Void |
+        if: condition then: void else: {
+            AssertionFailure signal
+        }
+    } withEagerAnalysis;
+    withSelector: #assertion:failedAt: addMethod: {:(Object)self :(String)assertionString :(SourcePosition)assertionLocation :: Unwinds |
+        AssertionFailure new
+            sourcePosition: assertionLocation;
+            signal: assertionString
+    } withEagerAnalysis;
+    withSelector: #subclassResponsibility addMethod: {:(Object)self :: Unwinds |
+        self error: self __type__ printString -- " Subclass responsibility."
+    } withEagerAnalysis;
+    withSelector: #shouldBeImplemented addMethod: {:(Object)self :: Unwinds |
+        self error: self __type__ printString -- " should be implemented."
+    } withEagerAnalysis;
+    withSelector: #doesNotUnderstand: addMethod: {:(AnyValue)self :(Message)message |
+        MessageNotUnderstood new
+            message: message;
+            receiver: self;
+            signal
+    } makeVirtual withEagerAnalysis.
 
 ASTDownCastNode __type__
     withSelector: #makeForASTNode:targetType: addMethod: {:(ASTDownCastNode __type__)self :(ASTNode)astNode :(Type)targetType :: self |

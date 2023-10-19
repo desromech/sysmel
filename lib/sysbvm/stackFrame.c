@@ -13,6 +13,7 @@
 
 SYSBVM_THREAD_LOCAL sysbvm_context_t *sysbvm_stackFrame_activeContext;
 SYSBVM_THREAD_LOCAL sysbvm_stackFrameRecord_t *sysbvm_stackFrame_activeRecord;
+SYSBVM_THREAD_LOCAL sysbvm_stackFrameRecord_t *sysbvm_stackFrame_activeHandlerRecord;
 static void sysbvm_stackFrame_prepareUnwindingUntil(sysbvm_stackFrameRecord_t *targetRecord);
 
 SYSBVM_API void sysbvm_stackFrame_enterContext(sysbvm_context_t *context, sysbvm_stackFrameRecord_t *topLevelStackRecord)
@@ -163,7 +164,7 @@ SYSBVM_API void sysbvm_stackFrame_iterateGCRootsInStackWith(sysbvm_stackFrameRec
 SYSBVM_API void sysbvm_stackFrame_raiseException(sysbvm_tuple_t exception)
 {
     sysbvm_context_t *context = sysbvm_stackFrame_activeContext;
-    sysbvm_stackFrameRecord_t *exceptionRecord = sysbvm_stackFrame_activeRecord;
+    sysbvm_stackFrameRecord_t *exceptionRecord = sysbvm_stackFrame_activeHandlerRecord ? sysbvm_stackFrame_activeHandlerRecord->previous : sysbvm_stackFrame_activeRecord;
 
     if(!exceptionRecord)
     {
@@ -195,6 +196,7 @@ SYSBVM_API void sysbvm_stackFrame_raiseException(sysbvm_tuple_t exception)
     }
 
     // We found it, transfer the control flow onto it.
+    sysbvm_stackFrame_activeHandlerRecord = stackFrameRecord;
     sysbvm_stackFrameLandingPadRecord_t *landingPadRecord = (sysbvm_stackFrameLandingPadRecord_t*)stackFrameRecord;
     landingPadRecord->exception = exception;
 
@@ -209,6 +211,7 @@ SYSBVM_API void sysbvm_stackFrame_raiseException(sysbvm_tuple_t exception)
     if(landingPadRecord->keepStackTrace)
         landingPadRecord->stackTrace = sysbvm_stackFrame_buildStackTraceUpTo((sysbvm_stackFrameRecord_t*)landingPadRecord);
 
+    sysbvm_stackFrame_activeHandlerRecord = NULL;
     sysbvm_stackFrame_prepareUnwindingUntil((sysbvm_stackFrameRecord_t*)landingPadRecord);
     sysbvm_stackFrame_activeRecord = (sysbvm_stackFrameRecord_t*)landingPadRecord;
     longjmp(landingPadRecord->jmpbuffer, 1);

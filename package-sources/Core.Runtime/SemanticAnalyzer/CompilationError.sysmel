@@ -1,0 +1,9 @@
+Error definition: {
+    public virtual method isCompilationError => Boolean
+        := false.
+}.
+
+CompilationError definition: {
+    public virtual method isCompilationError => Boolean
+        := true.
+}.

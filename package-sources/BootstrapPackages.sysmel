@@ -29,6 +29,8 @@ loadSourceNamed: "BootstrapCore.sysmel".
 
     "Compiler.HIR"
     "Compiler.HIR.Tests"
+
+    "Graphics.Window.PAL"
 ) do: {:each |
     loadPackageNamed: each
 }.

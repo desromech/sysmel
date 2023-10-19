@@ -1723,7 +1723,7 @@ public function ObjectModel::coerceValue(expectedType: Type, value: Untyped) => 
     let valueType := RawTuple::type(value).
     (valueType isDirectSubtypeOf: expectedType) ifTrue: (return: value).
     
-    error("TODO: ObjectModel::coerceValue").
+    expectedType coerceValue: value
 }.
 
 public function ObjectModel::coerceNullableValue(expectedType: Type, value: Untyped) => Untyped := {

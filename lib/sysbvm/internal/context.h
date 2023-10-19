@@ -311,7 +311,12 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t errorType;
     sysbvm_tuple_t argumentsCountMismatchType;
     sysbvm_tuple_t arithmeticErrorType;
+    sysbvm_tuple_t compilationErrorType;
     sysbvm_tuple_t domainErrorType;
+    sysbvm_tuple_t evaluationErrorType;
+    sysbvm_tuple_t parseErrorType;
+    sysbvm_tuple_t scanErrorType;
+    sysbvm_tuple_t semanticAnalysisErrorType;
     sysbvm_tuple_t zeroDivideType;
     sysbvm_tuple_t assertionFailureType;
     sysbvm_tuple_t cannotReturnType;

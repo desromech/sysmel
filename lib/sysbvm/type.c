@@ -1286,6 +1286,20 @@ SYSBVM_API sysbvm_tuple_t sysbvm_type_decay(sysbvm_context_t *context, sysbvm_tu
     return type;
 }
 
+SYSBVM_API sysbvm_tuple_t sysbvm_type_decayReceiver(sysbvm_context_t *context, sysbvm_tuple_t type)
+{
+    if(sysbvm_tuple_isKindOf(context, type, context->roots.referenceType))
+    {
+        sysbvm_tuple_t baseType = ((sysbvm_referenceType_t*)type)->super.baseType;
+        if(sysbvm_tuple_isKindOf(context, baseType, context->roots.valueType) &&
+            !sysbvm_tuple_isKindOf(context, baseType, context->roots.primitiveValueType) && !
+            !sysbvm_tuple_isKindOf(context, baseType, context->roots.pointerLikeType))
+            return type;
+        return baseType;
+    }
+
+    return type;
+}
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getCanonicalPendingInstanceType(sysbvm_context_t *context, sysbvm_tuple_t type)
 {
     // FIXME: Check the validity of this condition.

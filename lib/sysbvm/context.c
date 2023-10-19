@@ -1435,11 +1435,18 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
 
     context->roots.exceptionType = sysbvm_context_createIntrinsicClass(context, "Exception", context->roots.objectType,
         "messageText", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.stringType,
+        "innerException", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.exceptionType,
+        "sourcePosition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sourcePositionType,
         NULL);
     context->roots.errorType = sysbvm_context_createIntrinsicClass(context, "Error", context->roots.exceptionType, NULL);
     context->roots.argumentsCountMismatchType = sysbvm_context_createIntrinsicClass(context, "ArgumentsCountMismatch", context->roots.errorType, NULL);
     context->roots.arithmeticErrorType = sysbvm_context_createIntrinsicClass(context, "ArithmeticError", context->roots.errorType, NULL);
+    context->roots.compilationErrorType = sysbvm_context_createIntrinsicClass(context, "CompilationError", context->roots.errorType, NULL);
+    context->roots.evaluationErrorType = sysbvm_context_createIntrinsicClass(context, "EvaluationError", context->roots.compilationErrorType, NULL);
+    context->roots.parseErrorType = sysbvm_context_createIntrinsicClass(context, "ParseError", context->roots.compilationErrorType, NULL);
+    context->roots.scanErrorType = sysbvm_context_createIntrinsicClass(context, "ScanError", context->roots.compilationErrorType, NULL);
     context->roots.domainErrorType = sysbvm_context_createIntrinsicClass(context, "DomainError", context->roots.arithmeticErrorType, NULL);
+    context->roots.semanticAnalysisErrorType = sysbvm_context_createIntrinsicClass(context, "SemanticAnalysisError", context->roots.compilationErrorType, NULL);
     context->roots.zeroDivideType = sysbvm_context_createIntrinsicClass(context, "ZeroDivide", context->roots.zeroDivideType,
         "dividend", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.anyValueType,
         NULL);

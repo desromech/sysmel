@@ -898,6 +898,11 @@ SYSBVM_API sysbvm_tuple_t sysbvm_pointerLikeType_store(sysbvm_context_t *context
 SYSBVM_API sysbvm_tuple_t sysbvm_type_decay(sysbvm_context_t *context, sysbvm_tuple_t type);
 
 /**
+ * Gets a decayed version of the receiver type.
+ */
+SYSBVM_API sysbvm_tuple_t sysbvm_type_decayReceiver(sysbvm_context_t *context, sysbvm_tuple_t type);
+
+/**
  * Gets the canonical pending type
  */
 SYSBVM_API sysbvm_tuple_t sysbvm_type_getCanonicalPendingInstanceType(sysbvm_context_t *context, sysbvm_tuple_t type);

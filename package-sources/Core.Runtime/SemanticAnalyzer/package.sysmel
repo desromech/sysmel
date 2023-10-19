@@ -1,4 +1,5 @@
 loadSourceNamed: "AnalysisQueue.sysmel".
+loadSourceNamed: "CompilationError.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
 loadSourceNamed: "Function.sysmel".
 loadSourceNamed: "Environment.sysmel".

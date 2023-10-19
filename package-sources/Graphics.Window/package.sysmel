@@ -1,3 +1,2 @@
-loadSourceNamed: "PAL.sysmel".
 loadSourceNamed: "Window.sysmel".
 loadSourceNamed: "WindowSystem.sysmel".

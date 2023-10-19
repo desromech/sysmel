@@ -27,6 +27,7 @@ public struct ExceptionStackRecord definition: {
 }.
 
 public threadLocal ExceptionStackRecord::LastActive mutable => ExceptionStackRecord pointer := nil.
+public threadLocal ExceptionStackRecord::ActiveHandlerRecord mutable => ExceptionStackRecord pointer := nil.
 
 public struct ExceptionCleanUpActionStackRecord supertype: ExceptionStackRecord; definition: {
     public field cleanUpAction => (() => Void).
@@ -54,61 +55,23 @@ Exception definition: {
     public virtual eager method defaultMessageText => String
         := "an " -- self class printString.
 
+    public override eager method printOn: (stream: Stream) ::=> Void := {
+        sourcePosition ifNotNil: {
+            stream print: sourcePosition; string: ": ".
+        }.
+
+        stream print: self class; string: ": ".
+        stream string: (messageText ifNil: self defaultMessageText)
+    }.
+
     public override eager method asString => String
-        := messageText ifNil: self defaultMessageText.
+        := super asString.
 
     public override eager method printString => String
-        := messageText ifNil: self defaultMessageText.
-
-    public override eager method printOn: (stream: Stream) ::=> Void := {
-        stream nextPutAll: (messageText ifNil: self defaultMessageText)
-    }.
+        := super printString.
 }.
 
-(Function::ensure:) adoptDefinitionOf: {:body :(() => Void)cleanUp :: AnyValue |
-    <primitive: #Function::ensure: >
-
-    ## Make the clean up stack record.
-    let stackRecord mutable := ExceptionCleanUpActionStackRecord basicAllocate.
-    stackRecord
-        previous: ExceptionStackRecord::LastActive;
-        kind: ExceptionStackRecord::Kind::CleanUp;
-        cleanUpAction: cleanUp.
-    ExceptionStackRecord::LastActive := stackRecord address.
-
-    ## Evaluate the body.
-    let result := body().
-    
-    ## Remove the clean up stack record.
-    ExceptionStackRecord::LastActive := stackRecord previous.
-
-    ## Execute the clean up action.
-    cleanUp().
-
-    ## Return the result.
-    result
-}.
-
-(Function::on:do:) adoptDefinitionOf: {:body :exceptionFilter :exceptionBlock :: AnyValue |
-    <primitive: #Function::on:do: >
-
-    ## Make the clean up stack record.
-    let stackRecord mutable := ExceptionOnDoStackRecord basicAllocate.
-    stackRecord
-        previous: ExceptionStackRecord::LastActive;
-        kind: ExceptionStackRecord::Kind::OnDo;
-        exceptionFilter: exceptionFilter;
-        exceptionBlock: exceptionBlock;
-        gcStackFrameRecord: GCStackFrameRecord::LastActive.
-    ExceptionStackRecord::LastActive := stackRecord address.
-
-    ## Perform setjmp
-    ## FIXME: Avoid this explicit __slotNamedReferenceAt__:
-    (stackRecord __slotNamedReferenceAt__: #setjmpBuffer) setjmp ifFalse: {
-        let result := body().
-        ExceptionStackRecord::LastActive := stackRecord previous.
-        result
-    } ifTrue: {
-        stackRecord exceptionResult
-    }.
+(Function::on:do:) adoptDefinitionOf: {:self :exceptionFilter :exceptionBlock :: self __type__ canonicalResultType |
+    <targetDefinedPrimitive>
+    primitiveFailedError()
 }.
