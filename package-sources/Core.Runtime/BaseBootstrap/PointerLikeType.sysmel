@@ -75,7 +75,7 @@ ReferenceType definition: {
             __type__: (self) => baseType;
             yourself.
         storeValueFunction := (PointerLikeType::store:) copy
-            __type__: (self, baseType) => Void;
+            __type__: (self, baseType) => self;
             yourself.
 
         let referenceType := ReferenceTypeTemplate(theBaseType, theAddressSpace).
@@ -107,7 +107,7 @@ TemporaryReferenceType definition: {
             __type__: (self) => baseType;
             yourself.
         storeValueFunction := (PointerLikeType::store:) copy
-            __type__: (self, baseType) => Void;
+            __type__: (self, baseType) => self;
             yourself.
 
         let referenceType := ReferenceTypeTemplate(theBaseType, theAddressSpace).

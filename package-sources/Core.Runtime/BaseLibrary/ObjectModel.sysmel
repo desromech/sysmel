@@ -1891,7 +1891,7 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
                             return: checkedEntryPointFunction(functional, `@argumentIdentifiers)
                         }.
                         
-                        function interpretWithArguments: (`@argumentIdentifiers,)
+                        return: (function interpretWithArguments: (`@argumentIdentifiers,))
                     }.
                 }
             }.

@@ -51,6 +51,9 @@ FunctionBytecodeDirectCompiler definition: {
 
         self assembler optimize.
         self assembler build
+            arguments: sourceAnalyzedDefinition arguments;
+            captures: sourceAnalyzedDefinition captures;
+            yourself
     }.
 
     public method compileFunctionDefinition: (functionDefinition: FunctionDefinition) ::=> FunctionBytecode

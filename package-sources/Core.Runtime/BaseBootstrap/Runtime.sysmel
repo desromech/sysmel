@@ -898,7 +898,7 @@ Type
 UndefinedObject class
     withSelector: #coerceValue:intoType: addMethod: {:(UndefinedObject class)self :(Untyped)value :(Type)targetType :: Untyped |
         if: targetType isNullable then: {
-            nil
+            return: nil
         } else: {
             error((("Cannot coerce value " -- value printString) -- " into the expected target type ") -- targetType printString)
         }
