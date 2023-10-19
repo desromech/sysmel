@@ -14,6 +14,10 @@ FunctionBytecodeAssemblerVectorOperand definition: {
         := (self hasAllocaDestination && self hasNonAllocaDestination not) &&
             (self hasLoadStoreUsage && self hasNonLoadStoreUsage not).
 
+    public method isLocalOnlyReference => Boolean
+        := (self hasSlotReferenceAtDestination && self hasNonSlotReferenceAtDestination not) &&
+            (self hasLoadStoreUsage && self hasNonLoadStoreUsage not).
+
     public override method encodedValueForInstruction: (instruction: FunctionBytecodeAssemblerAbstractInstruction) ::=> Int16
         := (self index << FunctionBytecode::OperandVectorName::Bits) | self vectorType.
 
@@ -167,7 +171,7 @@ FunctionBytecodeAssemblerInstruction definition: {
 
     public method optimizeLocalOnlyAllocaWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
         let reference => FunctionBytecodeAssemblerVectorOperand := self operands first.
-        if: reference isLocalOnlyAlloca then: {
+        reference isLocalOnlyAlloca ifTrue: {
             let value := (if: self standardOpcode = FunctionBytecode::Opcode::Alloca
                 then: (assembler literal: nil)
                 else: self operands third).
@@ -175,25 +179,47 @@ FunctionBytecodeAssemblerInstruction definition: {
             assembler lowerTemporaryPointerRank: reference.
 
             self standardOpcode: FunctionBytecode::Opcode::Move.
-            self operands: (Array with: reference with: value)
-        }
-    }.
-
-    public method optimizeLocalOnlyLoadWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
-        let reference := self operands second.
-        if: reference isLocalOnlyAlloca then: {
-            self standardOpcode: FunctionBytecode::Opcode::Move
-        }
-    }.
-
-    public method optimizeLocalOnlyStoreWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
-        let reference := self operands first.
-        if: reference isLocalOnlyAlloca then: {
-            self standardOpcode: FunctionBytecode::Opcode::Move
-        }
+            self operands: (Array with: reference with: value).
+            return: void
+        }.
+        
     }.
 
     public method optimizeLocalOnlyReferenceAtWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+        let reference => FunctionBytecodeAssemblerVectorOperand := operands first.
+        reference isLocalOnlyReference ifTrue: {
+            reference
+                optimizationTupleOperand: self operands second;
+                optimizationTypeSlotOperand: self operands third.
+            assembler removeInstruction: self
+        }.
+    }.
+
+    public method optimizeLocalOnlyLoadWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+        let reference => FunctionBytecodeAssemblerVectorOperand := operands second.
+        reference isLocalOnlyAlloca ifTrue: {
+            self standardOpcode: FunctionBytecode::Opcode::Move.
+            return: void.
+        }.
+
+        reference isLocalOnlyReference ifTrue: {
+            operands := Array with: operands first with: reference optimizationTupleOperand with: reference optimizationTypeSlotOperand.
+            self standardOpcode: FunctionBytecode::Opcode::SlotAt.
+            return: void.
+        }.
+    }.
+
+    public method optimizeLocalOnlyStoreWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
+        let reference => FunctionBytecodeAssemblerVectorOperand := self operands first.
+        reference isLocalOnlyAlloca ifTrue: {
+            self standardOpcode: FunctionBytecode::Opcode::Move
+        }.
+
+        reference isLocalOnlyReference ifTrue: {
+            operands := Array with: reference optimizationTupleOperand with: reference optimizationTypeSlotOperand with: operands second.
+            self standardOpcode: FunctionBytecode::Opcode::SlotAtPut.
+            return: void.
+        }.
     }.
 
     public override method optimizeLocalOnlyAllocaAndSlotReferencesWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
@@ -572,7 +598,7 @@ FunctionBytecodeAssembler definition: {
         temporaryTypes at: temporaryPointer index asSize put: newTemporaryType.
         temporaryPointer allocaPointerRankIsLowered: true
     }.
-    
+
     public method optimizeTemporaries => Void := {
         self temporaries do: {:(FunctionBytecodeAssemblerVectorOperand)each :: Void |
             each

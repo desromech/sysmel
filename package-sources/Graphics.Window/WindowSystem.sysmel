@@ -69,14 +69,3 @@ WindowSystem definition: {
         nil
     }.
 }.
-
-{
-    let bytecode := ((WindowSystem >> #findWindowWithHandle:) ensureAnalysis; definition) bytecode.
-    printLine(bytecode fullPrintString).
-
-    let module := (WindowSystem >> #findWindowWithHandle:) asHIRModuleFromBytecodeForTarget: AsmCompilationTarget x86_64 asMirCompilationTarget asHIRCompilationTarget.
-    printLine(module fullPrintString).
-
-    module performStandardOptimizations.
-    printLine(module fullPrintString).
-}.
