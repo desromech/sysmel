@@ -887,16 +887,16 @@ Type
 
     withSelector: #coerceValue: addMethod: {:(Type)self :(Untyped)value :: Untyped |
         let: #valueType with: RawTuple::type(value).
-        if: (valueType isSubtypeOf: self) then: (value) else: {
-            valueType coerceValue: value intoType: self
-        }.
+        if: (valueType isSubtypeOf: self)
+            then: (value)
+            else: (valueType coerceValue: value intoType: self)
     } makeVirtual;
     withSelector: #printAnonymousNameOn: addMethod: {:(Type)self :(Stream)stream :: Void |
         stream nextPutAll: "a Type"
     } makeOverride.
 
 UndefinedObject class
-    withSelector: #coerceValue:intoType: addMethod: {:(Type)self :(Untyped)value :(Type)targetType :: Untyped |
+    withSelector: #coerceValue:intoType: addMethod: {:(UndefinedObject class)self :(Untyped)value :(Type)targetType :: Untyped |
         if: targetType isNullable then: {
             nil
         } else: {

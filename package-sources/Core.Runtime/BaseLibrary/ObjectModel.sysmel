@@ -1722,6 +1722,7 @@ public function ObjectModel::checkAndUnboxFatPointer(pointerType: PointerLikeTyp
 public function ObjectModel::coerceValue(expectedType: Type, value: Untyped) => Untyped := {
     let valueType := RawTuple::type(value).
     (valueType isDirectSubtypeOf: expectedType) ifTrue: (return: value).
+    Untyped::==(value, nil) && valueType isNullable ifTrue: (return: nil).
     
     expectedType coerceValue: value
 }.
