@@ -44,7 +44,39 @@ WindowSystem definition: {
     public method runEventLoopIteration => Void := {
         let event mutable := SysmelPAL::WindowEvent basicNew.
         sysmel_pal_window_waitEvent(event) ifTrue: {
-            ## TODO: Wait until next event
+            self convertAndDispatchEvent: event
         }.
     }.
+
+    public method convertAndDispatchEvent: (event: SysmelPAL::WindowEvent ref) ::=> Void := {
+        let window := self findWindowWithHandle: event window.
+        window ifNil: {
+            printLine("Got event unknown window: ", event type).
+            return: void
+        }.
+
+        window convertAndDispatchEvent: event
+    }.
+
+    public method findWindowWithHandle: (handle: SysmelPAL::WindowHandle) ::=> Window := {
+        let i mutable := 0sz.
+        while: (i < openWindowList size) do: {
+            let window => Window := openWindowList at: i.
+            window handle == handle ifTrue: {
+                return: window
+            }
+        } continueWith: (i := i + 1sz).
+        nil
+    }.
+}.
+
+{
+    let bytecode := ((WindowSystem >> #findWindowWithHandle:) ensureAnalysis; definition) bytecode.
+    printLine(bytecode fullPrintString).
+
+    let module := (WindowSystem >> #findWindowWithHandle:) asHIRModuleFromBytecodeForTarget: AsmCompilationTarget x86_64 asMirCompilationTarget asHIRCompilationTarget.
+    printLine(module fullPrintString).
+
+    module performStandardOptimizations.
+    printLine(module fullPrintString).
 }.

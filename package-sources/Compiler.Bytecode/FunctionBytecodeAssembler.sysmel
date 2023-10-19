@@ -166,11 +166,13 @@ FunctionBytecodeAssemblerInstruction definition: {
     }.
 
     public method optimizeLocalOnlyAllocaWith: (assembler: FunctionBytecodeAssembler) ::=> Void := {
-        let reference := self operands first.
+        let reference => FunctionBytecodeAssemblerVectorOperand := self operands first.
         if: reference isLocalOnlyAlloca then: {
             let value := (if: self standardOpcode = FunctionBytecode::Opcode::Alloca
                 then: (assembler literal: nil)
                 else: self operands third).
+
+            assembler lowerTemporaryPointerRank: reference.
 
             self standardOpcode: FunctionBytecode::Opcode::Move.
             self operands: (Array with: reference with: value)
@@ -550,6 +552,27 @@ FunctionBytecodeAssembler definition: {
             standardOpcode: FunctionBytecode::Opcode::Unreachable;
             yourself).
 
+    public method lowerTemporaryPointerRank: (temporaryPointer: FunctionBytecodeAssemblerVectorOperand) ::=> Void :={
+        temporaryPointer allocaPointerRankIsLowered ifTrue: {
+            return: void
+        }.
+
+        (temporaryPointer vectorType = FunctionBytecode::OperandVectorName::Local) &&
+        (temporaryPointer index >= 0i16) &&
+        (temporaryPointer index asSize < temporaryTypes size) ifFalse: {
+            return: void
+        }.
+
+        let temporaryType => Type := temporaryTypes at: temporaryPointer index asSize.
+        temporaryType isPointerLikeType ifFalse: {
+            return: void
+        }.
+
+        let newTemporaryType := (temporaryType downCastTo: PointerLikeType) baseType.
+        temporaryTypes at: temporaryPointer index asSize put: newTemporaryType.
+        temporaryPointer allocaPointerRankIsLowered: true
+    }.
+    
     public method optimizeTemporaries => Void := {
         self temporaries do: {:(FunctionBytecodeAssemblerVectorOperand)each :: Void |
             each

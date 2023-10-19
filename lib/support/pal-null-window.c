@@ -36,3 +36,29 @@ SYSMEL_PAL_EXTERN_C bool sysmel_pal_window_waitEvent(sysmel_pal_window_event_t *
     (void)event;
     return false;
 }
+
+SYSMEL_PAL_EXTERN_C sysmel_pal_windowRenderer_t *sysmel_pal_windowRenderer_create(sysmel_pal_window_t *window, uint32_t flags)
+{
+    (void)window;
+    (void)flags;
+    return NULL;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_windowRenderer_destroy(sysmel_pal_windowRenderer_t *renderer)
+{
+    (void)renderer;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_windowRenderer_beginFrame(sysmel_pal_windowRenderer_t *renderer, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    (void)renderer;
+    (void)r;
+    (void)g;
+    (void)b;
+    (void)a;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_windowRenderer_endFrame(sysmel_pal_windowRenderer_t *renderer)
+{
+    (void)renderer;
+}

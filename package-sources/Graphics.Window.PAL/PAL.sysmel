@@ -1,16 +1,27 @@
-public global SysmelPAL::WindowEventType := UInt8.
-
-public struct SysmelPAL::WindowEvent definition: {
-}.
+public global SysmelPAL::WindowEventType := UInt32.
 
 public struct SysmelPAL::Window.
 public global SysmelPAL::WindowHandle := SysmelPAL::Window pointer.
+
+public struct SysmelPAL::WindowRenderer.
+public global SysmelPAL::WindowRendererHandle := SysmelPAL::WindowRenderer pointer.
+
+public struct SysmelPAL::WindowEvent definition: {
+    public field type => SysmelPAL::WindowEventType.
+    public field window => SysmelPAL::WindowHandle.
+}.
 
 public externC function sysmel_pal_windowSystem_initialize() => Void.
 public externC function sysmel_pal_windowSystem_finalize() => Void.
 
 public externC function sysmel_pal_window_create(titleSize: Size, title: Char8 const pointer, x: Int32, y: Int32, width: Int32, height: Int32, flags: UInt32) => SysmelPAL::WindowHandle.
 public externC function sysmel_pal_window_destroy(window: SysmelPAL::WindowHandle) => Void.
+
+public externC function sysmel_pal_windowRenderer_create(window: Size, flags: UInt32) => SysmelPAL::WindowRendererHandle.
+public externC function sysmel_pal_windowRenderer_destroy(renderer: SysmelPAL::WindowRendererHandle) => Void.
+
+public externC function sysmel_pal_windowRenderer_beginFrame(renderer: SysmelPAL::WindowRendererHandle, red: UInt8, green: UInt8, blue: UInt8, alpha: UInt8) => Void.
+public externC function sysmel_pal_windowRenderer_endFrame(renderer: SysmelPAL::WindowRendererHandle) => Void.
 
 public externC function sysmel_pal_window_pollEvent(event: SysmelPAL::WindowEvent ref) => Boolean.
 public externC function sysmel_pal_window_waitEvent(event: SysmelPAL::WindowEvent ref) => Boolean.
