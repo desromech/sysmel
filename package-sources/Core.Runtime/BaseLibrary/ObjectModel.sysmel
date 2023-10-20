@@ -1771,7 +1771,7 @@ public function ObjectModel::allocaGC(valueType: Type) => Void memberPointer := 
 }.
 
 public function ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline(function: Function, interpreterTrampoline: UIntPointer) => UIntPointer := {
-    let result := function definition uncheckedEntryPoint asUIntPointer.
+    let result := function definition uncheckedEntryPoint.
     result = 0uptr ifTrue: {
         interpreterTrampoline
     } ifFalse: {
@@ -1781,7 +1781,7 @@ public function ObjectModel::fetchUncheckedEntryPointOrInterpreterTrampoline(fun
 
 public function ObjectModel::fetchUncheckedEntryPointMatchingBoxDescriptorOrBoxingTrampoline(function: Function, boxDescriptor: UIntPointer, boxingTrampoline: UIntPointer) => UIntPointer := {
     let definition := function definition.
-    let result := definition uncheckedEntryPoint asUIntPointer.
+    let result := definition uncheckedEntryPoint.
     (result = 0uptr) || (definition boxDescriptor ~= boxDescriptor) ifTrue: {
         boxingTrampoline
     } ifFalse: {
@@ -1867,7 +1867,7 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
             
             function ensureIsReadyForEvaluation.
 
-            let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
+            let checkedEntryPoint := definition checkedEntryPoint.
             checkedEntryPoint ~= 0uptr ifTrue: {
                 let checkedEntryPointFunction := checkedEntryPoint reinterpretCastTo: `,(checkedEntryPointPointerType asMacroLiteral).
                 return: checkedEntryPointFunction(function, `@argumentIdentifiers)
@@ -1885,7 +1885,7 @@ public struct ObjectModel::PolymorphicInlineCache definition: {
                     definition ifNotNil: {
                         function ensureIsReadyForEvaluation.
                         
-                        let checkedEntryPoint := definition checkedEntryPoint asUIntPointer.
+                        let checkedEntryPoint := definition checkedEntryPoint.
                         checkedEntryPoint ~= 0uptr ifTrue: {
                             let checkedEntryPointFunction := checkedEntryPoint reinterpretCastTo: `,(checkedEntryPointPointerType asMacroLiteral).
                             return: checkedEntryPointFunction(functional, `@argumentIdentifiers)

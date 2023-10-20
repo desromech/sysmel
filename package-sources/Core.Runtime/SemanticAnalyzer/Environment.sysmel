@@ -340,6 +340,10 @@ AnalysisAndEvaluationEnvironment definition: {
     public eager override method expectedTypeOrNil => Type
         := expectedType.
 
+    public eager method clearAnalyzerToken => Void := {
+        analyzerToken := nil
+    }.
+
     public eager method analyzeIfNeeded: (node: ASTNode) ::=> ASTNode := {
         node analyzerToken == self validAnalyzerToken ifTrue: {
             node

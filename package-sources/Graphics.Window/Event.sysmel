@@ -1,0 +1,135 @@
+public class EventHandler superclass: Object.
+
+#**
+ * I am a basic event for a window.
+ *#
+public abstract class Event superclass: Object; definition: {
+    public abstract method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := self subclassResponsibility
+}.
+
+#**
+ * I am a tick event.
+ *#
+public class TickEvent superclass: Event; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onTickEvent: self
+}.
+
+#**
+ * I am keyboard event
+ *#
+public abstract class KeyboardEvent superclass: Event; definition: {
+}.
+
+#**
+ * I am key pressed event
+ *#
+public class KeyPressedEvent superclass: KeyboardEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onKeyPressedEvent: self
+}.
+
+#**
+ * I am key released event
+ *#
+public class KeyReleasedEvent superclass: KeyboardEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onKeyReleasedEvent: self
+}.
+
+#**
+ * I am a text input event
+ *#
+public class TextInputEvent superclass: Event; definition: {
+    public field text => String.
+
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onTextInputEvent: self
+}.
+
+#**
+ * I am a text editing event
+ *#
+public class TextEditingEvent superclass: Event; definition: {
+    public field text => String.
+
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onTextEditingEvent: self
+}.
+
+#**
+ * I am a mouse event
+ *#
+public class MouseEvent superclass: Event; definition: {
+}.
+
+#**
+ * I am a mouse enter event
+ *#
+public class MouseEnterEvent superclass: MouseEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onMouseEnterEvent: self
+}.
+
+#**
+ * I am a mouse leave enter event
+ *#
+public class MouseLeaveEvent superclass: MouseEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onMouseLeaveEvent: self
+}.
+
+#**
+ * I am a mouse move event
+ *#
+public class MouseMoveEvent superclass: MouseEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onMouseMoveEvent: self
+}.
+
+#**
+ * I am a mouse button event
+ *#
+public class MouseButtonEvent superclass: MouseEvent; definition: {
+}.
+
+#**
+ * I am a mouse button pressed event
+ *#
+public class MouseButtonPressedEvent superclass: MouseEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onMouseButtonPressedEvent: self
+}.
+
+#**
+ * I am a mouse button pressed event
+ *#
+public class MouseButtonReleasedEvent superclass: MouseEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onMouseButtonReleasedEvent: self
+}.
+
+#**
+ * I am a mouse wheel event
+ *#
+public class MouseWheelEvent superclass: MouseEvent; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onMouseWheelEvent: self
+}.
+
+#**
+ * I am an expose event.
+ *#
+public class ExposeEvent superclass: Event; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onExposeEvent: self
+}.
+
+#**
+ * I am a window close event.
+ *#
+public class WindowCloseRequestEvent superclass: Event; definition: {
+    public override method acceptEventHandler: (handler: EventHandler) ::=> Void
+        := handler onWindowCloseRequestEvent: self
+}.

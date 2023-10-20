@@ -35,6 +35,21 @@ SYSMEL_PAL_EXTERN_C sysmel_pal_window_t *sysmel_pal_window_create(size_t titleSi
     return (sysmel_pal_window_t*)window;
 }
 
+SYSMEL_PAL_EXTERN_C void sysmel_pal_window_show(sysmel_pal_window_t *window)
+{
+    SDL_ShowWindow((SDL_Window*)window);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_window_hide(sysmel_pal_window_t *window)
+{
+    SDL_HideWindow((SDL_Window*)window);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_window_raise(sysmel_pal_window_t *window)
+{
+    SDL_RaiseWindow((SDL_Window*)window);
+}
+
 SYSMEL_PAL_EXTERN_C void sysmel_pal_window_destroy(sysmel_pal_window_t *window)
 {
     SDL_DestroyWindow((SDL_Window*)window);

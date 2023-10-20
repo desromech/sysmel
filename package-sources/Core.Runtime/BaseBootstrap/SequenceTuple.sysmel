@@ -8,6 +8,13 @@ AnySequenceTuple definition: {
     public override final method at: (index: Size) put: value ::=> Void := {
         (RawTuple::typeSlotAt:put:)(self, self class slots at: index, value)
     }.
+
+    public final method untypedAt: (index: Size) ::=> Untyped
+        := (RawTuple::typeSlotAt:)(self, self class slots at: index).
+
+    public final method untypedAt: (index: Size) put: (value: Untyped) ::=> Void := {
+        (RawTuple::typeSlotAt:put:)(self, self class slots at: index, value)
+    }.
 }.
 
 SequenceTupleType definition: {

@@ -1428,9 +1428,9 @@ FunctionDefinition definition: {
     }.
 
     public eager method ensureSourceAnalyzedDefinition => FunctionSourceAnalyzedDefinition := {
-        sourceDefinition ifNil: {return: void}.
-        bytecode ifNotNil: {return: void}.
-        sourceAnalyzedDefinition isNotNil && sourceAnalyzedDefinition captures isNotNil ifTrue: {return: void}.
+        sourceDefinition ifNil: {return: sourceAnalyzedDefinition}.
+        bytecode ifNotNil: {return: sourceAnalyzedDefinition}.
+        sourceAnalyzedDefinition isNotNil && sourceAnalyzedDefinition captures isNotNil ifTrue: {return: sourceAnalyzedDefinition}.
         
         self ensureTypeAnalysis.
 
@@ -1447,6 +1447,11 @@ FunctionDefinition definition: {
 
         let captureTypes := sourceAnalyzedDefinition captures collect: {:(SymbolBinding)eachCaptureBinding :: Type | eachCaptureBinding type ifNil: Untyped}.
         captureVectorType := SequenceTupleTypeTemplate(captureTypes).
+
+        ## Discard the source definition if not needed anymore.
+        sourceAnalyzedDefinition environment keepSourceDefinition ifFalse: {
+            sourceDefinition := nil.
+        }.
 
         sourceAnalyzedDefinition
     }.
@@ -2251,5 +2256,58 @@ ASTWhileContinueWithNode definition: {
 
         } continueWith: (self continueExpression ifNotNil: (self continueExpression evaluateWithEnvironment: environment)).
         void
+    }.
+}.
+
+Function definition: {
+    public eager method recompileAndOptimize => Function := {
+        self ensureAnalysis.
+        definition ifNil: (return: self).
+        definition sourceDefinition ifNil: (return: self).
+        definition sourceAnalyzedDefinition isNotNil || definition bytecode isNotNil ifFalse: {
+            return: self
+        }.
+
+        let captures => Array := definition bytecode
+            ifNotNil: (definition bytecode captures)
+            ifNil: (definition sourceAnalyzedDefinition captures).
+
+        let optimizedSourceDefinition := definition sourceDefinition shallowCopy.
+        let optimizedFunctionDefinition := definition shallowCopy
+            owner: nil;
+            name: nil;
+            sourceDefinition: optimizedSourceDefinition;
+            clearEntryPoints;
+            yourself.
+
+        let optimizedDefinitionEnvironment := AnalysisAndEvaluationEnvironment parent: definition sourceDefinition environment.
+        optimizedDefinitionEnvironment clearAnalyzerToken.
+        optimizedSourceDefinition environment: optimizedDefinitionEnvironment.
+
+        captures doWithIndex: {:(SymbolCaptureBinding)binding :(Size)index :: Void |
+            let value := captureVector untypedAt: index.
+            optimizedDefinitionEnvironment setNewSymbol: binding name bindingWithValue: value
+        }.
+
+        optimizedFunctionDefinition
+            sourceAnalyzedDefinition: nil;
+            captureVectorType: nil;
+            type: nil;
+            pragmas: nil;
+            innerFunctions: nil;
+            primitiveName: nil;
+            annotations: nil;
+
+            bytecode: nil;
+            nativeCodeDefinition: nil;
+
+            ensureAnalysis.
+        self assert: optimizedFunctionDefinition bytecode captures isEmpty.
+        let optimizedCaptureVector => AnySequenceTuple := optimizedFunctionDefinition captureVectorType new.
+
+        let optimizedFunction := Function new.
+        optimizedFunction __type__: optimizedFunctionDefinition type.
+        optimizedFunction setupWithFunctionDefinition: optimizedFunctionDefinition captureVector: optimizedCaptureVector.
+        optimizedFunction
     }.
 }.

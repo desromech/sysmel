@@ -9,7 +9,13 @@ FunctionDefinition definition: {
         }.
 
         error("Function definition is missing definition with capture list.")
-    }
+    }.
+
+    public eager method clearEntryPoints => Void := {
+        capturelessUncheckedEntryPoint := 0uptr.
+        uncheckedEntryPoint := 0uptr.
+        checkedEntryPoint := 0uptr.
+    }.
 }.
 
 Function definition: {
@@ -89,13 +95,6 @@ Function definition: {
 
     public override eager method ensureAnalysis => Void := {
         self doEnsureAnalysis
-    }.
-
-    public eager method recompileAndOptimize => Function := {
-        self ensureAnalysis.
-        (definition isNil || captureVector isNotNil) ifTrue: (return: self).
-
-        error("TODO: recompileAndOptimize")
     }.
 
     public eager method applyWithExpandedArguments: (arguments: Array) ::=> Untyped := {

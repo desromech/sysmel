@@ -852,15 +852,15 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "innerFunctions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "annotations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.dictionaryType,
 
-        "sourceDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.functionSourceDefinitionType,
+        "sourceDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionSourceDefinitionType,
         "sourceAnalyzedDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.functionSourceAnalyzedDefinitionType,
         "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_BYTECODE, context->roots.functionBytecodeType,
         "nativeCodeDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionNativeCodeType,
 
         "boxDescriptor", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
-        "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
-        "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
-        "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.systemHandleType,
+        "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
+        "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
+        "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,
         NULL);
 
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionSourceDefinitionType, "FunctionSourceDefinition", SYSBVM_NULL_TUPLE,

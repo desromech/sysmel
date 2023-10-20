@@ -3,6 +3,7 @@ public class WindowSystem superclass: Object.
 public class Window superclass: Object; definition: {
     private field windowSystem => WindowSystem.
     private field handle => SysmelPAL::WindowHandle.
+    public field eventHandler => EventHandler.
 
     public method initializeWithWindowSystem: (initialWindowSystem: WindowSystem) handle: (initialHandle: SysmelPAL::WindowHandle) ::=> Void := {
         windowSystem := initialWindowSystem.
@@ -10,6 +11,14 @@ public class Window superclass: Object; definition: {
     }.
 
     public inline method handle => SysmelPAL::WindowHandle := handle.
+
+    public method show => Void := {
+        sysmel_pal_window_show(handle)
+    }.
+
+    public method hide => Void := {
+        sysmel_pal_window_hide(handle)
+    }.
 
     public method close => Void := {
         handle ifNil: {return: void}.
@@ -21,12 +30,18 @@ public class Window superclass: Object; definition: {
     public method convertAndDispatchEvent: (event: SysmelPAL::WindowEvent ref) ::=> Void := {
         switch: event type withCases: #{
         SysmelPAL::WindowEventType::Exposed : {
-            printLine("WindowEventType::Exposed").
+            self dispatchEvent: ExposeEvent new
         }.
         SysmelPAL::WindowEventType::Close : {
-            printLine("WindowEventType::Close").
+            self dispatchEvent: WindowCloseRequestEvent new
         }.
         _:{}
+        }
+    }.
+
+    public method dispatchEvent: (event: Event) ::=> Void := {
+        eventHandler ifNotNil: {
+            eventHandler processEvent: event
         }
     }.
 }.
