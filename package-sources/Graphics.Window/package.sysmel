@@ -1,4 +1,6 @@
 loadSourceNamed: "Event.sysmel".
 loadSourceNamed: "EventHandler.sysmel".
 loadSourceNamed: "Window.sysmel".
+loadSourceNamed: "WindowRenderer.sysmel".
+loadSourceNamed: "WindowBasicRenderer.sysmel".
 loadSourceNamed: "WindowSystem.sysmel".

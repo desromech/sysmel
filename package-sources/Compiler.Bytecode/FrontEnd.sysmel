@@ -89,11 +89,14 @@ ASTDownCastNode extend: {
 ASTLambdaNode extend: {
     public override eager method doCompileIntoBytecodeWith: (compiler: FunctionBytecodeDirectCompiler) ::=> FunctionBytecodeAssemblerVectorOperand := {
         let functionDefinition := self functionDefinition.
-        functionDefinition ensureAnalysis.
+        functionDefinition ensureSourceAnalyzedDefinition.
 
         let functionDefinitionValue := compiler functionDefinitionValueFor: functionDefinition.
+        let captureList := functionDefinition bytecode
+            ifNotNil: functionDefinition bytecode captures
+            ifNil: functionDefinition sourceAnalyzedDefinition captures.
 
-        let captures := functionDefinition sourceAnalyzedDefinition captures collect: {:(SymbolCaptureBinding)capture :: FunctionBytecodeAssemblerVectorOperand |
+        let captures := captureList collect: {:(SymbolCaptureBinding)capture :: FunctionBytecodeAssemblerVectorOperand |
             compiler getValueForLocalBinding: capture sourceBinding
         }.
 

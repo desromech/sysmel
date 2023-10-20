@@ -1,5 +1,9 @@
 WindowSystem definition: {
     private field openWindowList => OrderedCollection.
+    private field loopIterationTime => Time::MicrosecondsTimestamp.
+    private field lastLoopIterationTime => Time::MicrosecondsTimestamp.
+    private field loopIterationDeltaTime => Time::MicrosecondsTimestamp.
+    private field loopIterationCount => UInt32.
 
     private global Default mutable => WindowSystem.
 
@@ -42,10 +46,41 @@ WindowSystem definition: {
     }.
 
     public method runEventLoopIteration => Void := {
+        loopIterationTime := Time::Timestamp::microsecondsNow().
+        loopIterationDeltaTime := loopIterationTime - lastLoopIterationTime.
+        loopIterationCount := loopIterationCount + 1u32.
+
         let event mutable := SysmelPAL::WindowEvent basicNew.
-        sysmel_pal_window_waitEvent(event) ifTrue: {
+        while: sysmel_pal_window_pollEvent(event) do: {
             self convertAndDispatchEvent: event
         }.
+
+        self dispatchTickEvent ifTrue: {
+            ##printLine("TODO: Animation delay.")
+        } ifFalse: {
+            sysmel_pal_window_waitEvent(event) ifTrue: {
+                self convertAndDispatchEvent: event
+            }.
+        }.
+
+        lastLoopIterationTime := loopIterationTime
+    }.
+
+    public method dispatchTickEvent => Boolean := {
+        let hasAnimatedWindow := openWindowList anySatisfy: {:(Window)each :: Boolean | each isAnimated }.
+        hasAnimatedWindow ifTrue: {
+            let event := TickEvent new
+                ticks: loopIterationTime;
+                delta: loopIterationDeltaTime;
+                mainLoopFrameCount: loopIterationCount;
+                yourself.
+
+            openWindowList do: {:(Window)each :: Void |
+                each dispatchEvent: event
+            }
+        }.
+
+        hasAnimatedWindow
     }.
 
     public method convertAndDispatchEvent: (event: SysmelPAL::WindowEvent ref) ::=> Void := {
@@ -67,4 +102,10 @@ WindowSystem definition: {
         } continueWith: (i := i + 1sz).
         nil
     }.
+
+    public method onWindowClosed: (window: Window) ::=> Void := {
+        (openWindowList includes: window) ifTrue: {
+            openWindowList remove: window
+        }
+    }
 }.

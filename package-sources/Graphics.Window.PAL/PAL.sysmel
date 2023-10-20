@@ -49,7 +49,7 @@ public externC function sysmel_pal_window_hide(window: SysmelPAL::WindowHandle) 
 public externC function sysmel_pal_window_raise(window: SysmelPAL::WindowHandle) => Void.
 public externC function sysmel_pal_window_destroy(window: SysmelPAL::WindowHandle) => Void.
 
-public externC function sysmel_pal_windowRenderer_create(window: Size, flags: UInt32) => SysmelPAL::WindowRendererHandle.
+public externC function sysmel_pal_windowRenderer_create(window: SysmelPAL::WindowHandle, flags: UInt32) => SysmelPAL::WindowRendererHandle.
 public externC function sysmel_pal_windowRenderer_destroy(renderer: SysmelPAL::WindowRendererHandle) => Void.
 
 public externC function sysmel_pal_windowRenderer_beginFrame(renderer: SysmelPAL::WindowRendererHandle, red: UInt8, green: UInt8, blue: UInt8, alpha: UInt8) => Void.

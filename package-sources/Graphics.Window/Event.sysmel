@@ -12,6 +12,16 @@ public abstract class Event superclass: Object; definition: {
  * I am a tick event.
  *#
 public class TickEvent superclass: Event; definition: {
+    public field ticks => Time::MicrosecondsTimestamp.
+    public field delta => Time::MicrosecondsTimestamp.
+    public field mainLoopFrameCount => UInt32.
+
+    public inline method seconds => Float64
+        := ticks asFloat64 * 1.0e-6f64.
+
+    public inline method deltaSeconds => Float64
+        := delta asFloat64 * 1.0e-6f64.
+        
     public override method acceptEventHandler: (handler: EventHandler) ::=> Void
         := handler onTickEvent: self
 }.

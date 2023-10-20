@@ -1,2 +1,5 @@
+public global Time::MicrosecondsTimestamp := Int64.
+public global Time::NanosecondsTimestamp := Int64.
+
 Time::Timestamp::microsecondsNow adoptDefinitionOf: {:: Int64 | sysmel_pal_microsecondsNow()}.
 Time::Timestamp::nanosecondsNow adoptDefinitionOf: {:: Int64 | sysmel_pal_nanosecondsNow()}.

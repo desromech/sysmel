@@ -1,16 +1,20 @@
 public class WindowSystem superclass: Object.
+public abstract class WindowRenderer superclass: Object.
 
 public class Window superclass: Object; definition: {
     private field windowSystem => WindowSystem.
     private field handle => SysmelPAL::WindowHandle.
     public field eventHandler => EventHandler.
+    public field renderer => WindowRenderer.
+    public field isAnimated => Boolean.
 
     public method initializeWithWindowSystem: (initialWindowSystem: WindowSystem) handle: (initialHandle: SysmelPAL::WindowHandle) ::=> Void := {
         windowSystem := initialWindowSystem.
         handle := initialHandle
     }.
 
-    public inline method handle => SysmelPAL::WindowHandle := handle.
+    public inline method handle => SysmelPAL::WindowHandle
+        := handle.
 
     public method show => Void := {
         sysmel_pal_window_show(handle)
@@ -23,7 +27,15 @@ public class Window superclass: Object; definition: {
     public method close => Void := {
         handle ifNil: {return: void}.
 
+        renderer ifNotNil: {
+            renderer destroy.
+            renderer := nil
+        }.
+
         sysmel_pal_window_destroy(handle).
+        
+        windowSystem onWindowClosed: self.
+        windowSystem := nil.
         handle := nil.
     }.
 
