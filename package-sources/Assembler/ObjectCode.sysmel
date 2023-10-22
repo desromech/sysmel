@@ -71,6 +71,15 @@ public abstract class AsmCompilationTarget superclass: Object; definition: {
     }.
 }.
 
+PlatformDescription definition: {
+    public method asAsmCompilationTarget => AsmCompilationTarget := {
+        let target => AsmCompilationTarget := AsmCompilationTarget perform: architectureName.
+        target
+            setupForPlatform: self;
+            yourself
+    }.
+}.
+
 public abstract class AsmCallFrameInformationInstruction superclass: Object; definition: {
     public field address => UInt64.
 }.

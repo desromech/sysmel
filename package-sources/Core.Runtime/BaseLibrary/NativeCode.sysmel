@@ -143,6 +143,19 @@ NativeCode definition: {
         sections := #().
     }.
 
+    public method findNativeCodeDefinitionFor: (definition: FunctionDefinition) ::=> FunctionNativeCodeDefinition := {
+        functionDefinitionsEntryPoints ifNil: {return: nil}.
+
+        let i mutable := 0sz.
+        while: i < functionDefinitionsEntryPoints size do: {
+            let entryPoint => FunctionNativeCodeDefinition := functionDefinitionsEntryPoints at: i.
+            entryPoint definition == definition ifTrue: {
+                return: entryPoint
+            }
+        } continueWith: (i := i + 1sz).
+        nil
+    }.
+
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         stream string: "Sections:"; nl.
         sections do: {:(NativeCodeSection)eachSection :: Void |

@@ -855,7 +855,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "sourceDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.functionSourceDefinitionType,
         "sourceAnalyzedDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.functionSourceAnalyzedDefinitionType,
         "bytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_BYTECODE, context->roots.functionBytecodeType,
+        "optimizedBytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_BYTECODE, context->roots.functionBytecodeType,
         "nativeCodeDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionNativeCodeType,
+        "targetOptimizedBytecode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_BYTECODE, context->roots.functionBytecodeType,
+        "targetNativeCodeDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.functionNativeCodeType,
 
         "boxDescriptor", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "capturelessUncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uintptrType,

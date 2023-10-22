@@ -119,7 +119,10 @@ typedef struct sysbvm_functionDefinition_s
     sysbvm_tuple_t sourceDefinition;
     sysbvm_tuple_t sourceAnalyzedDefinition;
     sysbvm_tuple_t bytecode;
+    sysbvm_tuple_t optimizedBytecode;
     sysbvm_tuple_t nativeCodeDefinition;
+    sysbvm_tuple_t targetOptimizedBytecode;
+    sysbvm_tuple_t targetNativeCodeDefinition;
 
     sysbvm_tuple_t boxDescriptor;
     sysbvm_tuple_t capturelessUncheckedEntryPoint;

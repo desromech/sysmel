@@ -98,13 +98,6 @@ AsmX86_64CompilationTarget definition: {
 }.
 
 PlatformDescription definition: {
-    public method asAsmCompilationTarget => AsmCompilationTarget := {
-        let target => AsmCompilationTarget := AsmCompilationTarget perform: architectureName.
-        target
-            setupForPlatform: self;
-            yourself
-    }.
-
     public method asImageBuilderNativeCodeTarget => ImageBuilderHIRTarget
         := self asAsmCompilationTarget asImageBuilderNativeCodeTarget.
 }.

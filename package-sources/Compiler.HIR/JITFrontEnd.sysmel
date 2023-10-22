@@ -1,0 +1,43 @@
+public class HIR_MIRFunctionNativeCodeCompiler superclass: FunctionNativeCodeCompiler; definition: {
+    __Meta__ definition: {
+        public override eager method compileFunctionDefinition: (definition: FunctionDefinition) ::=> FunctionNativeCodeDefinition
+            := self new compileFunctionDefinition: definition
+    }.
+
+    public method compileFunctionDefinition: (definition: FunctionDefinition) ::=> FunctionNativeCodeDefinition := {
+        let asmCompilationTarget := PlatformDescription currentHostPlatformDescription asAsmCompilationTarget.
+        let mirCompilationTarget := asmCompilationTarget asMirCompilationTarget.
+        let hirCompilationTarget := mirCompilationTarget asHIRCompilationTarget.
+
+        ## HIR
+        let hirModule := (HIRModuleCompilationContext forTarget: hirCompilationTarget)
+            virtualTableSetSource: CurrentImageVirtualTableSetSource uniqueInstance;
+            exclusiveCompilationMode: true;
+            compileFunctionDefinition: definition;
+            finish.
+        hirModule performStandardOptimizations.
+        ##printLine(hirModule fullPrintString).
+
+        ## MIR
+        let mirModule := HIRModuleMIRCodeGenerator new
+            initializeWithTarget: mirCompilationTarget;
+            importRuntimeFunction: true;
+            compileHIRModule: hirModule patchingFunctions: #() definitions: (Array with: definition);
+            finish.
+        mirModule performStandardOptimizations.
+        ##printLine(mirModule fullPrintString).
+
+        ## Assembler
+        let nativeCodeIR := mirModule asTargetNativeCodeIR.
+        ##printLine(nativeCodeIR fullPrintString).
+
+        ## Native code.
+        let nativeCode => NativeCode := nativeCodeIR asNativeCode.
+
+        ## Find the native code definition.
+        let nativeCodeDefinition := nativeCode findNativeCodeDefinitionFor: definition.
+        ##printLine(nativeCodeDefinition).
+
+        nativeCodeDefinition
+    }.
+}.

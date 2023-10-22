@@ -1393,12 +1393,18 @@ public global FunctionBytecodeCompiler::Current mutable => FunctionBytecodeCompi
 
 FunctionNativeCodeCompiler definition: {
     __Meta__ definition: {
-        public abstract eager method compileFunctionSourceAnalyzedDefinition: (sourceAnalyzedDefinition: FunctionSourceAnalyzedDefinition) orBytecode: (bytecode: FunctionBytecode) ::=> FunctionNativeCodeDefinition
+        public abstract eager method compileFunctionDefinition: (definition: FunctionDefinition) ::=> FunctionNativeCodeDefinition
             := self subclassResponsibility
     }.
 }.
 
 public global FunctionNativeCodeCompiler::Current mutable => FunctionNativeCodeCompiler class := nil.
+
+FunctionNativeCodeDefinition definition: {
+    public eager method installForExecutionOfFunctionDefinition: (definition: FunctionDefinition) ::=> Void := {
+        ## TODO: Implement this
+    }.
+}.
 
 FunctionDefinition definition: {
     public eager method ensureTypeAnalysis => Void := {
@@ -1473,9 +1479,12 @@ FunctionDefinition definition: {
         }.
 
         FunctionNativeCodeCompiler::Current ifNotNil: {
-            nativeCodeDefinition := FunctionNativeCodeCompiler::Current compileFunctionSourceAnalyzedDefinition: validSourceAnalyzedDefinition orBytecode: bytecode
-
-            ## TODO: Install the native code definition if possible.
+            nativeCodeDefinition := FunctionNativeCodeCompiler::Current compileFunctionDefinition: self.
+            nativeCodeDefinition ifNotNil: {
+                ObjectModel::isLogical() ifFalse: {
+                    nativeCodeDefinition installForExecutionOfFunctionDefinition: self
+                }
+            }.
         }.
     }.
 }.

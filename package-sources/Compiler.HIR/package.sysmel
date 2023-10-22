@@ -13,6 +13,7 @@ loadSourceNamed: "DestroySSAPass.sysmel".
 loadSourceNamed: "StandardOptimizations.sysmel".
 
 loadSourceNamed: "MIR.sysmel".
+loadSourceNamed: "JITFrontEnd.sysmel".
 loadSourceNamed: "ImageBuilderHIRImage.sysmel".
 loadSourceNamed: "ImageBuilderHIRTarget.sysmel".
 loadSourceNamed: "ImageBuilderHIR_MIRTarget.sysmel".

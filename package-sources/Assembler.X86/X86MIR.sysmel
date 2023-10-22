@@ -6126,12 +6126,17 @@ MIR::Operation::ExceptionLongjmp
         codegen function callingConvention asm::generateExceptionLongjmpRegistersFor: instruction with: codegen
     }.
 
+AsmCompilationTarget extend: {
+    public abstract method asMirCompilationTarget => MIRCompilationTarget
+        := self subclassResponsibility
+}.
+
 AsmX86CompilationTarget extend: {
-    public method asMirCompilationTarget => MIRX86CompilationTarget
+    public override method asMirCompilationTarget => MIRX86CompilationTarget
         := MIRX86CompilationTarget new asmCompilationTarget: self; yourself
 }.
 
 AsmX86_64CompilationTarget extend: {
-    public method asMirCompilationTarget => MIRX86_64CompilationTarget
+    public override method asMirCompilationTarget => MIRX86_64CompilationTarget
         := MIRX86_64CompilationTarget new asmCompilationTarget: self; yourself.
 }.
