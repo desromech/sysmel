@@ -1,0 +1,99 @@
+public struct ChunkedCodeAllocatorChunk definition: {
+    public field previous => ChunkedCodeAllocatorChunk pointer.
+    public field next => ChunkedCodeAllocatorChunk pointer.
+
+    public field writeMapping => ChunkedCodeAllocatorChunk pointer.
+    public field executableMapping => ChunkedCodeAllocatorChunk pointer.
+
+    public field mappingHandle => Void pointer.
+    public field reserved => Void pointer.
+
+    public field capacity => Size.
+    public field size => Size.
+
+    public inline nogc method remainingCapacityWithAlignment: (alignment: Size) ::=> Size
+        := capacity - (size alignedTo: alignment).
+}.
+
+public global ChunkedCodeAllocatorChunk::HeaderSize := ChunkedCodeAllocatorChunk valueSize.
+public global ChunkedCodeAllocator::ChunkSize := 2sz << 20sz.
+public global ChunkedCodeAllocator::PageAlignment := 1sz << 16sz.
+
+public struct ChunkedCodeAllocator definition: {
+    private field mutex => SysmelPAL::Mutex.
+
+    public field firstChunk => ChunkedCodeAllocatorChunk pointer.
+    public field lastChunk => ChunkedCodeAllocatorChunk pointer.
+    public field currentChunk => ChunkedCodeAllocatorChunk pointer.
+
+    public override nogc method initialize => Void := {
+        mutex initialize
+    }.
+
+    public override nogc method finalize => Void := {
+        let position mutable := firstChunk.
+        while: position isNotNil do: {
+            let next := position _ next.
+            let capacity := position _ capacity.
+            let mappingHandle := position _ mappingHandle.
+            let writeMapping := position _ writeMapping.
+            let executableMapping := position _ executableMapping.
+            sysmel_pal_freeMemoryWithDualMappingForJIT(capacity, mappingHandle, writeMapping reinterpretCastTo: Void pointer, executableMapping reinterpretCastTo: Void pointer).
+            position := next.
+        }.
+
+        mutex finalize
+    }.
+
+    public nogc method ensureChunkWithCapacityFor: (size: Size) alignment: (alignment: Size) ::=> ChunkedCodeAllocatorChunk pointer := {
+        let alignedSize := size alignedTo: alignment.
+
+        while: currentChunk isNotNil do: {
+            (currentChunk _ remainingCapacityWithAlignment: alignment) <= alignedSize ifTrue: {
+                currentChunk
+            }
+        } continueWith: (currentChunk := currentChunk _ next).
+
+        let chunkSize := ChunkedCodeAllocator::ChunkSize max: (ChunkedCodeAllocatorChunk::HeaderSize + alignedSize alignedTo: ChunkedCodeAllocator::PageAlignment).
+        let mappingHandle mutable => Void pointer := nil.
+        let writeMemoryPointer mutable => Void pointer := nil.
+        let executableMemoryPointer mutable => Void pointer := nil.
+
+        sysmel_pal_allocateMemoryWithDualMappingForJIT(chunkSize, mappingHandle, writeMemoryPointer, executableMemoryPointer) ifFalse: {
+            "Failed to allocate jit memory chunk with dual mapping." writeOntoStderr
+        }.
+
+        let newChunk := writeMemoryPointer reinterpretCastTo: ChunkedCodeAllocatorChunk pointer.
+        newChunk _
+            previous: lastChunk;
+            next: nil;
+            mappingHandle: mappingHandle;
+            writeMapping: (writeMemoryPointer reinterpretCastTo: ChunkedCodeAllocatorChunk pointer);
+            executableMapping: (executableMemoryPointer reinterpretCastTo: ChunkedCodeAllocatorChunk pointer);
+            capacity: chunkSize;
+            size: ChunkedCodeAllocatorChunk::HeaderSize.
+
+        lastChunk ifNotNil: {
+            lastChunk _ next: newChunk.
+            lastChunk := newChunk
+        } ifNil: {
+            firstChunk := lastChunk := newChunk
+        }.
+
+        currentChunk := newChunk.
+        newChunk
+    }.
+
+    public nogc method allocateWithSize: (size: Size) alignment: (alignment: Size) ::=> Void pointer := {
+        mutex lock.
+
+        let chunk := self ensureChunkWithCapacityFor: size alignment: alignment.
+
+        let offset := chunk _ size alignedTo: alignment.
+        let alignedSize := size alignedTo: alignment.
+        chunk _ size: offset + alignedSize.
+
+        mutex unlock.
+        (chunk reinterpretCastTo: UInt8 pointer) + offset asIntPointer reinterpretCastTo: Void pointer
+    }.
+}.

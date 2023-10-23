@@ -7,7 +7,6 @@
 #include <stddef.h>
 
 void *sysbvm_virtualMemory_allocateSystemMemory(size_t sizeToAllocate);
-void *sysbvm_virtualMemory_allocateSystemMemoryForCode(size_t sizeToAllocate);
 void sysbvm_virtualMemory_freeSystemMemory(void *memory, size_t sizeToFree);
 
 size_t sysbvm_virtualMemory_getSystemAllocationAlignment(void);

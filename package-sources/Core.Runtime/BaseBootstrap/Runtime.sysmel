@@ -539,10 +539,10 @@ PointerType
                         applicationFlags: 0bflgs;
                         yourself
                 } else: {
-                    error((("Cannot perform coercion from " -- self printString) -- " into ") -- targetType printString)
+                    error(astNode sourcePosition printString -- ((("Cannot perform coercion from " -- self printString) -- " into ") -- targetType printString))
                 }
             } else: {
-                error((("Cannot perform coercion from " -- self printString) -- " into ") -- targetType printString)
+                error(astNode sourcePosition printString -- ((("Cannot perform coercion from " -- self printString) -- " into ") -- targetType printString))
             }
         }.
     } makeOverride withEagerAnalysis.

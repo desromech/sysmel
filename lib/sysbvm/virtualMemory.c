@@ -15,11 +15,6 @@ void *sysbvm_virtualMemory_allocateSystemMemory(size_t sizeToAllocate)
     return VirtualAlloc(NULL, sizeToAllocate, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 }
 
-void *sysbvm_virtualMemory_allocateSystemMemoryForCode(size_t sizeToAllocate)
-{
-    return VirtualAlloc(NULL, sizeToAllocate, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
-}
-
 void sysbvm_virtualMemory_freeSystemMemory(void *memory, size_t sizeToFree)
 {
     (void)sizeToFree;
@@ -64,15 +59,6 @@ void sysbvm_virtualMemory_unlockCodePagesForExecution(void *codePointer, size_t 
 void *sysbvm_virtualMemory_allocateSystemMemory(size_t sizeToAllocate)
 {
     void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-    if(result == MAP_FAILED)
-        return 0;
-
-    return result;
-}
-
-void *sysbvm_virtualMemory_allocateSystemMemoryForCode(size_t sizeToAllocate)
-{
-    void *result = mmap(0, sizeToAllocate, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
     if(result == MAP_FAILED)
         return 0;
 

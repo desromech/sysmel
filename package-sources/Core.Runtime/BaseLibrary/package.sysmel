@@ -7,6 +7,8 @@ loadSourceNamed: "ByteArray.sysmel".
 loadSourceNamed: "ByteSerialization.sysmel".
 loadSourceNamed: "ByteSerializableObject.sysmel".
 loadSourceNamed: "Boolean.sysmel".
+loadSourceNamed: "ChunkedAllocator.sysmel".
+loadSourceNamed: "ChunkedCodeAllocator.sysmel".
 loadSourceNamed: "OrderedCollection.sysmel".
 loadSourceNamed: "Set.sysmel".
 loadSourceNamed: "SequenceableCollection.sysmel".

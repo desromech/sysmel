@@ -1,0 +1,83 @@
+public struct ChunkedAllocatorChunk definition: {
+    public field previous => ChunkedAllocatorChunk pointer.
+    public field next => ChunkedAllocatorChunk pointer.
+
+    public field capacity => Size.
+    public field size => Size.
+
+    public inline nogc method remainingCapacityWithAlignment: (alignment: Size) ::=> Size
+        := capacity - (size alignedTo: alignment).
+}.
+
+public global ChunkedAllocatorChunk::HeaderSize := ChunkedAllocatorChunk valueSize.
+public global ChunkedAllocator::ChunkSize := 2sz << 20sz.
+public global ChunkedAllocator::PageAlignment := 1sz << 16sz.
+
+public struct ChunkedAllocator definition: {
+    private field mutex => SysmelPAL::Mutex.
+
+    public field firstChunk => ChunkedAllocatorChunk pointer.
+    public field lastChunk => ChunkedAllocatorChunk pointer.
+    public field currentChunk => ChunkedAllocatorChunk pointer.
+
+    public override nogc method initialize => Void := {
+        mutex initialize
+    }.
+
+    public override nogc method finalize => Void := {
+        let position mutable := firstChunk.
+        while: position isNotNil do: {
+            let next := position _ next.
+            let capacity := position _ capacity.
+            sysmel_pal_freeSystemMemory(position reinterpretCastTo: Void pointer, capacity).
+            position := next.
+        }.
+
+        mutex finalize
+    }.
+
+    public nogc method ensureChunkWithCapacityFor: (size: Size) alignment: (alignment: Size) ::=> ChunkedAllocatorChunk pointer := {
+        let alignedSize := size alignedTo: alignment.
+
+        while: currentChunk isNotNil do: {
+            (currentChunk _ remainingCapacityWithAlignment: alignment) <= alignedSize ifTrue: {
+                currentChunk
+            }
+        } continueWith: (currentChunk := currentChunk _ next).
+
+        let chunkSize := ChunkedAllocator::ChunkSize max: (ChunkedAllocatorChunk::HeaderSize + alignedSize alignedTo: ChunkedAllocator::PageAlignment).
+        let newChunk := sysmel_pal_allocateSystemMemory(chunkSize) reinterpretCastTo: ChunkedAllocatorChunk pointer.
+        newChunk ifNil: {
+            "Failed to allocate memory chunk." writeOntoStderr
+        }.
+
+        newChunk _
+            previous: lastChunk;
+            next: nil;
+            capacity: chunkSize;
+            size: ChunkedAllocatorChunk::HeaderSize.
+
+        lastChunk ifNotNil: {
+            lastChunk _ next: newChunk.
+            lastChunk := newChunk
+        } ifNil: {
+            firstChunk := lastChunk := newChunk
+        }.
+
+        currentChunk := newChunk.
+        newChunk
+    }.
+
+    public nogc method allocateWithSize: (size: Size) alignment: (alignment: Size) ::=> Void pointer := {
+        mutex lock.
+
+        let chunk := self ensureChunkWithCapacityFor: size alignment: alignment.
+
+        let offset := chunk _ size alignedTo: alignment.
+        let alignedSize := size alignedTo: alignment.
+        chunk _ size: offset + alignedSize.
+
+        mutex unlock.
+        (chunk reinterpretCastTo: UInt8 pointer) + offset asIntPointer reinterpretCastTo: Void pointer
+    }.
+}.

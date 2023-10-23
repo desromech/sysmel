@@ -1,9 +1,6 @@
 #include "sysmel/pal.h"
 
-#ifndef _XOPEN_SOURCE
-#    define _XOPEN_SOURCE 600
-#endif
-
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -106,6 +103,71 @@ SYSMEL_PAL_EXTERN_C intptr_t sysmel_pal_readFromFile(sysmel_pal_filehandle_t han
 SYSMEL_PAL_EXTERN_C intptr_t sysmel_pal_readFromFileAtOffset(sysmel_pal_filehandle_t handle, uint64_t offset, size_t size, void *buffer)
 {
     return pread((intptr_t)handle, buffer, size, offset);
+}
+
+SYSMEL_PAL_EXTERN_C void *sysmel_pal_allocateSystemMemory(size_t size)
+{
+    void *result = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    if(result == MAP_FAILED)
+        return 0;
+
+    return result;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_freeSystemMemory(void *memoryPointer, size_t size)
+{
+    munmap(memoryPointer, size);
+}
+
+SYSMEL_PAL_EXTERN_C bool sysmel_pal_supportsMemoryWithDualMappingForJIT(void)
+{
+    return true;
+}
+
+SYSMEL_PAL_EXTERN_C bool sysmel_pal_allocateMemoryWithDualMappingForJIT(size_t size, void **outHandle, void **outWriteMemoryPointer, void **outExecuteMemoryPointer)
+{
+    *outHandle = NULL;
+    *outWriteMemoryPointer = NULL;
+    *outExecuteMemoryPointer = NULL;
+
+    int fd = memfd_create("sysmel-pal-jit", MFD_CLOEXEC);
+    if(fd < 0)
+        return false;
+
+    if(ftruncate(fd, size) < 0)
+    {
+        close(fd);
+        return false;
+    }
+
+    void *writeMapping = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if(writeMapping == MAP_FAILED)
+    {
+        close(fd);
+        return false;
+    }
+
+    void *executableMapping = mmap(0, size, PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
+    if(executableMapping == MAP_FAILED)
+    {
+        munmap(writeMapping, size);
+        close(fd);
+        return false;
+    }
+
+    *outHandle = (void*)(intptr_t)fd;
+    *outWriteMemoryPointer = writeMapping;
+    *outExecuteMemoryPointer = executableMapping;
+    return true;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_freeMemoryWithDualMappingForJIT(size_t size, void *handle, void *writeMemoryPointer, void *executeMemoryPointer)
+{
+    int fd = (intptr_t)handle;
+
+    munmap(writeMemoryPointer, size);
+    munmap(executeMemoryPointer, size);
+    close(fd);
 }
 
 SYSMEL_PAL_EXTERN_C int64_t sysmel_pal_microsecondsNow(void)
