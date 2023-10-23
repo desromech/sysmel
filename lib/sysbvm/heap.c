@@ -11,11 +11,6 @@
 
 #define SYSBVM_HEAP_CODE_ZONE_SIZE (16<<20)
 
-static uintptr_t uintptrAlignedTo(uintptr_t pointer, size_t alignment)
-{
-    return (pointer + alignment - 1) & (~(alignment - 1));
-}
-
 static void sysbvm_heap_checkForGCThreshold(sysbvm_heap_t *heap)
 {
     if(heap->shouldAttemptToCollect)
@@ -85,41 +80,6 @@ sysbvm_tuple_t *sysbvm_heap_allocateGCRootTableEntry(sysbvm_heap_t *heap)
     return result;
 }
 
-void *sysbvm_heap_allocateAndLockCodeZone(sysbvm_heap_t *heap, size_t size, size_t alignment)
-{
-    if(!heap->codeZone)
-    {
-        heap->codeZone = (uint8_t*)sysbvm_virtualMemory_allocateSystemMemoryForCode(SYSBVM_HEAP_CODE_ZONE_SIZE);
-        if(!heap->codeZone)
-            abort();
-
-        heap->codeZoneCapacity = SYSBVM_HEAP_CODE_ZONE_SIZE;
-        heap->codeZoneSize = 0;
-    }
-
-    uintptr_t alignedOffset = uintptrAlignedTo(heap->codeZoneSize, alignment);
-    if(alignedOffset + size > heap->codeZoneCapacity)
-        abort();
-
-    heap->codeZoneSize = alignedOffset + size;;
-
-    uint8_t *result = heap->codeZone + alignedOffset;
-    sysbvm_virtualMemory_lockCodePagesForWriting(result, size);
-    return result;
-}
-
-void sysbvm_heap_lockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size)
-{
-    (void)heap;
-    sysbvm_virtualMemory_lockCodePagesForWriting(codePointer, size);
-}
-
-void sysbvm_heap_unlockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size)
-{
-    (void)heap;
-    sysbvm_virtualMemory_unlockCodePagesForExecution(codePointer, size);
-}
-
 SYSBVM_API sysbvm_object_tuple_t *sysbvm_heap_shallowCopyTuple(sysbvm_heap_t *heap, sysbvm_object_tuple_t *tupleToCopy)
 {
     size_t objectSize = tupleToCopy->header.objectSize;
@@ -159,8 +119,6 @@ void sysbvm_heap_destroy(sysbvm_heap_t *heap)
     sysbvm_chunkedAllocator_destroy(&heap->gcRootTableAllocator);
     sysbvm_chunkedAllocator_destroy(&heap->picTableAllocator);
     sysbvm_chunkedAllocator_destroy(&heap->codeAllocator);
-    if(heap->codeZone)
-        sysbvm_virtualMemory_freeSystemMemory(heap->codeZone, heap->codeZoneCapacity);
 }
 
 static void sysbvm_heap_computeNextCollectionThreshold(sysbvm_heap_t *heap)

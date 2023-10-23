@@ -39,10 +39,6 @@ struct sysbvm_heap_s
     sysbvm_chunkedAllocator_t gcRootTableAllocator;
     sysbvm_chunkedAllocator_t picTableAllocator;
     sysbvm_chunkedAllocator_t codeAllocator;
-
-    size_t codeZoneCapacity;
-    size_t codeZoneSize;
-    uint8_t *codeZone;
 };
 
 typedef struct sysbvm_heap_relocationRecord_s
@@ -69,10 +65,6 @@ void sysbvm_heap_initialize(sysbvm_heap_t *heap);
 void sysbvm_heap_destroy(sysbvm_heap_t *heap);
 
 sysbvm_tuple_t *sysbvm_heap_allocateGCRootTableEntry(sysbvm_heap_t *heap);
-
-void *sysbvm_heap_allocateAndLockCodeZone(sysbvm_heap_t *heap, size_t size, size_t alignment);
-void sysbvm_heap_lockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size);
-void sysbvm_heap_unlockCodeZone(sysbvm_heap_t *heap, void *codePointer, size_t size);
 
 void sysbvm_heap_replaceWeakReferencesWithTombstones(sysbvm_heap_t *heap);
 void sysbvm_heap_sweep(sysbvm_heap_t *heap);

@@ -904,9 +904,11 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "debugSourceEnvironments", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_DEBUG_INFORMATION | SYSBVM_TYPE_SLOT_FLAG_MIN_RTTI_EXCLUDED, context->roots.orderedOffsetTableType,
         
         "jittedCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
+        "jittedCodeWritePointer", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         "jittedCodeSessionToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
 
         "jittedCodeTrampoline", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
+        "jittedCodeTrampolineWritePointer", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         "jittedCodeTrampolineSessionToken", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_JIT_SPECIFIC, context->roots.systemHandleType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionNativeCodeType, "FunctionNativeCodeDefinition", SYSBVM_NULL_TUPLE,
@@ -1766,8 +1768,6 @@ SYSBVM_API void sysbvm_context_printMemoryUsageStats(sysbvm_context_t *context)
         return;
 
     printf("Heap Size: %lld\n", (long long)context->heap.totalSize);
-    printf("Code Zone Size: %lld\n", (long long)context->heap.codeZoneSize);
-    printf("Code Zone Capacity: %lld\n", (long long)context->heap.codeZoneCapacity);
 }
 
 SYSBVM_API sysbvm_tuple_t sysbvm_context_shallowCopy(sysbvm_context_t *context, sysbvm_tuple_t tuple)

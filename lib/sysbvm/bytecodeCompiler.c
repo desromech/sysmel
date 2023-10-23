@@ -1098,8 +1098,11 @@ SYSBVM_API void sysbvm_functionBytecodeDirectCompiler_compileFunctionDefinition(
     gcFrame.bytecode->temporaryTypes = sysbvm_orderedCollection_asArray(context, gcFrame.compiler->assembler->temporaryTypes);
 
     gcFrame.bytecode->jittedCode = sysbvm_tuple_systemHandle_encode(context, 0);
+    gcFrame.bytecode->jittedCodeWritePointer = sysbvm_tuple_systemHandle_encode(context, 0);
     gcFrame.bytecode->jittedCodeSessionToken = sysbvm_tuple_systemHandle_encode(context, 0);
+
     gcFrame.bytecode->jittedCodeTrampoline = sysbvm_tuple_systemHandle_encode(context, 0);
+    gcFrame.bytecode->jittedCodeTrampolineWritePointer = sysbvm_tuple_systemHandle_encode(context, 0);
     gcFrame.bytecode->jittedCodeTrampolineSessionToken = sysbvm_tuple_systemHandle_encode(context, 0);
 
     // Tables for the debug information.

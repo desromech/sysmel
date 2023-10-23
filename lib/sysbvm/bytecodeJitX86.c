@@ -670,29 +670,32 @@ static void *sysbvm_jit_getTrampolineOrEntryPointForBytecode(sysbvm_bytecodeJit_
     // Install the trampoline in the code zone.
     size_t trampolineCodeSize = sizeof(trampolineCode);
     size_t requiredCodeSize = sysbvm_sizeAlignedTo(trampolineCodeSize, 16);
-    uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&jit->context->heap, requiredCodeSize, 16);
-    memset(codeZonePointer, 0xcc, requiredCodeSize); // int3;
-    memcpy(codeZonePointer, trampolineCode, trampolineCodeSize);
-    sysbvm_heap_unlockCodeZone(&jit->context->heap, codeZonePointer, requiredCodeSize);
 
-    bytecode->jittedCodeTrampoline = sysbvm_tuple_systemHandle_encode(jit->context, (sysbvm_systemHandle_t)(uintptr_t)codeZonePointer);
+    uint8_t *trampolineWritePointer = NULL;
+    uint8_t *trampolineExecutablePointer = NULL;
+    sysbvm_chunkedAllocator_allocateWithDualMapping(&jit->context->heap.codeAllocator, requiredCodeSize, 16, (void**)&trampolineWritePointer, (void**)&trampolineExecutablePointer);
+
+    memset(trampolineWritePointer, 0xcc, requiredCodeSize); // int3;
+    memcpy(trampolineWritePointer, trampolineCode, trampolineCodeSize);
+
+    bytecode->jittedCodeTrampoline = sysbvm_tuple_systemHandle_encode(jit->context, (sysbvm_systemHandle_t)(uintptr_t)trampolineExecutablePointer);
+    bytecode->jittedCodeTrampolineWritePointer = sysbvm_tuple_systemHandle_encode(jit->context, (sysbvm_systemHandle_t)(uintptr_t)trampolineWritePointer);
     bytecode->jittedCodeTrampolineSessionToken = jit->context->roots.sessionToken;
 
-    return codeZonePointer;
+    return trampolineExecutablePointer;
 }
 
 SYSBVM_API void sysbvm_jit_patchTrampolineWithRealEntryPoint(sysbvm_bytecodeJit_t *jit, sysbvm_functionBytecode_t *bytecode)
 {
-    if(bytecode->jittedCodeTrampoline && bytecode->jittedCodeTrampolineSessionToken == jit->context->roots.sessionToken)
+    if(bytecode->jittedCodeTrampoline && bytecode->jittedCodeTrampolineWritePointer && bytecode->jittedCodeTrampolineSessionToken == jit->context->roots.sessionToken)
     {
         uint8_t *realEntryPoint = (uint8_t*)sysbvm_tuple_systemHandle_decode(bytecode->jittedCode);
-        uint8_t *trampolineEntryPoint = (uint8_t*)sysbvm_tuple_systemHandle_decode(bytecode->jittedCodeTrampoline);
+        uint8_t *trampolineEntryPointWritePointer = (uint8_t*)sysbvm_tuple_systemHandle_decode(bytecode->jittedCodeTrampolineWritePointer);
 
         size_t trampolineCodeSize = 16;
         size_t targetAddressOffset = trampolineCodeSize - 2 - sizeof(void*);
-        sysbvm_heap_lockCodeZone(&jit->context->heap, trampolineEntryPoint, trampolineCodeSize);
-        memcpy(trampolineEntryPoint +targetAddressOffset, &realEntryPoint, sizeof(realEntryPoint));
-        sysbvm_heap_unlockCodeZone(&jit->context->heap, trampolineEntryPoint, trampolineCodeSize);
+        uintptr_t *jumpAddressLocation = (uintptr_t*)(trampolineEntryPointWritePointer + targetAddressOffset);
+        *jumpAddressLocation = (uintptr_t)realEntryPoint;
     }
 }
 

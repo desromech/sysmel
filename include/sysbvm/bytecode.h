@@ -92,8 +92,11 @@ typedef struct sysbvm_functionBytecode_s
     sysbvm_tuple_t debugSourceEnvironments;
 
     sysbvm_tuple_t jittedCode;
+    sysbvm_tuple_t jittedCodeWritePointer;
     sysbvm_tuple_t jittedCodeSessionToken;
+
     sysbvm_tuple_t jittedCodeTrampoline;
+    sysbvm_tuple_t jittedCodeTrampolineWritePointer;
     sysbvm_tuple_t jittedCodeTrampolineSessionToken;
 } sysbvm_functionBytecode_t;
 
