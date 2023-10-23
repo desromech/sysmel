@@ -675,18 +675,20 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
     size_t objectFileContentSize = sysbvm_sizeAlignedTo(jit.objectFileContent.size, 16);
 
     size_t requiredCodeSize = objectFileHeaderSize + textSectionSize + rodataSectionSize + unwindInfoSize + debugInfoSize + objectFileContentSize;
-    uint8_t *codeZonePointer = sysbvm_heap_allocateAndLockCodeZone(&context->heap, requiredCodeSize, 16);
-    memset(codeZonePointer, 0xcc, textSectionSize); // int3;
-    memset(codeZonePointer + textSectionSize, 0, rodataSectionSize); // int3;
-    uint8_t *entryPointPointer = sysbvm_jit_installIn(&jit, codeZonePointer);
-    sysbvm_heap_unlockCodeZone(&context->heap, codeZonePointer, requiredCodeSize);
+    uint8_t *codeWriteablePointer = NULL;
+    uint8_t *codeExecutablePointer = NULL;
+    sysbvm_chunkedAllocator_allocateWithDualMapping(&context->heap.codeAllocator, requiredCodeSize, 16, (void**)&codeWriteablePointer, (void**)&codeExecutablePointer);
+
+    memset(codeWriteablePointer + objectFileHeaderSize, 0xcc, textSectionSize); // int3;
+    memset(codeWriteablePointer + objectFileHeaderSize + textSectionSize, 0, rodataSectionSize); // int3;
+    uint8_t *entryPointPointer = sysbvm_jit_installIn(&jit, codeWriteablePointer, codeExecutablePointer);
 
     // Register the object file with gdb.
     if(jit.objectFileHeader.size > 0 && jit.objectFileContent.size > 0)
     {
         sysbvm_gdb_jit_code_entry_t *entry = (sysbvm_gdb_jit_code_entry_t*)calloc(1, sizeof(sysbvm_gdb_jit_code_entry_t));
         sysbvm_dynarray_add(&context->jittedObjectFileEntries, &entry);
-        sysbvm_gdb_registerObjectFile(entry, codeZonePointer, requiredCodeSize);
+        sysbvm_gdb_registerObjectFile(entry, codeExecutablePointer, requiredCodeSize);
     }
 
     functionBytecode->jittedCode = sysbvm_tuple_systemHandle_encode(context, (sysbvm_systemHandle_t)(uintptr_t)entryPointPointer);

@@ -12,8 +12,13 @@ typedef struct sysbvm_chunkedAllocatorChunk_s
 {
     struct sysbvm_chunkedAllocatorChunk_s *previous;
     struct sysbvm_chunkedAllocatorChunk_s *next;
+
     struct sysbvm_chunkedAllocatorChunk_s *writeableMapping;
     struct sysbvm_chunkedAllocatorChunk_s *executableMapping;
+
+    void *dualMappingHandle;
+    void *reserved;
+
     size_t capacity;
     size_t size;
 } sysbvm_chunkedAllocatorChunk_t;

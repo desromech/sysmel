@@ -1502,48 +1502,50 @@ static void sysbvm_jit_emitObjectFile(sysbvm_bytecodeJit_t *jit)
     sysbvm_dynarray_addAll(&jit->objectFileContent, sizeof(footer), &footer);
 }
 
-static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit, sysbvm_elf64_header_t *header,
-    uint8_t *instructionsPointer,
-    uint8_t *ehFramePointer,
-    uint8_t *debugLinePointer,
-    uint8_t *debugStrPointer,
-    uint8_t *debugAbbrevPointer,
-    uint8_t *debugInfoPointer,
-    uint8_t *objectFileContentPointer,
+static void sysbvm_jit_fixupObjectFile(sysbvm_bytecodeJit_t *jit,
+    sysbvm_elf64_header_t *header, sysbvm_elf64_header_t *headerExecutablePointer,
+    uint8_t *instructionsExecutablePointer,
+    uint8_t *ehFramePointer, uint8_t *ehFrameExecutablePointer,
+    uint8_t *debugLineExecutablePointer,
+    uint8_t *debugStrExecutablePointer,
+    uint8_t *debugAbbrevExecutablePointer,
+    uint8_t *debugInfoExecutablePointer,
+    uint8_t *objectFileContentExecutablePointer,
     sysbvm_jit_x64_elfContentFooter_t *footer)
 {
     if(jit->dwarfEhBuilder.fdeInitialLocationOffset > 0)
     {
         int32_t *initialLocationPointer = (int32_t*)(ehFramePointer + jit->dwarfEhBuilder.fdeInitialLocationOffset);
-        *initialLocationPointer = (int32_t) ((uintptr_t)instructionsPointer - (uintptr_t)initialLocationPointer);
+        int32_t *initialLocationExecutablePointer = (int32_t*)(ehFrameExecutablePointer + jit->dwarfEhBuilder.fdeInitialLocationOffset);
+        *initialLocationPointer = (int32_t) ((uintptr_t)instructionsExecutablePointer - (uintptr_t)initialLocationExecutablePointer);
     }
 
     header->sectionHeadersOffset = (uintptr_t)&footer->sections - (uintptr_t)header;
-    sysbvm_elf64_off_t contentOffset = (uintptr_t)objectFileContentPointer - (uintptr_t)header;
-    sysbvm_elf64_addr_t contentBaseAddress = (uintptr_t)objectFileContentPointer;
+    sysbvm_elf64_off_t contentOffset = (uintptr_t)objectFileContentExecutablePointer - (uintptr_t)headerExecutablePointer;
+    sysbvm_elf64_addr_t contentBaseAddress = (uintptr_t)objectFileContentExecutablePointer;
 
-    footer->sections.text.offset = (uintptr_t)instructionsPointer - (uintptr_t)header;
-    footer->sections.text.address = (sysbvm_elf64_addr_t)instructionsPointer;
+    footer->sections.text.offset = (uintptr_t)instructionsExecutablePointer - (uintptr_t)headerExecutablePointer;
+    footer->sections.text.address = (sysbvm_elf64_addr_t)instructionsExecutablePointer;
     footer->sections.text.size = jit->instructions.size;
 
-    footer->sections.eh_frame.offset = (uintptr_t)ehFramePointer - (uintptr_t)header;
-    footer->sections.eh_frame.address = (sysbvm_elf64_addr_t)ehFramePointer;
+    footer->sections.eh_frame.offset = (uintptr_t)ehFrameExecutablePointer - (uintptr_t)headerExecutablePointer;
+    footer->sections.eh_frame.address = (sysbvm_elf64_addr_t)ehFrameExecutablePointer;
     footer->sections.eh_frame.size = jit->dwarfEhBuilder.buffer.size;
 
-    footer->sections.debug_line.offset = (uintptr_t)debugLinePointer - (uintptr_t)header;
-    footer->sections.debug_line.address = (sysbvm_elf64_addr_t)debugLinePointer;
+    footer->sections.debug_line.offset = (uintptr_t)debugLineExecutablePointer - (uintptr_t)headerExecutablePointer;
+    footer->sections.debug_line.address = (sysbvm_elf64_addr_t)debugLineExecutablePointer;
     footer->sections.debug_line.size = jit->dwarfDebugInfoBuilder.line.size;
 
-    footer->sections.debug_str.offset = (uintptr_t)debugStrPointer - (uintptr_t)header;
-    footer->sections.debug_str.address = (sysbvm_elf64_addr_t)debugStrPointer;
+    footer->sections.debug_str.offset = (uintptr_t)debugStrExecutablePointer - (uintptr_t)headerExecutablePointer;
+    footer->sections.debug_str.address = (sysbvm_elf64_addr_t)debugStrExecutablePointer;
     footer->sections.debug_str.size = jit->dwarfDebugInfoBuilder.str.size;
 
-    footer->sections.debug_abbrev.offset = (uintptr_t)debugAbbrevPointer - (uintptr_t)header;
-    footer->sections.debug_abbrev.address = (sysbvm_elf64_addr_t)debugAbbrevPointer;
+    footer->sections.debug_abbrev.offset = (uintptr_t)debugAbbrevExecutablePointer - (uintptr_t)headerExecutablePointer;
+    footer->sections.debug_abbrev.address = (sysbvm_elf64_addr_t)debugAbbrevExecutablePointer;
     footer->sections.debug_abbrev.size = jit->dwarfDebugInfoBuilder.abbrev.size;
 
-    footer->sections.debug_info.offset = (uintptr_t)debugInfoPointer - (uintptr_t)header;
-    footer->sections.debug_info.address = (sysbvm_elf64_addr_t)debugInfoPointer;
+    footer->sections.debug_info.offset = (uintptr_t)debugInfoExecutablePointer - (uintptr_t)headerExecutablePointer;
+    footer->sections.debug_info.address = (sysbvm_elf64_addr_t)debugInfoExecutablePointer;
     footer->sections.debug_info.size = jit->dwarfDebugInfoBuilder.info.size;
 
     footer->sections.symtab.offset += contentOffset;
@@ -1701,7 +1703,7 @@ SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit)
     sysbvm_jit_emitObjectFile(jit);
 }
 
-SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer)
+SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeWriteablePointer, uint8_t *codeExecutablePointer)
 {
     size_t objectFileHeaderOffset = 0;
     size_t codeOffset = sysbvm_sizeAlignedTo(jit->objectFileHeader.size, 16);
@@ -1716,22 +1718,26 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
 
     size_t objectFileContentOffset = debugInfoOffset + sysbvm_sizeAlignedTo(jit->dwarfDebugInfoBuilder.info.size, 16);
 
-    uint8_t *objectFileHeaderPointer = codeZonePointer + objectFileHeaderOffset;
+    uint8_t *objectFileHeaderPointer = codeWriteablePointer + objectFileHeaderOffset;
+    uint8_t *objectFileHeaderExecutablePointer = codeExecutablePointer + objectFileHeaderOffset;
     memcpy(objectFileHeaderPointer, jit->objectFileHeader.data, jit->objectFileHeader.size);
 
-    uint8_t *instructionsPointers = codeZonePointer + codeOffset;
+    uint8_t *instructionsPointers = codeWriteablePointer + codeOffset;
+    uint8_t *instructionsExecutablePointers = codeExecutablePointer + codeOffset;
     memcpy(instructionsPointers, jit->instructions.data, jit->instructions.size);
 
-    uint8_t *constantZonePointer = codeZonePointer + constantsOffset;
+    uint8_t *constantZonePointer = codeWriteablePointer + constantsOffset;
+    uint8_t *constantZoneExecutablePointer = codeExecutablePointer + constantsOffset;
     memcpy(constantZonePointer, jit->constants.data, jit->constants.size);
 
     for(size_t i = 0; i < jit->relocations.size; ++i)
     {
         sysbvm_bytecodeJitRelocation_t *relocation = sysbvm_dynarray_entryOfTypeAt(jit->relocations, sysbvm_bytecodeJitRelocation_t, i);
         uint8_t *relocationTarget = instructionsPointers + relocation->offset;
-        intptr_t relocationTargetAddress = (intptr_t)relocationTarget;
+        uint8_t *relocationExecutableTarget = instructionsExecutablePointers + relocation->offset;
+        intptr_t relocationTargetAddress = (intptr_t)relocationExecutableTarget;
 
-        intptr_t relativeValue = (intptr_t)constantZonePointer + relocation->value - relocationTargetAddress + relocation->addend;
+        intptr_t relativeValue = (intptr_t)constantZoneExecutablePointer + relocation->value - relocationTargetAddress + relocation->addend;
         switch(relocation->type)
         {
         case SYSBVM_BYTECODE_JIT_RELOCATION_RELATIVE32:
@@ -1743,70 +1749,79 @@ SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *cod
         }
     }
 
-    uint8_t *unwindInfoZonePointer = codeZonePointer + unwindInfoOffset;
+    uint8_t *unwindInfoZonePointer = codeWriteablePointer + unwindInfoOffset;
+    uint8_t *unwindInfoZoneExecutablePointer = codeExecutablePointer + unwindInfoOffset;
     memcpy(unwindInfoZonePointer, jit->unwindInfo.data, jit->unwindInfo.size);
 
-    uint8_t *ehFrameZonePointer = codeZonePointer + ehFrameOffset;
+    uint8_t *ehFrameZonePointer = codeWriteablePointer + ehFrameOffset;
+    uint8_t *ehFrameZoneExecutablePointer = codeExecutablePointer + ehFrameOffset;
     memcpy(ehFrameZonePointer, jit->dwarfEhBuilder.buffer.data, jit->dwarfEhBuilder.buffer.size);
 
-    sysbvm_dwarf_debugInfo_patchTextAddressesRelativeTo(&jit->dwarfDebugInfoBuilder, (uintptr_t)instructionsPointers);
+    sysbvm_dwarf_debugInfo_patchTextAddressesRelativeTo(&jit->dwarfDebugInfoBuilder, (uintptr_t)instructionsExecutablePointers);
 
-    uint8_t *debugLineZonePointer = codeZonePointer + debugLineOffset;
+    uint8_t *debugLineZonePointer = codeWriteablePointer + debugLineOffset;
+    uint8_t *debugLineZoneExecutablePointer = codeExecutablePointer + debugLineOffset;
     memcpy(debugLineZonePointer, jit->dwarfDebugInfoBuilder.line.data, jit->dwarfDebugInfoBuilder.line.size);
 
-    uint8_t *debugStrZonePointer = codeZonePointer + debugStrOffset;
+    uint8_t *debugStrZonePointer = codeWriteablePointer + debugStrOffset;
+    uint8_t *debugStrZoneExecutablePointer = codeExecutablePointer + debugStrOffset;
     memcpy(debugStrZonePointer, jit->dwarfDebugInfoBuilder.str.data, jit->dwarfDebugInfoBuilder.str.size);
 
-    uint8_t *debugAbbrevZonePointer = codeZonePointer + debugAbbrevOffset;
+    uint8_t *debugAbbrevZonePointer = codeWriteablePointer + debugAbbrevOffset;
+    uint8_t *debugAbbrevZoneExecutablePointer = codeExecutablePointer + debugAbbrevOffset;
     memcpy(debugAbbrevZonePointer, jit->dwarfDebugInfoBuilder.abbrev.data, jit->dwarfDebugInfoBuilder.abbrev.size);
 
-    uint8_t *debugInfoZonePointer = codeZonePointer + debugInfoOffset;
+    uint8_t *debugInfoZonePointer = codeWriteablePointer + debugInfoOffset;
+    uint8_t *debugInfoZoneExecutablePointer = codeExecutablePointer + debugInfoOffset;
     memcpy(debugInfoZonePointer, jit->dwarfDebugInfoBuilder.info.data, jit->dwarfDebugInfoBuilder.info.size);
 
-    uint8_t *objectFileContentPointer = codeZonePointer + objectFileContentOffset;
+    uint8_t *objectFileContentPointer = codeWriteablePointer + objectFileContentOffset;
+    uint8_t *objectFileContentExecutablePointer = codeExecutablePointer + objectFileContentOffset;
     memcpy(objectFileContentPointer, jit->objectFileContent.data, jit->objectFileContent.size);
 
     sysbvm_jit_fixupObjectFile(jit,
         (sysbvm_elf64_header_t*)objectFileHeaderPointer,
-        instructionsPointers,
-        ehFrameZonePointer,
-        debugLineZonePointer,
-        debugStrZonePointer,
-        debugAbbrevZonePointer,
-        debugInfoZonePointer,
-        objectFileContentPointer,
+        (sysbvm_elf64_header_t*)objectFileHeaderExecutablePointer,
+        instructionsExecutablePointers,
+        ehFrameZonePointer, ehFrameZoneExecutablePointer,
+        debugLineZoneExecutablePointer,
+        debugStrZoneExecutablePointer,
+        debugAbbrevZoneExecutablePointer,
+        debugInfoZoneExecutablePointer,
+        objectFileContentExecutablePointer,
         (sysbvm_jit_x64_elfContentFooter_t*) (objectFileContentPointer + jit->objectFileContent.size - sizeof(sysbvm_jit_x64_elfContentFooter_t))
     );
 
     sysbvm_jit_emitPerfSymbolFor(jit, instructionsPointers);
 
 #ifdef _WIN32
-    RUNTIME_FUNCTION *runtimeFunction = (RUNTIME_FUNCTION*)unwindInfoZonePointer;
-    runtimeFunction->UnwindInfoAddress = (DWORD)(sizeof(RUNTIME_FUNCTION) + unwindInfoZonePointer - instructionsPointers);
-    if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)instructionsPointers))
+    RUNTIME_FUNCTION *runtimeFunction = (RUNTIME_FUNCTION*)unwindInfoZoneExecutablePointer;
+    runtimeFunction->UnwindInfoAddress = (DWORD)(sizeof(RUNTIME_FUNCTION) + unwindInfoZoneExecutablePointer - instructionsExecutablePointers);
+    if(RtlAddFunctionTable(runtimeFunction, 1, (DWORD64)(uintptr_t)instructionsExecutablePointers))
     {
         // Store the handle in the context for cleanup.
     }
 #else
+    (void)unwindInfoZoneExecutablePointer;
     if(jit->dwarfEhBuilder.buffer.size > 0)
     {
 #   ifdef __APPLE__
         // It takes the FDE parameter
         if(jit->dwarfEhBuilder.fdeOffset > 0)
         {
-            void *fdePointer = ehFrameZonePointer + jit->dwarfEhBuilder.fdeOffset;
+            void *fdePointer = ehFrameZoneExecutablePointer + jit->dwarfEhBuilder.fdeOffset;
             sysbvm_dynarray_add(&jit->context->jittedRegisteredFrames, &fdePointer);
             __register_frame(fdePointer);
         }
 #   else
         // Send the eh_frame section.
-        sysbvm_dynarray_add(&jit->context->jittedRegisteredFrames, &ehFrameZonePointer);
-        __register_frame(ehFrameZonePointer);
+        sysbvm_dynarray_add(&jit->context->jittedRegisteredFrames, &ehFrameZoneExecutablePointer);
+        __register_frame(ehFrameZoneExecutablePointer);
 #   endif
     }
 #endif
 
-    return instructionsPointers;
+    return instructionsExecutablePointers;
 }
 
 #endif // SYSBVM_ARCH_X86_64

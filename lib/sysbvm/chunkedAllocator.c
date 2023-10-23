@@ -22,12 +22,21 @@ SYSBVM_API void sysbvm_chunkedAllocator_destroy(sysbvm_chunkedAllocator_t *alloc
         sysbvm_chunkedAllocatorChunk_t *nextChunk = chunk->next;
         size_t fullChunkSize = sizeof(sysbvm_chunkedAllocatorChunk_t) + chunk->capacity;
 
-        sysbvm_chunkedAllocatorChunk_t *writeableMapping = chunk->writeableMapping;
-        sysbvm_chunkedAllocatorChunk_t *executableMapping = chunk->executableMapping;
-        if(writeableMapping)
-            sysbvm_virtualMemory_freeSystemMemory(writeableMapping, fullChunkSize);
-        if(executableMapping)
-            sysbvm_virtualMemory_freeSystemMemory(executableMapping, fullChunkSize);
+        if(allocator->requiresExecutableMapping)
+        {
+            sysbvm_chunkedAllocatorChunk_t *writeableMapping = chunk->writeableMapping;
+            sysbvm_chunkedAllocatorChunk_t *executableMapping = chunk->executableMapping;
+            sysbvm_virtualMemory_freeSystemMemoryWithDualMapping(fullChunkSize, chunk->dualMappingHandle, writeableMapping, executableMapping);
+            chunk = nextChunk;
+
+        }
+        else
+        {
+            sysbvm_chunkedAllocatorChunk_t *writeableMapping = chunk->writeableMapping;
+            if(writeableMapping)
+                sysbvm_virtualMemory_freeSystemMemory(writeableMapping, fullChunkSize);
+        }
+
         chunk = nextChunk;
     }
 }
@@ -37,7 +46,8 @@ static sysbvm_chunkedAllocatorChunk_t *sysbvm_chunkedAllocator_ensureChunkWithRe
     sysbvm_chunkedAllocatorChunk_t **currentChunk = &allocator->currentChunk;
 
     // Advance the current chunk.
-    while(*currentChunk && sysbvm_chunkedAllocator_sizeAlignedTo((*currentChunk)->size, alignment) > size)
+    size_t requiredAlignedSize = sysbvm_chunkedAllocator_sizeAlignedTo(size, alignment);
+    while(*currentChunk && ((*currentChunk)->capacity - sysbvm_chunkedAllocator_sizeAlignedTo((*currentChunk)->size, alignment)) < requiredAlignedSize)
         *currentChunk = (*currentChunk)->next;
 
     // Create a new chunk if needed
@@ -46,8 +56,18 @@ static sysbvm_chunkedAllocatorChunk_t *sysbvm_chunkedAllocator_ensureChunkWithRe
         sysbvm_chunkedAllocatorChunk_t *newChunkWriteableMapping = NULL;
         sysbvm_chunkedAllocatorChunk_t *newChunkExecutableMapping = NULL;
 
-        newChunkWriteableMapping = (sysbvm_chunkedAllocatorChunk_t*)sysbvm_virtualMemory_allocateSystemMemory(allocator->chunkSize);
-        memset(newChunkWriteableMapping, 0, sizeof(sysbvm_chunkedAllocatorChunk_t));
+        if(allocator->requiresExecutableMapping)
+        {
+            void *handle = sysbvm_virtualMemory_allocateSystemMemoryWithDualMapping(allocator->chunkSize, (void**)&newChunkWriteableMapping, (void**)&newChunkExecutableMapping);
+            memset(newChunkWriteableMapping, 0, sizeof(sysbvm_chunkedAllocatorChunk_t));
+            newChunkWriteableMapping->dualMappingHandle = handle;
+        }
+        else
+        {
+            newChunkWriteableMapping = (sysbvm_chunkedAllocatorChunk_t*)sysbvm_virtualMemory_allocateSystemMemory(allocator->chunkSize);
+            memset(newChunkWriteableMapping, 0, sizeof(sysbvm_chunkedAllocatorChunk_t));
+        }
+        
         newChunkWriteableMapping->capacity = allocator->chunkSize - sizeof(sysbvm_chunkedAllocatorChunk_t);
         newChunkWriteableMapping->writeableMapping = newChunkWriteableMapping;
         newChunkWriteableMapping->executableMapping = newChunkExecutableMapping;
@@ -77,6 +97,7 @@ SYSBVM_API void* sysbvm_chunkedAllocator_allocate(sysbvm_chunkedAllocator_t *all
     size_t alignedOffset = sysbvm_chunkedAllocator_sizeAlignedTo(chunk->size, alignment);
     uint8_t *result = (uint8_t*)(chunk + 1) + alignedOffset;
     chunk->size = alignedOffset + size;
+    SYSBVM_ASSERT(chunk->size <= chunk->capacity);
 
     return result;
 }
@@ -93,4 +114,5 @@ SYSBVM_API void sysbvm_chunkedAllocator_allocateWithDualMapping(sysbvm_chunkedAl
     if(executableMapping)
         *executableMapping = (uint8_t*)(chunk->executableMapping + 1) + alignedOffset;
     chunk->size = alignedOffset + size;
+    SYSBVM_ASSERT(chunk->size <= chunk->capacity);
 }

@@ -1,3 +1,7 @@
+#ifndef _GNU_SOURCE
+#   define _GNU_SOURCE
+#endif
+
 #include "internal/virtualMemory.h"
 #include <stdint.h>
 
@@ -54,6 +58,8 @@ void sysbvm_virtualMemory_unlockCodePagesForExecution(void *codePointer, size_t 
 
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 void *sysbvm_virtualMemory_allocateSystemMemory(size_t sizeToAllocate)
 {
@@ -71,6 +77,56 @@ void *sysbvm_virtualMemory_allocateSystemMemoryForCode(size_t sizeToAllocate)
         return 0;
 
     return result;
+}
+
+void *sysbvm_virtualMemory_allocateSystemMemoryWithDualMapping(size_t sizeToAllocate, void **writeableMapping, void **executableMapping)
+{
+    *writeableMapping = NULL;
+    *executableMapping = NULL;
+
+    int fd = memfd_create("sysbvm_code", MFD_CLOEXEC);
+    if(fd < 0)
+    {
+        perror("failed to make memfd.");
+        abort();
+    }
+
+    if(ftruncate(fd, sizeToAllocate) < 0)
+    {
+        perror("failed to allocate memory with dual mapping for JIT execution.");
+        abort();
+    }
+
+    // Read-Write mapping.
+    void *mmapResult = mmap(0, sizeToAllocate, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if(mmapResult == MAP_FAILED)
+    {
+        perror("failed to map read-write memory for JIT execution.");
+        abort();
+    }
+    *writeableMapping = mmapResult;
+
+    // Read-Execute mapping.
+    mmapResult = mmap(0, sizeToAllocate, PROT_READ | PROT_EXEC, MAP_SHARED, fd, 0);
+    if(mmapResult == MAP_FAILED)
+    {
+        perror("failed to map read-write memory for JIT execution.");
+        abort();
+    }
+    *executableMapping = mmapResult;
+
+    return (void*)(intptr_t)fd;
+}
+
+void sysbvm_virtualMemory_freeSystemMemoryWithDualMapping(size_t sizeToFree, void *mappingHandle, void *writeableMapping, void *executableMapping)
+{
+    int fd = (intptr_t)mappingHandle;
+    if(fd < 0)
+        return;
+
+    munmap(writeableMapping, sizeToFree);
+    munmap(executableMapping, sizeToFree);
+    close(fd);
 }
 
 void sysbvm_virtualMemory_freeSystemMemory(void *memory, size_t sizeToFree)

@@ -1,5 +1,9 @@
 #ifndef _WIN32
 
+#ifndef _GNU_SOURCE
+#   define _GNU_SOURCE
+#endif
+
 #   ifndef _DEFAULT_SOURCE
 #       define _DEFAULT_SOURCE // for realpath
 #   endif

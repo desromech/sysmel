@@ -141,6 +141,7 @@ void sysbvm_heap_initialize(sysbvm_heap_t *heap)
 
     sysbvm_chunkedAllocator_initialize(&heap->gcRootTableAllocator, SYSBVM_CHUNKED_ALLOCATOR_DEFAULT_CHUNK_SIZE, false);
     sysbvm_chunkedAllocator_initialize(&heap->picTableAllocator, SYSBVM_CHUNKED_ALLOCATOR_DEFAULT_CHUNK_SIZE, false);
+    sysbvm_chunkedAllocator_initialize(&heap->codeAllocator, SYSBVM_CHUNKED_ALLOCATOR_DEFAULT_CHUNK_SIZE, true);
 }
 
 void sysbvm_heap_destroy(sysbvm_heap_t *heap)
@@ -157,6 +158,7 @@ void sysbvm_heap_destroy(sysbvm_heap_t *heap)
 
     sysbvm_chunkedAllocator_destroy(&heap->gcRootTableAllocator);
     sysbvm_chunkedAllocator_destroy(&heap->picTableAllocator);
+    sysbvm_chunkedAllocator_destroy(&heap->codeAllocator);
     if(heap->codeZone)
         sysbvm_virtualMemory_freeSystemMemory(heap->codeZone, heap->codeZoneCapacity);
 }

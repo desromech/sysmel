@@ -38,6 +38,7 @@ struct sysbvm_heap_s
     
     sysbvm_chunkedAllocator_t gcRootTableAllocator;
     sysbvm_chunkedAllocator_t picTableAllocator;
+    sysbvm_chunkedAllocator_t codeAllocator;
 
     size_t codeZoneCapacity;
     size_t codeZoneSize;

@@ -166,7 +166,7 @@ SYSBVM_API void sysbvm_bytecodeJit_jit(sysbvm_context_t *context, sysbvm_functio
 SYSBVM_API void sysbvm_jit_prologue(sysbvm_bytecodeJit_t *jit);
 SYSBVM_API bool sysbvm_jit_emitDebugLineInfo(sysbvm_bytecodeJit_t *jit);
 SYSBVM_API void sysbvm_jit_finish(sysbvm_bytecodeJit_t *jit);
-SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeZonePointer);
+SYSBVM_API uint8_t *sysbvm_jit_installIn(sysbvm_bytecodeJit_t *jit, uint8_t *codeWriteablePointer, uint8_t *codeExecutablePointer);
 
 SYSBVM_API void sysbvm_jit_breakpoint(sysbvm_bytecodeJit_t *jit);
 SYSBVM_API void sysbvm_jit_unreachable(sysbvm_bytecodeJit_t *jit);
