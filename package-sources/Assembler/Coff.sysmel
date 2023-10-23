@@ -264,9 +264,9 @@ public final class AsmObjectCoffFileWriter superclass: AsmObjectFileWriter; defi
         ## Emit the sections.
         objectCode sections do: {:(AsmObjectCodeSection)eachSection :: Void |
             let characteristics mutable => UInt32 := Coff::ImageSection::AlignMap at: eachSection alignment asSize.
-            eachSection loaded
-                ifTrue: (characteristics := characteristics | Coff::ImageSection::ContentInitializedData)
-                ifFalse: (characteristics := characteristics | Coff::ImageSection::ContentUnitializedData).
+            eachSection nobits
+                ifFalse: (characteristics := characteristics | Coff::ImageSection::ContentInitializedData)
+                ifTrue: (characteristics := characteristics | Coff::ImageSection::ContentUnitializedData).
             eachSection executable
                 ifTrue: (characteristics := characteristics | Coff::ImageSection::ContentCode | Coff::ImageSection::MemExecute).
             eachSection readable ifTrue: (characteristics := characteristics | Coff::ImageSection::MemRead).

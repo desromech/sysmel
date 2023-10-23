@@ -412,6 +412,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
     context->roots.functionSourceAnalyzedDefinitionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionBytecodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.functionNativeCodeType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
+    context->roots.symbolValueBindingNativeCodeDefinitionType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.orderedOffsetTableType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
     context->roots.orderedOffsetTableBuilderType = sysbvm_type_createAnonymousClassAndMetaclass(context, context->roots.objectType);
 
@@ -828,6 +829,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "isMutable", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isExternal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
         "isThreadLocal", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.booleanType,
+        "nativeCodeDefinition", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolValueBindingNativeCodeDefinitionType,
+        "virtualAddress", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.uintptrType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.functionType, "Function", SYSBVM_NULL_TUPLE,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.bitflagsType,
@@ -918,6 +921,13 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "uncheckedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "checkedEntryPoint", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         NULL);
+    sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.symbolValueBindingNativeCodeDefinitionType, "SymbolValueBindingNativeCodeDefinition", SYSBVM_NULL_TUPLE,
+        "binding", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.symbolValueBindingType,
+        "nativeCode", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeType,
+        "symbol", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
+        NULL
+    );
+
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.orderedOffsetTableType, "OrderedOffsetTable", SYSBVM_NULL_TUPLE,
         "keys", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.wordArrayType,
         "values", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -933,6 +943,7 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "programEntities", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "programEntityImportedSymbols", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "functionDefinitionsEntryPoints", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
+        "symbolValueBindingDefinitions", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
         "hirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "mirTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
         "asmTextIR", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_NO_SOURCE_DEFINITION_EXCLUDED, context->roots.stringType,
@@ -955,6 +966,10 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "type", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,
         "visibility", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint8Type,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint16Type,
+        "virtualAddress", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.uintptrType,
+        "writeableVirtualAddress", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.uintptrType,
+        "gotVirtualAddress", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.uintptrType,
+        "pltVirtualAddress", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.uintptrType,
         NULL);
     sysbvm_context_setIntrinsicTypeMetadata(context, context->roots.nativeCodeSymbolTableType, "NativeCodeSymbolTable", SYSBVM_NULL_TUPLE,
         "symbols", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.arrayType,
@@ -968,6 +983,8 @@ static void sysbvm_context_createBasicTypes(sysbvm_context_t *context)
         "relocations", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.nativeCodeRelocationTableType,
         "size", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
         "alignment", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.sizeType,
+        "virtualAddress", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.uintptrType,
+        "writeableVirtualAddress", SYSBVM_TYPE_SLOT_FLAG_PUBLIC | SYSBVM_TYPE_SLOT_FLAG_TARGET_GENERATED, context->roots.uintptrType,
         "flags", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.uint32Type,
         "data", SYSBVM_TYPE_SLOT_FLAG_PUBLIC, context->roots.byteArrayType,
 

@@ -73,14 +73,30 @@ public final class HIRModuleMIRCodeGenerator superclass: HIRMIRCodeGenerator; de
     public method compileHIRModule: (module: HIRModule) patchingFunctions: (patchedFunctionList: SequenceableCollection) definitions: (patchedFunctionDefinitionList: SequenceableCollection) ::=> MIRModule := {
         ## Declare the values.
         hirModule := module.
+        let globalVariables := OrderedCollection new.
         module globalValues do: {:(HIRGlobalValue)each :: Void |
-            each compileDirectMirTranslationWith: self
+            each compileDirectMirTranslationWith: self.
+            each isGlobalVariable ifTrue: {
+                globalVariables add: each
+            }
         }.
 
         runtimeFunctionCompilerFrontend ifNotNil: {
             runtimeFunctionCompilerFrontend hirModule globalValues do: {:(HIRGlobalValue)each :: Void |
                 each compileDirectMirTranslationWith: self
             }.
+        }.
+
+        globalVariables do: {:(HIRGlobalVariable)eachGlobalVariable :: Void |
+            eachGlobalVariable sourceBinding ifNil: {return: void}.
+            eachGlobalVariable sourceBinding isSymbolValueBinding ifFalse: {return: void}.
+
+            let patch := MIRSymbolValueBindingDefinitionPatch new
+                binding: (eachGlobalVariable sourceBinding downCastTo: SymbolValueBinding);
+                symbol: (globalValueDictionary at: eachGlobalVariable);
+                yourself.
+
+            targetModule symbolValueBindingDefinitionPatches add: patch
         }.
 
         patchedFunctionDefinitionList do: {:(FunctionDefinition)eachFunctionDefinition :: Void |

@@ -19,7 +19,7 @@ public global ChunkedCodeAllocatorChunk::HeaderSize := ChunkedCodeAllocatorChunk
 public global ChunkedCodeAllocator::ChunkSize := 2sz << 20sz.
 public global ChunkedCodeAllocator::PageAlignment := 1sz << 16sz.
 
-public struct ChunkedCodeAllocator definition: {
+public final struct ChunkedCodeAllocator definition: {
     private field mutex => SysmelPAL::Mutex.
 
     public field firstChunk => ChunkedCodeAllocatorChunk pointer.
@@ -84,7 +84,7 @@ public struct ChunkedCodeAllocator definition: {
         newChunk
     }.
 
-    public nogc method allocateWithSize: (size: Size) alignment: (alignment: Size) ::=> Void pointer := {
+    public nogc method allocateWithSize: (size: Size) alignment: (alignment: Size) writePointerResult: (writePointerResult: Void pointer ref) executablePointerResult: (executablePointerResult: Void pointer ref) ::=> Boolean := {
         mutex lock.
 
         let chunk := self ensureChunkWithCapacityFor: size alignment: alignment.
@@ -94,6 +94,8 @@ public struct ChunkedCodeAllocator definition: {
         chunk _ size: offset + alignedSize.
 
         mutex unlock.
-        (chunk reinterpretCastTo: UInt8 pointer) + offset asIntPointer reinterpretCastTo: Void pointer
+        writePointerResult := (chunk _ writeMapping reinterpretCastTo: UInt8 pointer) + offset asIntPointer reinterpretCastTo: Void pointer.
+        executablePointerResult := (chunk _ executableMapping reinterpretCastTo: UInt8 pointer) + offset asIntPointer reinterpretCastTo: Void pointer.
+        true
     }.
 }.

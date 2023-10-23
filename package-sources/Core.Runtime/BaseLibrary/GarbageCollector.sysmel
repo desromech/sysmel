@@ -118,8 +118,10 @@ public external global GarbageCollector::StaticRootPointerTableEnd mutable => UI
 public external global GarbageCollector::StaticRootFatPointerTableStart mutable => UIntPointer.
 public external global GarbageCollector::StaticRootFatPointerTableEnd mutable => UIntPointer.
 
+public global GarbageCollector::GCPointerRootAllocator mutable := ChunkedAllocator basicNew.
+public global GarbageCollector::GCFatPointerRootAllocator mutable := ChunkedAllocator basicNew.
+
 ## Set the static object segment virtual load address at the 2 MB mark.
-## TODO: Implement manual relocation of the static object segment to save on object file relocation annotations.
 public global GarbageCollector::StaticObjectSegmentMustBeRelocatedAtLoadTime := true.
 public global GarbageCollector::StaticObjectSegmentLoadAddress => UIntPointer := 16r0020_0000 uptr.
 
@@ -320,6 +322,8 @@ public nogc function GarbageCollector::initialize() => Void := {
 
     GarbageCollector::NextCollectionThreshold := (GarbageCollector::CurrentHeapSize + GarbageCollector::staticObjectSegmentSize()) * GarbageCollector::GammaFactor max: GarbageCollector::MinimalCollectionThreshold.
     GarbageCollector::NextYoungCollectionThreshold := GarbageCollector::NextCollectionThreshold / GarbageCollector::NurseryFraction.
+    GarbageCollector::GCPointerRootAllocator initialize.
+    GarbageCollector::GCFatPointerRootAllocator initialize.
     GarbageCollector::IsInitialized := true.
 }.
 
@@ -331,6 +335,8 @@ public nogc function GarbageCollector::shutdown() => Void := {
     GarbageCollector::fullCollect().
     GarbageCollector::MarkingStack finalize.
     GarbageCollector::RememberedSet finalize.
+    GarbageCollector::GCPointerRootAllocator finalize.
+    GarbageCollector::GCFatPointerRootAllocator finalize.
     GarbageCollector::IsInitialized := false.
 }.
 
@@ -809,6 +815,9 @@ public hotcc nogc function GarbageCollector::rememberPointer(object: UIntPointer
 
     GarbageCollector::RememberedSet pushNoCheck: object
 }.
+
+public nogc function GarbageCollector::allocateGCRootPointer() => Untyped pointer
+    := (GarbageCollector::GCPointerRootAllocator allocateZeroInitializedWithSize: ObjectModel::PointerSize alignment: ObjectModel::PointerSize) reinterpretCastTo: Untyped pointer.
 
 public nogc function GarbageCollector::safepoint() => Void := {
     GarbageCollector::CurrentYoungHeapSize >= GarbageCollector::NextYoungCollectionThreshold ifFalse: {

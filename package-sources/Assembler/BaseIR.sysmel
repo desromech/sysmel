@@ -1673,6 +1673,7 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             name: #".bss";
             machoSectionName: #__bss;
             machoSegmentName: #__DATA;
+            loaded: true;
             readable: true;
             writeable: true;
             nobits: true;
@@ -1703,6 +1704,7 @@ public final class AsmStreamBuilder superclass: Object; definition: {
             name: #".tbss";
             machoSectionName: #__tbss;
             machoSegmentName: #__TDATA;
+            loaded: true;
             readable: true;
             writeable: true;
             nobits: true;
@@ -1896,6 +1898,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
     public field importedSymbols => OrderedCollection.
     public field importedProgramEntitySymbols => OrderedCollection.
     public field functionDefinitionsEntryPoints => OrderedCollection.
+    public field symbolValueBindingDefinitions => OrderedCollection.
     public field isDebuggingInformation => Boolean.
 
     public field debugInformationGenerator => AsmObjectDebugInformationGenerator.
@@ -1907,6 +1910,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
         importedSymbols := OrderedCollection new.
         importedProgramEntitySymbols := OrderedCollection new.
         functionDefinitionsEntryPoints := OrderedCollection new.
+        symbolValueBindingDefinitions := OrderedCollection new.
     }.
 
     public method newStreamBuilder => AsmStreamBuilder := {
@@ -1958,6 +1962,10 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
 
     public method addFunctionDefinitionEntryPoints: (entryPoints: FunctionDefinitionAsmObjectCode) ::=> Void := {
         functionDefinitionsEntryPoints add: entryPoints
+    }.
+
+    public method addSymbolValueBindingDefinition: (definition: SymbolValueBindingAsmObjectCode) ::=> Void := {
+        symbolValueBindingDefinitions add: definition
     }.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
@@ -2051,6 +2059,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
             addImportedSymbols: importedSymbols;
             addProgramEntityImportedSymbols: importedProgramEntitySymbols;
             addFunctionDefinitionsEntryPoints: functionDefinitionsEntryPoints;
+            addSymbolValueBindingDefinitions: symbolValueBindingDefinitions;
             yourself.
 
         self prepareToAssemble.
@@ -2070,6 +2079,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
             addImportedSymbols: importedSymbols;
             addProgramEntityImportedSymbols: importedProgramEntitySymbols;
             addFunctionDefinitionsEntryPoints: functionDefinitionsEntryPoints;
+            addSymbolValueBindingDefinitions: symbolValueBindingDefinitions;
             addLinkedObjectCode: initialObjectCode;
             yourself.
 
@@ -2089,6 +2099,7 @@ public final class AsmProgramEntity superclass: AsmObjectCodeProgramEntity; defi
             addImportedSymbols: importedSymbols;
             addProgramEntityImportedSymbols: importedProgramEntitySymbols;
             addFunctionDefinitionsEntryPoints: functionDefinitionsEntryPoints;
+            addSymbolValueBindingDefinitions: symbolValueBindingDefinitions;
             yourself.
 
         {|

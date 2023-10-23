@@ -13,7 +13,7 @@ public global ChunkedAllocatorChunk::HeaderSize := ChunkedAllocatorChunk valueSi
 public global ChunkedAllocator::ChunkSize := 2sz << 20sz.
 public global ChunkedAllocator::PageAlignment := 1sz << 16sz.
 
-public struct ChunkedAllocator definition: {
+public final struct ChunkedAllocator definition: {
     private field mutex => SysmelPAL::Mutex.
 
     public field firstChunk => ChunkedAllocatorChunk pointer.
@@ -79,5 +79,21 @@ public struct ChunkedAllocator definition: {
 
         mutex unlock.
         (chunk reinterpretCastTo: UInt8 pointer) + offset asIntPointer reinterpretCastTo: Void pointer
+    }.
+
+    public nogc method allocateZeroInitializedWithSize: (size: Size) alignment: (alignment: Size) ::=> Void pointer := {
+        mutex lock.
+
+        let chunk := self ensureChunkWithCapacityFor: size alignment: alignment.
+
+        let offset := chunk _ size alignedTo: alignment.
+        let alignedSize := size alignedTo: alignment.
+        chunk _ size: offset + alignedSize.
+
+        let result := (chunk reinterpretCastTo: UInt8 pointer) + offset asIntPointer reinterpretCastTo: Void pointer.
+        memset(result, 0i8, alignedSize).
+
+        mutex unlock.
+        result
     }.
 }.

@@ -80,6 +80,8 @@ public externC function sysmel_pal_supportsMemoryWithDualMappingForJIT() => Bool
 public externC function sysmel_pal_allocateMemoryWithDualMappingForJIT(size: Size, outHandle: Void pointer ref, outWriteMemoryPointer: Void pointer ref, outExecuteMemoryPointer: Void pointer ref) => Boolean.
 public externC function sysmel_pal_freeMemoryWithDualMappingForJIT(size: Size, handle: Void pointer, writeMemoryPointer: Void pointer, executeMemoryPointer: Void pointer) => Void.
 
+public externC function sysmel_pal_flushInstructionCache(size: Size, pointer: Void pointer) => Void.
+
 public externC function sysmel_pal_getStdinFileHandle() => SysmelPAL::FileHandle.
 public externC function sysmel_pal_getStdoutFileHandle() => SysmelPAL::FileHandle.
 public externC function sysmel_pal_getStderrFileHandle() => SysmelPAL::FileHandle.
@@ -112,3 +114,8 @@ public externC function sysmel_pal_condition_finalize(handle: SysmelPAL::Conditi
 public externC function sysmel_pal_condition_wait(handle: SysmelPAL::Condition pointer, mutex: SysmelPAL::Mutex pointer) => Void.
 public externC function sysmel_pal_condition_signal(handle: SysmelPAL::Condition pointer) => Void.
 public externC function sysmel_pal_condition_broadcast(handle: SysmelPAL::Condition pointer) => Void.
+
+public externC function sysmel_pal_openLibrary(nameSize: Size, name: Char8 const pointer) => Void pointer.
+public externC function sysmel_pal_closeLibrary(handle: Void pointer) => Void.
+public externC function sysmel_pal_getLibrarySymbol(handle: Void pointer, nameSize: Size, name: Char8 const pointer, outSymbol: Void pointer ref) => Boolean.
+public externC function sysmel_pal_getApplicationSymbol(nameSize: Size, name: Char8 const pointer, outSymbol: Void pointer ref) => Boolean.

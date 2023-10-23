@@ -365,6 +365,13 @@ AsmObjectHeap definition: {
             offset: offset;
             yourself)
     }.
+
+    public method writeSymbolTPOffset64: (symbol: AsmSymbol) at: (offset: Size) ::=> Void := {
+        serializedObjectDataRelocations add: (AsmObjectCodeRelocationTPOffset64 new
+            symbol: symbol;
+            offset: offset;
+            yourself)
+    }.
 }.
 
 Type extend: {
@@ -588,6 +595,13 @@ AsmObjectCode definition: {
                 checkedEntryPoint: entryPoints checkedEntryPoint;
                 uncheckedEntryPoint: entryPoints uncheckedEntryPoint;
                 uncheckedCapturelessEntryPoint: entryPoints uncheckedCapturelessEntryPoint;
+                yourself)
+        }.
+
+        symbolValueBindingDefinitions do: {:(SymbolValueBindingAsmObjectCode)definition :: Void |
+            asmObjectHeap tracer addObject: definition binding patch: (ImageSymbolValueBindingDefinitionAsmPatch new
+                binding: definition binding;
+                symbol: definition symbol;
                 yourself)
         }.
 

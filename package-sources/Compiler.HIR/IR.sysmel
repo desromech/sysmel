@@ -37,6 +37,7 @@ HIRValue definition: {
     public virtual method isFunction => Boolean := false.
     public virtual method isFunctionDefinition => Boolean := false.
     public virtual method isFunctionLocalValue => Boolean := false.
+    public virtual method isGlobalVariable => Boolean := false.
 
     public virtual method isBasicBlock => Boolean := false.
     
@@ -358,6 +359,8 @@ HIRGlobalVariable definition: {
     public field isReadOnly => Boolean.
     public field isExternal => Boolean.
     public field isThreadLocal => Boolean.
+
+    public override method isGlobalVariable => Boolean := true.
 
     public override method printOn: (stream: Stream) ::=> Void := {
         stream print: type; nextPutAll: " @".
@@ -2169,6 +2172,12 @@ public final class HIRSwitchInstruction superclass: HIRInstruction; definition: 
     public override method replaceDestination: (oldDestination: HIRBasicBlock) with: (newDestination: HIRBasicBlock) ::=> Void := {
         if: self defaultDestination = oldDestination then: (self defaultDestination: newDestination).
         caseDestinations replaceAll: oldDestination with: newDestination.
+    }.
+
+    public override method postCopy => Void := {
+        super postCopy.
+        caseKeys := caseKeys copy.
+        caseDestinations := caseDestinations copy.
     }.
 }.
 

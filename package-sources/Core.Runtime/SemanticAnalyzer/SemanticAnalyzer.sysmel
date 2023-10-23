@@ -7,6 +7,8 @@ SymbolBinding definition: {
     
     public abstract method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self subclassResponsibility.
+
+    public virtual method isSymbolValueBinding => Boolean := false.
 }.
 
 SymbolValueBinding definition: {
@@ -27,6 +29,8 @@ SymbolValueBinding definition: {
 
     public override method evaluateWithActivationEnvironment: (environment: FunctionActivationEnvironment) ::=> Untyped
         := self __slotNamedAt__: #value.
+    
+    public override method isSymbolValueBinding => Boolean := true.
 }.
 
 SymbolMacroValueBinding definition: {
@@ -1401,7 +1405,7 @@ FunctionNativeCodeCompiler definition: {
 public global FunctionNativeCodeCompiler::Current mutable => FunctionNativeCodeCompiler class := nil.
 
 FunctionNativeCodeDefinition definition: {
-    public eager method installForExecutionOfFunctionDefinition: (definition: FunctionDefinition) ::=> Void := {
+    public eager method installForExecution ::=> Void := {
         ## TODO: Implement this
     }.
 }.
@@ -1482,7 +1486,7 @@ FunctionDefinition definition: {
             nativeCodeDefinition := FunctionNativeCodeCompiler::Current compileFunctionDefinition: self.
             nativeCodeDefinition ifNotNil: {
                 ObjectModel::isLogical() ifFalse: {
-                    nativeCodeDefinition installForExecutionOfFunctionDefinition: self
+                    nativeCodeDefinition installForExecution
                 }
             }.
         }.

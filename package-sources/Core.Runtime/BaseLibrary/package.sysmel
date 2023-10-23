@@ -41,7 +41,14 @@ loadSourceNamed: "OrderedInsertionIdentitySet.sysmel".
 loadSourceNamed: "OrderedOffsetTable.sysmel".
 loadSourceNamed: "OrderedOffsetTableBuilder.sysmel".
 loadSourceNamed: "NativeCode.sysmel".
+loadSourceNamed: "NativeCodeCallFrameInformation.sysmel".
+loadSourceNamed: "NativeCodeLocationList.sysmel".
+loadSourceNamed: "NativeCodeRelocation.sysmel".
+loadSourceNamed: "NativeCodeSection.sysmel".
+loadSourceNamed: "NativeCodeSymbol.sysmel".
+loadSourceNamed: "NativeCodeSymbolTable.sysmel".
 loadSourceNamed: "ProgramEntity.sysmel".
+loadSourceNamed: "NativeCodeLoader.sysmel".
 loadSourceNamed: "ProgrammingLanguage.sysmel".
 loadSourceNamed: "Utility.sysmel".
 loadSourceNamed: "SourceCode.sysmel".

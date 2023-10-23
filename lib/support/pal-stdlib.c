@@ -33,3 +33,8 @@ SYSMEL_PAL_EXTERN_C void sysmel_pal_freeMemoryWithDualMappingForJIT(size_t size,
     (void)executeMemoryPointer;
 }
 
+SYSMEL_PAL_EXTERN_C void sysmel_pal_flushInstructionCache(size_t size, void *pointer)
+{
+    (void)size;
+    (void)pointer;
+}

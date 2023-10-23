@@ -454,6 +454,11 @@ public final class FunctionDefinitionAsmObjectCode superclass: Object; definitio
     public field uncheckedCapturelessEntryPoint => AsmSymbol.
 }.
 
+public final class SymbolValueBindingAsmObjectCode superclass: Object; definition: {
+    public field binding => SymbolValueBinding.
+    public field symbol => AsmSymbol.
+}.
+
 public abstract class AsmStackMapLocation superclass: Object; definition: {
     public field liveIntervalSection => AsmObjectCodeSection.
     public field liveIntervalSectionStart => Size.
@@ -471,6 +476,7 @@ public final class AsmObjectCode superclass: Object; definition: {
     public field programEntities => Array.
     public field programEntityImportedSymbols => Array.
     public field functionDefinitionsEntryPoints => Array.
+    public field symbolValueBindingDefinitions => Array.
 
     public override method fullPrintOn: (stream: Stream) ::=> Void := {
         sections do: {:(AsmObjectCodeSection)each :: Void |
@@ -683,6 +689,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
     public field programEntities => OrderedCollection.
     public field programEntityImportedSymbols => OrderedCollection.
     public field functionDefinitionsEntryPoints => OrderedCollection.
+    public field symbolValueBindingDefinitions => OrderedCollection.
 
     public override method initialize => Void := {
         sections := OrderedCollection new.
@@ -694,6 +701,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
         programEntities := OrderedCollection new.
         programEntityImportedSymbols := OrderedCollection new.
         functionDefinitionsEntryPoints := OrderedCollection new.
+        symbolValueBindingDefinitions := OrderedCollection new.
     }.
 
     public method addImportedSymbols: (importedSymbols: Collection) ::=> Void := {
@@ -708,6 +716,10 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
 
     public method addFunctionDefinitionsEntryPoints: (newFunctionDefinitions: Collection) ::=> Void := {
         functionDefinitionsEntryPoints addAll: newFunctionDefinitions
+    }.
+
+    public method addSymbolValueBindingDefinitions: (newDefinitions: Collection) ::=> Void := {
+        symbolValueBindingDefinitions addAll: newDefinitions
     }.
 
     public method addLinkedObjectCode: (linkedObjectCode: AsmObjectCode) ::=> Void := {
@@ -763,6 +775,7 @@ public final class AsmObjectCodeBuilder superclass: Object; definition: {
             programEntities: programEntities asArray;
             programEntityImportedSymbols: programEntityImportedSymbols asArray;
             functionDefinitionsEntryPoints: functionDefinitionsEntryPoints asArray;
+            symbolValueBindingDefinitions: symbolValueBindingDefinitions asArray;
             yourself
     }.
 
@@ -818,6 +831,13 @@ public final class AsmObjectCodeRelocationTPOffset32 superclass: AsmObjectCodeRe
         := targetSection data int32At: offset put: addend + extraAddend asInt32.
 }.
 
+public final class AsmObjectCodeRelocationTPOffset64 superclass: AsmObjectCodeRelocation; definition: {
+    public field addend => Int64.
+
+    public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
+        := targetSection data int64At: offset put: addend + extraAddend.
+}.
+
 public final class AsmObjectCodeRelocationAbsoluteInt32 superclass: AsmObjectCodeRelocation; definition: {
     public field addend => Int32.
 
@@ -829,7 +849,7 @@ public final class AsmObjectCodeRelocationAbsoluteInt64 superclass: AsmObjectCod
     public field addend => Int64.
 
     public override method applyAddendInTargetSection: (targetSection: AsmObjectCodeSection) withExtraAddend: (extraAddend: Int64) ::=> Void
-        := targetSection data int64At: offset put: addend + extraAddend asInt64.
+        := targetSection data int64At: offset put: addend + extraAddend.
 }.
 
 public final class AsmObjectCodeRelocationSectionRelativeInt32 superclass: AsmObjectCodeRelocation; definition: {

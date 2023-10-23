@@ -2863,16 +2863,23 @@ public final class MIRFunctionDefinitionPatch superclass: Object; definition: {
     public field uncheckedCapturelessEntryPoint => MIRProgramEntity.
 }.
 
+public final class MIRSymbolValueBindingDefinitionPatch superclass: Object; definition: {
+    public field binding => SymbolValueBinding.
+    public field symbol => MIRProgramEntity.
+}.
+
 public final class MIRModule superclass: MIRProgramEntity; definition: {
     public field programEntities => OrderedCollection.
     public field baseObjectTracer => ImageTracer.
     public field functionDefinitionPatches => OrderedCollection.
+    public field symbolValueBindingDefinitionPatches => OrderedCollection.
     public field sourceProgramEntityDictionary => ObjectPointerDictionary.
 
     public override method initialize => Void := {
         super initialize.
         programEntities := OrderedCollection new.
         functionDefinitionPatches := OrderedCollection new.
+        symbolValueBindingDefinitionPatches := OrderedCollection new.
         sourceProgramEntityDictionary := ObjectPointerDictionary new.
     }.
 

@@ -104,6 +104,7 @@ public global Elf::X86_64::Rel::A16 := 12u32.
 public global Elf::X86_64::Rel::PC16 := 13u32.
 public global Elf::X86_64::Rel::A8 := 14u32.
 public global Elf::X86_64::Rel::PC8 := 15u32.
+public global Elf::X86_64::Rel::TPOff64 := 18u32.
 public global Elf::X86_64::Rel::TPOff32 := 23u32.
 
 public final class Elf32::Header superclass: ByteSerializableObject; definition: {
@@ -418,9 +419,9 @@ public final class Elf64::SymbolTable superclass: Object; definition: {
 
 AsmObjectCodeSection extend: {
     public method elfSectionType => UInt32
-        := loaded
-            ifTrue: Elf::SectionHeaderType::Progbits
-            ifFalse: Elf::SectionHeaderType::Nobits.
+        := nobits
+            ifTrue: Elf::SectionHeaderType::Nobits
+            ifFalse: Elf::SectionHeaderType::Progbits.
 
     public method elfSectionFlags => UInt32 := {
         let elfFlags mutable := 0u32.

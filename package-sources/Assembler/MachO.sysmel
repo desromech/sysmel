@@ -449,7 +449,7 @@ public final class AsmObjectMachO64FileWriter superclass: AsmObjectFileWriter; d
                 size: eachSection size;
                 yourself.
 
-            eachSection loaded ifFalse: {
+            eachSection nobits ifTrue: {
                 sectionHeader zeroFill
             }.
             eachSection executable ifTrue: {

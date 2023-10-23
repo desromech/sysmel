@@ -6,6 +6,11 @@ public class FunctionNativeCodeLinkerDefinition superclass: Object; definition: 
     public field capturelessUncheckedEntryPoint => NativeCodeSymbol.
 }.
 
+public class SymbolValueBindingNativeCodeLinkerDefinition superclass: Object; definition: {
+    public field binding => SymbolValueBinding.
+    public field symbol => NativeCodeSymbol.
+}.
+
 public class NativeCodeLinker superclass: Object; definition: {
     public field keepingIRTextForDebugging => Boolean.
     private field sectionNameTable => Dictionary.
@@ -15,6 +20,7 @@ public class NativeCodeLinker superclass: Object; definition: {
     private field programEntities => OrderedCollection.
     private field programEntityImportedSymbols => OrderedCollection.
     private field functionDefinitionsEntryPoints => OrderedCollection.
+    private field symbolValueBindingDefinitions => OrderedCollection.
     private field hirTextIR => StringStream.
     private field mirTextIR => StringStream.
     private field asmTextIR => StringStream.
@@ -27,6 +33,7 @@ public class NativeCodeLinker superclass: Object; definition: {
         programEntities := OrderedCollection new.
         programEntityImportedSymbols := OrderedCollection new.
         functionDefinitionsEntryPoints := OrderedCollection new.
+        symbolValueBindingDefinitions := OrderedCollection new.
     }.
 
     public method addNativeCode: (nativeCode: NativeCode) ::=> Void := {
@@ -54,6 +61,13 @@ public class NativeCodeLinker superclass: Object; definition: {
                 checkedEntryPoint: symbolLoadWithIndex(each checkedEntryPoint);
                 uncheckedEntryPoint: symbolLoadWithIndex(each uncheckedEntryPoint);
                 capturelessUncheckedEntryPoint: symbolLoadWithIndex(each capturelessUncheckedEntryPoint);
+                yourself)
+        }.
+
+        nativeCode symbolValueBindingDefinitions do: {:(SymbolValueBindingNativeCodeDefinition)each :: Void |
+            symbolValueBindingDefinitions add: (SymbolValueBindingNativeCodeLinkerDefinition new
+                binding: each binding;
+                symbol: symbolLoadWithIndex(each symbol);
                 yourself)
         }.
 
@@ -90,7 +104,8 @@ public class NativeCodeLinker superclass: Object; definition: {
             addSymbolTables: sourceSymbolTables;
             link.
 
-        let nativeCode := NativeCode new
+        let nativeCode := NativeCode new.
+        nativeCode
             sections: (sections collect: {:(NativeCodeLinkerSection)eachSection :: NativeCodeSection |
                 (eachSection linkWithSymbolTable: symbolTable)
                     symbolTable: linkedSymbolTable;
@@ -105,10 +120,18 @@ public class NativeCodeLinker superclass: Object; definition: {
             }) asArray;
             functionDefinitionsEntryPoints: (functionDefinitionsEntryPoints collect: {:(FunctionNativeCodeLinkerDefinition)each :: FunctionNativeCodeDefinition |
                 FunctionNativeCodeDefinition new
+                    nativeCode: nativeCode;
                     definition: each definition;
                     checkedEntryPoint: (symbolTable convertSymbolIndex: each checkedEntryPoint);
                     uncheckedEntryPoint: (symbolTable convertSymbolIndex: each uncheckedEntryPoint);
                     capturelessUncheckedEntryPoint: (symbolTable convertSymbolIndex: each capturelessUncheckedEntryPoint);
+                    yourself
+            }) asArray;
+            symbolValueBindingDefinitions: (symbolValueBindingDefinitions collect: {:(SymbolValueBindingNativeCodeLinkerDefinition)each :: SymbolValueBindingNativeCodeDefinition |
+                SymbolValueBindingNativeCodeDefinition new
+                    nativeCode: nativeCode;
+                    binding: each binding;
+                    symbol: (symbolTable convertSymbolIndex: each symbol);
                     yourself
             }) asArray;
             

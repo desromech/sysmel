@@ -131,6 +131,8 @@ typedef struct sysbvm_symbolValueBinding_s
     sysbvm_tuple_t isMutable;
     sysbvm_tuple_t isExternal;
     sysbvm_tuple_t isThreadLocal;
+    sysbvm_tuple_t nativeCodeDefinition;
+    sysbvm_tuple_t virtualAddress;
 } sysbvm_symbolValueBinding_t;
 
 /**

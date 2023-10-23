@@ -1085,7 +1085,6 @@ AsmStreamBuilder extend: {
             name: #".debug_frame";
             machoSectionName: #__debug_frame;
             machoSegmentName: #__DWARF;
-            loaded: true;
             readable: false;
             debugging: true;
             yourself).
@@ -1095,7 +1094,6 @@ AsmStreamBuilder extend: {
             name: #".debug_line";
             machoSectionName: #__debug_line;
             machoSegmentName: #__DWARF;
-            loaded: true;
             readable: false;
             debugging: true;
             yourself).
@@ -1105,7 +1103,6 @@ AsmStreamBuilder extend: {
             name: #".debug_str";
             machoSectionName: #__debug_str;
             machoSegmentName: #__DWARF;
-            loaded: true;
             readable: false;
             debugging: true;
             yourself).
@@ -1115,7 +1112,6 @@ AsmStreamBuilder extend: {
             name: #".debug_abbrev";
             machoSectionName: #__debug_abbrev;
             machoSegmentName: #__DWARF;
-            loaded: true;
             readable: false;
             debugging: true;
             yourself).
@@ -1125,7 +1121,6 @@ AsmStreamBuilder extend: {
             name: #".debug_info";
             machoSectionName: #__debug_info;
             machoSegmentName: #__DWARF;
-            loaded: true;
             readable: false;
             debugging: true;
             yourself).

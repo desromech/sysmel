@@ -10,6 +10,8 @@ CC="gcc"
 SYSBVMI="$OUT_DIR/sysbvmi"
 SYSBVMI32="$OUT_DIR32/sysbvmi"
 
+BUILD_LD_FLAGS="-dl"
+
 SDL2_CFLAGS=$(sdl2-config --cflags)
 SDL2_LDFLAG=$(sdl2-config --libs)
 

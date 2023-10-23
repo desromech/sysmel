@@ -194,6 +194,7 @@ typedef struct sysbvm_context_roots_s
     sysbvm_tuple_t symbolLocalBindingType;
     sysbvm_tuple_t symbolMacroValueBindingType;
     sysbvm_tuple_t symbolValueBindingType;
+    sysbvm_tuple_t symbolValueBindingNativeCodeDefinitionType;
     sysbvm_tuple_t tombstoneType;
     sysbvm_tuple_t temporaryReferenceType;
     sysbvm_tuple_t trueType;

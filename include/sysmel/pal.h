@@ -52,6 +52,8 @@ SYSMEL_PAL_EXTERN_C bool sysmel_pal_supportsMemoryWithDualMappingForJIT(void);
 SYSMEL_PAL_EXTERN_C bool sysmel_pal_allocateMemoryWithDualMappingForJIT(size_t size, void **outHandle, void **outWriteMemoryPointer, void **outExecuteMemoryPointer);
 SYSMEL_PAL_EXTERN_C void sysmel_pal_freeMemoryWithDualMappingForJIT(size_t size, void *handle, void *writeMemoryPointer, void *executeMemoryPointer);
 
+SYSMEL_PAL_EXTERN_C void sysmel_pal_flushInstructionCache(size_t size, void *pointer);
+
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStdinFileHandle(void);
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStdoutFileHandle(void);
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStderrFileHandle(void);
@@ -84,5 +86,10 @@ SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_finalize(sysmel_pal_condition_t *h
 SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_wait(sysmel_pal_condition_t *handle, sysmel_pal_mutex_t *mutex);
 SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_signal(sysmel_pal_condition_t *handle);
 SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_broadcast(sysmel_pal_condition_t *handle);
+
+SYSMEL_PAL_EXTERN_C void* sysmel_pal_openLibrary(size_t nameSize, const char *name);
+SYSMEL_PAL_EXTERN_C void sysmel_pal_closeLibrary(void *handle);
+SYSMEL_PAL_EXTERN_C bool sysmel_pal_getLibrarySymbol(void *handle, size_t nameSize, const char *name, void **outSymbol);
+SYSMEL_PAL_EXTERN_C bool sysmel_pal_getApplicationSymbol(size_t nameSize, const char *name, void **outSymbol);
 
 #endif //SYSMEL_PAL_H

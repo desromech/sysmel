@@ -163,6 +163,7 @@ SYSBVM_API sysbvm_tuple_t sysbvm_symbolValueBinding_createWithFlags(sysbvm_conte
     result->isMutable = sysbvm_tuple_boolean_encode(isMutable);
     result->isExternal = sysbvm_tuple_boolean_encode(isExternal);
     result->isThreadLocal = sysbvm_tuple_boolean_encode(isThreadLocal);
+    result->virtualAddress = sysbvm_tuple_uintptr_encode(context, 0);
     return (sysbvm_tuple_t)result;
 }
 

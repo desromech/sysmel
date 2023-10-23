@@ -220,7 +220,7 @@ public final class HIRModuleCompilationContext superclass: Object; definition: {
         := self translateFunctionDefinition: functionDefinition withBuilder: nil.
 
     public method declareGlobalVariableForSymbolValueBinding: (binding: SymbolValueBinding) ::=> HIRGlobalVariable := {
-        let translatedValue := HIRGlobalVariable new
+        let translatedValue := (HIRGlobalVariable forContext: hirContext)
             sourceBinding: binding;
             referenceValue: binding value;
             name: binding programEntityQualifiedNameSymbol;

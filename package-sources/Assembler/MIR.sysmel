@@ -178,7 +178,14 @@ public final class MIRModuleAsmCodeGenerator superclass: MIRAsmCodeGenerator; de
                     uncheckedCapturelessEntryPoint: (compiledProgramEntitySymbolMap atOrNil: mirPatch uncheckedCapturelessEntryPoint);
                     yourself
                 )
-            }
+            }.
+
+            module symbolValueBindingDefinitionPatches do: {:(MIRSymbolValueBindingDefinitionPatch)mirPatch :: Void |
+                targetModule addSymbolValueBindingDefinition: (SymbolValueBindingAsmObjectCode new
+                    binding: mirPatch binding;
+                    symbol: (compiledProgramEntitySymbolMap atOrNil: mirPatch symbol);
+                    yourself)
+            }.
         } ifFalse: {
             module functionDefinitionPatches do: {:(MIRFunctionDefinitionPatch)mirPatch :: Void |
                 objectHeap tracer addObject: mirPatch functionDefinition patch: (ImageFunctionDefinitionEntryPointAsmPatch new
@@ -1248,6 +1255,14 @@ MIRGlobalVariable definition: {
             target: moduleGenerator target;
             moduleGenerator: moduleGenerator;
             generateGlobalVariable: self withSymbol: symbol
+    }.
+}.
+
+MIRImportedFunction definition: {
+    public override method generateAssemblySymbolWith: (moduleGenerator: MIRModuleAsmCodeGenerator) ::=> AsmSymbol := {
+        (super generateAssemblySymbolWith: moduleGenerator)
+            makeFunction;
+            yourself
     }.
 }.
 

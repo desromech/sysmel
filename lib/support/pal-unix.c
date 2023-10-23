@@ -8,6 +8,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <assert.h>
+#include <dlfcn.h>
 
 SYSMEL_PAL_EXTERN_C sysmel_pal_filehandle_t sysmel_pal_getStdinFileHandle(void)
 {
@@ -237,4 +238,44 @@ SYSMEL_PAL_EXTERN_C void sysmel_pal_condition_broadcast(sysmel_pal_condition_t *
 {
     assert(sizeof(pthread_cond_t) <= sizeof(sysmel_pal_condition_t));
     pthread_cond_broadcast((pthread_cond_t*)handle);
+}
+
+SYSMEL_PAL_EXTERN_C void* sysmel_pal_openLibrary(size_t nameSize, const char *name)
+{
+    char *nameCString = malloc(nameSize + 1);
+    memcpy(nameCString, name, nameSize);
+    nameCString[nameSize] = 0;
+
+    void *handle = dlopen(nameCString, RTLD_NOW | RTLD_LOCAL | RTLD_DEEPBIND);
+    free(nameCString);
+    return handle;
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_closeLibrary(void *handle)
+{
+    dlclose(handle);
+}
+
+SYSMEL_PAL_EXTERN_C bool sysmel_pal_getLibrarySymbol(void *handle, size_t nameSize, const char *name, void **outSymbol)
+{
+    char *nameCString = malloc(nameSize + 1);
+    memcpy(nameCString, name, nameSize);
+    nameCString[nameSize] = 0;
+
+    dlerror();
+    *outSymbol = dlsym(handle, nameCString);
+    char *error = dlerror();
+
+    free(nameCString);
+    return error == NULL;
+}
+
+SYSMEL_PAL_EXTERN_C bool sysmel_pal_getApplicationSymbol(size_t nameSize, const char *name, void **outSymbol)
+{
+    return sysmel_pal_getLibrarySymbol(NULL, nameSize, name, outSymbol);
+}
+
+SYSMEL_PAL_EXTERN_C void sysmel_pal_flushInstructionCache(size_t size, void *pointer)
+{
+    __builtin___clear_cache(pointer, (char*)pointer + size);
 }

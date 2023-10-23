@@ -218,12 +218,22 @@ AsmObjectCode definition: {
             each key -> convertSymbolBlock(each value)
         }.
 
+        let nativeCode := NativeCode new.
         let convertedFunctionDefinitionsEntryPoints := functionDefinitionsEntryPoints collect: {:(FunctionDefinitionAsmObjectCode)each :: FunctionNativeCodeDefinition |
             FunctionNativeCodeDefinition new
+                nativeCode: nativeCode;
                 definition: each functionDefinition;
                 checkedEntryPoint: (convertedSymbolDictionary at: each checkedEntryPoint ifAbsent: {:: UInt32 | 0u32});
                 uncheckedEntryPoint: (convertedSymbolDictionary at: each uncheckedEntryPoint ifAbsent: {:: UInt32 | 0u32});
                 capturelessUncheckedEntryPoint: (convertedSymbolDictionary at: each uncheckedCapturelessEntryPoint ifAbsent: {:: UInt32 | 0u32});
+                yourself
+        }.
+
+        let convertedSymbolValueBindingDefinitions := symbolValueBindingDefinitions collect: {:(SymbolValueBindingAsmObjectCode)each :: SymbolValueBindingNativeCodeDefinition |
+            SymbolValueBindingNativeCodeDefinition new
+                nativeCode: nativeCode;
+                binding: each binding;
+                symbol: (convertedSymbolDictionary at: each symbol ifAbsent: {:: UInt32 | 0u32});
                 yourself
         }.
 
@@ -248,12 +258,13 @@ AsmObjectCode definition: {
         }.
 
         ## Create the native code.
-        NativeCode new
+        nativeCode
             symbolTable: symbolTable;
             sections: convertedSections asArray;
             programEntities: convertedProgramEntities;
             programEntityImportedSymbols: convertedProgramEntityImportedSymbols;
             functionDefinitionsEntryPoints: convertedFunctionDefinitionsEntryPoints;
+            symbolValueBindingDefinitions: convertedSymbolValueBindingDefinitions;
             yourself
     }.
 }.
@@ -586,6 +597,12 @@ NativeCode definition: {
                     checkedEntryPoint: convertSymbolIndexBlock(each checkedEntryPoint);
                     uncheckedEntryPoint: convertSymbolIndexBlock(each uncheckedEntryPoint);
                     uncheckedCapturelessEntryPoint: convertSymbolIndexBlock(each capturelessUncheckedEntryPoint);
+                    yourself
+            });
+            symbolValueBindingDefinitions: (symbolValueBindingDefinitions collect: {:(SymbolValueBindingNativeCodeDefinition)each :: SymbolValueBindingAsmObjectCode |
+                SymbolValueBindingAsmObjectCode new
+                    binding: each binding;
+                    symbol: convertSymbolIndexBlock(each symbol); 
                     yourself
             });
             yourself

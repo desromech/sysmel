@@ -1,0 +1,16 @@
+NativeCodeSymbolTable definition: {
+    public override method initialize => Void := {
+        symbols := #().
+    }.
+
+    public method atOrNil: (index: UInt32) ::=> NativeCodeSymbol
+        := (index > 0u32) && (index asSize <= symbols size)
+            ifTrue: (symbols at: index asSize - 1sz)
+            ifFalse: nil.
+
+    public override method fullPrintOn: (stream: Stream) ::=> Void := {
+        symbols do: {:(NativeCodeSymbol)eachSymbol :: Void |
+            stream string: "  "; fullPrint: eachSymbol; nl
+        }.
+    }.
+}.
